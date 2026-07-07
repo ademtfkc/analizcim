@@ -368,7 +368,7 @@
             <!-- Loading Overlay -->
             <div class="loading-overlay" id="loadingOverlay">
                 <div class="loader"></div>
-                <p>Dosyalar analiz ediliyor...</p>
+                <p id="loadingMessage">Dosyalar analiz ediliyor...</p>
             </div>
 
             <!-- Error / Success Toast (aria-live for screen readers) -->
@@ -549,7 +549,7 @@
                 </div>
 
                 <div class="history-empty" id="historyEmpty">
-                    <span class="empty-icon">Arşiv</span>
+                    <span class="empty-icon"></span>
                     <p>Henüz kayıtlı analiz yok</p>
                     <span class="empty-hint">Analiz sekmesinden dosya yükleyip başarılı analiz yaptığınızda kayıtlar burada listelenir.</span>
                 </div>
@@ -628,7 +628,7 @@
                 </div>
 
                 <div class="history-empty" id="trashEmpty">
-                    <span class="empty-icon">Boş</span>
+                    <span class="empty-icon"></span>
                     <p>Çöp kutusu boş</p>
                     <span class="empty-hint">Sildiğiniz kayıtlar burada görünür.</span>
                 </div>
@@ -995,7 +995,7 @@
 
                 <!-- Dashboard Empty State -->
                 <div class="dashboard-empty" id="dashboardEmpty" style="display: none;">
-                    <span class="empty-icon">Boş</span>
+                    <span class="empty-icon"></span>
                     <p>Henüz analiz yapılmamış</p>
                     <span class="empty-hint">Satış veya alış dosyanızı yüklediğinizde özet, grafik ve KDV bilgileri burada oluşur.</span>
                     <button class="analyze-btn btn-push-down" onclick="switchTab('analyze')">
@@ -1035,7 +1035,7 @@
 
                 <div class="customers-grid" id="customersGrid"></div>
                 <div class="customers-empty" id="customersEmpty" style="display: none;">
-                    <span class="empty-icon">Boş</span>
+                    <span class="empty-icon"></span>
                     <p>Henüz müşteri eklenmemiş</p>
                     <span class="empty-hint">İlk müşteriyi ekleyerek cari portföyünüzü oluşturmaya başlayın.</span>
                     <button type="button" class="dashboard-action-btn primary" onclick="openCustomerModal()">Müşteri Ekle</button>
@@ -1076,7 +1076,7 @@
                         </table>
                     </div>
                     <div class="customers-empty" id="customerPartyEmpty" style="display: none;">
-                        <span class="empty-icon">Boş</span>
+                        <span class="empty-icon"></span>
                         <p>Henüz müşteri bulunamadı. Excel dosyası yükleyerek otomatik ekleyebilirsiniz.</p>
                     </div>
                 </div>
@@ -1121,7 +1121,7 @@
                         </table>
                     </div>
                     <div class="customers-empty" id="supplierPartyEmpty" style="display: none;">
-                        <span class="empty-icon">Boş</span>
+                        <span class="empty-icon"></span>
                         <p>Henüz tedarikçi bulunamadı. Excel dosyası yükleyerek otomatik ekleyebilirsiniz.</p>
                     </div>
                 </div>
@@ -1280,7 +1280,7 @@
                         <div class="expenses-chart-container">
                             <canvas id="expensesPieChart"></canvas>
                             <div class="expenses-chart-empty" id="expensesChartEmpty" style="display: none;">
-                                <span class="empty-icon">Grafik</span>
+                                <span class="empty-icon"></span>
                                 <p>Gider ekledikçe dağılım burada görünür</p>
                             </div>
                         </div>
@@ -1444,7 +1444,7 @@
 
                 <!-- Empty State -->
                 <div class="compare-empty" id="compareEmpty">
-                    <span class="empty-icon">Karşılaştır</span>
+                    <span class="empty-icon"></span>
                     <p>Yıl seçerek karşılaştırma yapın</p>
                     <span class="empty-hint">Yukarıdaki menüden iki farklı yıl seçip "Karşılaştır" butonuna
                         tıklayın</span>

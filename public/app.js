@@ -1403,7 +1403,11 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function showLoading(show) {
+function showLoading(show, message) {
+    if (show) {
+        const msgEl = document.getElementById('loadingMessage');
+        if (msgEl) msgEl.textContent = message || 'Dosyalar analiz ediliyor...';
+    }
     loadingOverlay.classList.toggle('active', show);
 }
 
@@ -2636,7 +2640,7 @@ async function batchDeleteHistory() {
         });
         const data = await res.json();
         if (data.success) {
-            showSuccess(data.deleted + ' kayıt silindi.');
+            showSuccessToast(data.deleted + ' kayıt silindi.');
             clearHistorySelection();
             loadHistory();
             loadTrashCount();
@@ -2712,7 +2716,7 @@ async function saveHistoryEdit() {
         });
         const result = await res.json();
         if (result.success) {
-            showSuccess('Kayıt güncellendi.');
+            showSuccessToast('Kayıt güncellendi.');
             closeHistoryEditModal();
             loadHistory();
         } else {
@@ -2828,7 +2832,7 @@ window.restoreTrashEntry = async function (id) {
         const data = await res.json();
         if (data.success) {
             _selectedTrashIds.delete(id);
-            showSuccess('Kayıt geri alındı.');
+            showSuccessToast('Kayıt geri alındı.');
             loadTrash();
             loadTrashCount();
             loadHistory();
@@ -2847,7 +2851,7 @@ window.permanentlyDeleteTrash = async function (id) {
         const data = await res.json();
         if (data.success) {
             _selectedTrashIds.delete(id);
-            showSuccess('Kayıt kalıcı olarak silindi.');
+            showSuccessToast('Kayıt kalıcı olarak silindi.');
             loadTrash();
             loadTrashCount();
         } else {
@@ -2865,7 +2869,7 @@ window.emptyTrash = async function () {
         const data = await res.json();
         if (data.success) {
             _selectedTrashIds.clear();
-            showSuccess('Çöp kutusu temizlendi.');
+            showSuccessToast('Çöp kutusu temizlendi.');
             loadTrash();
             loadTrashCount();
             updateTrashBatchBar();
@@ -2918,7 +2922,7 @@ window.batchRestoreTrash = async function () {
         });
         const data = await res.json();
         if (data.success) {
-            showSuccess(data.restored + ' kayıt geri alındı.');
+            showSuccessToast(data.restored + ' kayıt geri alındı.');
             clearTrashSelection();
             loadTrash();
             loadTrashCount();
@@ -2942,7 +2946,7 @@ window.batchPermanentDeleteTrash = async function () {
         });
         const data = await res.json();
         if (data.success) {
-            showSuccess(data.deleted + ' kayıt kalıcı olarak silindi.');
+            showSuccessToast(data.deleted + ' kayıt kalıcı olarak silindi.');
             clearTrashSelection();
             loadTrash();
             loadTrashCount();
@@ -2957,7 +2961,7 @@ window.batchPermanentDeleteTrash = async function () {
 async function exportDashboardPdf() {
     const year = document.getElementById('yearSelect')?.value || new Date().getFullYear();
     try {
-        showLoading(true);
+        showLoading(true, 'PDF hazırlanıyor...');
         const res = await fetch('/api/export/pdf-dashboard/' + year);
         if (!res.ok) {
             const err = await res.json();
@@ -3982,7 +3986,7 @@ window.closeAnalysisDetailModal = function () {
 
 window.viewHistoryEntry = async function (id) {
     try {
-        showLoading(true);
+        showLoading(true, 'Kayıt açılıyor...');
         const response = await fetch(`/api/history/${id}`);
         const data = await response.json();
 
@@ -4089,7 +4093,7 @@ function clearDashboardRange() {
 
 async function loadDashboard() {
     try {
-        showLoading(true);
+        showLoading(true, 'Panel yükleniyor...');
         
         const rangeStart = document.getElementById('rangeStart')?.value;
         const rangeEnd = document.getElementById('rangeEnd')?.value;
@@ -7458,11 +7462,19 @@ function initPredictionsDragDrop() {
     const wrappers = grid.querySelectorAll('.pred-card-resize-wrapper');
     wrappers.forEach(wrapper => {
         wrapper.setAttribute('draggable', 'true');
+        // Idempotent bağlama: filtre/sekme değişince initPredictionsDragDrop tekrar çağrılıyor;
+        // önce kaldır sonra ekle ki aynı elemana dinleyiciler birikmesin (sürükle-bırak bozulmasın).
+        wrapper.removeEventListener('dragstart', onPredDragStart);
         wrapper.addEventListener('dragstart', onPredDragStart);
+        wrapper.removeEventListener('dragend', onPredDragEnd);
         wrapper.addEventListener('dragend', onPredDragEnd);
+        wrapper.removeEventListener('dragover', onPredDragOver);
         wrapper.addEventListener('dragover', onPredDragOver);
+        wrapper.removeEventListener('dragenter', onPredDragEnter);
         wrapper.addEventListener('dragenter', onPredDragEnter);
+        wrapper.removeEventListener('dragleave', onPredDragLeave);
         wrapper.addEventListener('dragleave', onPredDragLeave);
+        wrapper.removeEventListener('drop', onPredDrop);
         wrapper.addEventListener('drop', onPredDrop);
     });
 
@@ -7726,7 +7738,7 @@ async function archiveSelectedYear() {
             showError(data.error || 'Arşivleme başarısız.');
             return;
         }
-        showSuccess(`${year} yılı arşivlendi (${data.analyses} analiz, ${data.summaries} özet, ${data.expenses} gider).`);
+        showSuccessToast(`${year} yılı arşivlendi (${data.analyses} analiz, ${data.summaries} özet, ${data.expenses} gider).`);
         loadArchivesList();
     } catch (error) {
         showError('Arşivleme sırasında hata oluştu.');
@@ -7745,7 +7757,7 @@ async function restoreSelectedArchive() {
             showError(data.error || 'Geri yükleme başarısız.');
             return;
         }
-        showSuccess(`${year} yılı geri yüklendi (${data.analyses} analiz, ${data.summaries} özet, ${data.expenses} gider).`);
+        showSuccessToast(`${year} yılı geri yüklendi (${data.analyses} analiz, ${data.summaries} özet, ${data.expenses} gider).`);
         loadArchivesList();
     } catch (error) {
         showError('Geri yükleme sırasında hata oluştu.');
@@ -7764,7 +7776,7 @@ async function deleteSelectedArchive() {
             showError(data.error || 'Silme başarısız.');
             return;
         }
-        showSuccess(`${year} yılı arşivi silindi.`);
+        showSuccessToast(`${year} yılı arşivi silindi.`);
         loadArchivesList();
     } catch (error) {
         showError('Arşiv silinirken hata oluştu.');

@@ -1098,7 +1098,7 @@ app.get('/api/export/pdf-history', async (req, res) => {
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename=analizcim-gecmis.pdf');
-        doc.save(res);
+        res.send(Buffer.from(doc.output('arraybuffer')));
     } catch (error) {
         logger.error({ err: error }, 'PDF export history error:');
         res.status(500).json({ error: 'PDF dışa aktarımı sırasında hata oluştu.' });
@@ -1443,7 +1443,7 @@ app.get('/api/export/pdf-analysis/:id', async (req, res) => {
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=analizcim-analiz-${idValidation.value}.pdf`);
-        doc.save(res);
+        res.send(Buffer.from(doc.output('arraybuffer')));
     } catch (error) {
         logger.error({ err: error }, 'PDF export analysis error:');
         res.status(500).json({ error: 'PDF dışa aktarımı sırasında hata oluştu.' });

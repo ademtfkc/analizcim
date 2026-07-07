@@ -173,6 +173,7 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-07-08 | ana asistan | **Kullanıcı testi + hata düzeltme turu:** izole demo DB'de 58 HTTP + 10 yazma testi + 2 UI/UX ajanı. 6 gerçek bug düzeltildi (PDF export 500, showSuccess ×10, dashboard yükleme mesajı, sürükle-bırak sızıntısı, mobil buton 44px, empty-icon). 134 test + lint temiz, PDF canlı doğrulandı | `server.js`, `public/app.js`, `public/index.html`, `public/styles.css` |
 | 2026-07-07 | ana asistan | **Doküman turu:** README profesyonel yeniden düzen (iç günlükler CHANGELOG.md'ye taşındı), CHANGELOG.md + LICENSE (ISC) eklendi, .env.example eksik değişkenler + doğru default'lar, CLAUDE.md durum bölümü güncellendi. Cari geçmiş davranışı belgelendi | `README.md`, `CHANGELOG.md`, `LICENSE`, `.env.example`, `CLAUDE.md`, `PROJE_DURUMU.md` |
 | 2026-07-07 | ana asistan | **Sürüm kontrolü:** git init (main) + ilk commit + private GitHub deposu (github.com/ademtfkc/analizcim) push. Commit öncesi sır/veri sızıntı denetimi yapıldı (temiz) | `.git`, GitHub |
 | 2026-07-07 | ana asistan | **Geliştirme turu:** dedup, export formül nötrleme, 10 hata sızıntısı, /health, CSP+güvenlik başlıkları, kâr oranı paydası, escape, jsPDF 4.2.1 + kırık PDF export düzeltmesi, gradyan kaldırma. 134 birim test geçti, canlı health+CSP+PDF doğrulandı | `analyzer.js`, `validators.js`, `server.js`, `public/app.js`, `public/styles.css`, `package.json`, +2 yeni test |

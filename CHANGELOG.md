@@ -5,6 +5,26 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-07-08 — Kullanıcı testi ve hata düzeltmeleri
+
+Gerçek kullanıcı gibi kapsamlı test (izole demo DB üzerinde 58 HTTP + 10 yazma testi) ve iki uzman
+UI/UX incelemesi yapıldı. Bulunan 6 gerçek sorun düzeltildi:
+
+- **PDF dışa aktarma (geçmiş + analiz) 500 hatası** düzeltildi: `doc.save(res)` sunucuda geçersizdi;
+  çalışan dashboard deseniyle (`res.send(Buffer.from(doc.output('arraybuffer')))`) değiştirildi.
+  (3 PDF ucu da artık geçerli PDF üretiyor.)
+- **`showSuccess` tanımsız (10 çağrı)**: Geçmiş/Çöp/Arşiv işlemleri başarılı olsa da ekranda yanlış
+  "hata oluştu" gösteriyor ve liste yenilenmiyordu → `showSuccessToast` ile düzeltildi.
+- **Dashboard yükleme mesajı**: Panele her girişte yanlışlıkla "Dosyalar analiz ediliyor..." çıkıyordu;
+  `showLoading`'e mesaj parametresi eklendi ("Panel yükleniyor", "PDF hazırlanıyor", "Kayıt açılıyor").
+- **Tahmin sürükle-bırak dinleyici sızıntısı**: filtre/sekme değişiminde kart taşıma bozuluyordu;
+  idempotent bağlama (`removeEventListener` + `addEventListener`) ile düzeltildi.
+- **Mobil menü butonu** dokunma alanı 36→44px (erişilebilirlik asgarisi).
+- **`.empty-icon`** içindeki gizli ham kelimeler (`Boş`/`Arşiv` vb.) temizlendi (gelecekteki görünme riski).
+
+Doğrulama: 134 birim testi geçti, lint temiz, 3 PDF ucu canlı curl ile doğrulandı. (Ertelenen: tahmin
+"layout" ölü kodu — zararsız no-op, çalışan sıra özelliğini riske atmamak için dokunulmadı.)
+
 ## 2026-07-07 — Güvenlik, finansal doğruluk ve kalite turu
 
 **Güvenlik:**
