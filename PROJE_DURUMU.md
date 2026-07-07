@@ -163,10 +163,39 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 - jsPDF 4.1.0→4.2.1 (kritik açık kapandı: audit 1 kritik→0). **Ayrıca ÖNCEDEN kırık PDF export bug'ı düzeltildi** (`autoTable` yanlış çağrılıyordu → `.default`, 3 nokta; PDF üretimi doğrulandı).
 - Gradyan kaldırıldı (`styles.css:16821`), ui-structure 25/25.
 
-**Kalan (ertelendi):**
-- Bağımlılık: `xlsx` (npm fix yok), `sqlite3@6` (kırıcı) — çok kullanıcılı/ağ senaryosunda ayrı tur. dompurify (jsPDF transitive) aktif değil (`.html()` kullanılmıyor).
-- MemoryStore → kalıcı session store (teknik borç, yeni bağımlılık).
-- Büyük frontend refactor (inline onclick → addEventListener; CSP `'unsafe-inline'` kaldırılabilsin).
+**Doküman + repo turu (2026-07-07) ✅:** README profesyonelleştirildi + katlanabilir demo ekran görüntüleri
+(`docs/screenshots/`), CHANGELOG.md + LICENSE (ISC), `.env.example` tamamlandı, CLAUDE.md güncellendi.
+Proje **git + private GitHub deposu** altında: https://github.com/ademtfkc/analizcim. **CI (GitHub Actions)**
+kurulu ve yeşil (`.github/workflows/ci.yml` → `npm ci` + lint + `npm run test:ci`). package.json standartları
+(main/engines/repository/author).
+
+**Kullanıcı testi + hata düzeltme turu (2026-07-08) ✅:** İzole demo DB'de 58 HTTP + 10 yazma testi + 2 UI/UX
+ajanı. 6 gerçek bug düzeltildi (CHANGELOG'da detay): PDF export 500 (`server.js` `doc.save(res)`→`doc.output`),
+`showSuccess` tanımsız ×10 → `showSuccessToast`, dashboard yükleme mesajı (`showLoading`'e mesaj param), tahmin
+sürükle-bırak dinleyici sızıntısı (`initPredictionsDragDrop` idempotent), mobil buton 44px, empty-icon temizliği.
+134 test + lint temiz, CI yeşil (commit `b39820d`).
+
+### YENİ OTURUM — Sıradaki iş: Tier 3 (kullanıcı seçti, henüz YAPILMADI)
+- **#2 Cari tablosu mobilde kart görünümü** (ÖNERİLEN, orta risk): `styles.css:5671-5678` `.business-party-table`
+  (`min-width:720px`, 390px'te yatay kaydırma). Mobilde her cari = kart. En iyi değer/risk.
+- **#3 `confirm()` → özel onay modalı** (orta-büyük): `app.js` 17 yer (1770, 2630, 2844, 2862, 2912, 2936, 4019,
+  4038, 7721, 7740, 7759, 7879, 7897, 7998, 8022, 8287, 8310). Silme onayı gating'i birebir korunmalı.
+- **#1 Responsive breakpoint konsolidasyonu** (YÜKSEK RİSK — önerilmez): 92 `@media`, 18 max-width →
+  tek ölçek. 16.9k satırlık CSS; her kırılma noktasında görsel regresyon testi ister. Teknik borç, bug değil.
+
+### Diğer ertelenenler (backlog)
+- Bağımlılık: `xlsx` (npm fix yok), `sqlite3@6` (kırıcı) — çok kullanıcılı senaryoda ayrı tur.
+- MemoryStore → kalıcı session store · tahmin "layout" ölü kodu (`initPredictionsLayout`, zararsız no-op) · CONTRIBUTING/issue şablonları.
+
+### Güvenli test/QA yöntemi (yeni oturumda tekrar kurulabilir)
+Gerçek `data/analiz.db`'ye DOKUNMADAN test için: sunucuyu izole geçici DB ile başlat —
+`ANALIZCIM_DB_PATH=/private/tmp/analizcim-demo.db BOOTSTRAP_ADMIN_USERNAME=demo_admin
+BOOTSTRAP_ADMIN_PASSWORD='Demo12345!' SESSION_SECRET=... PORT=3131 node src/server.js` (repo kökü DIŞINDA bir
+cwd'den çalıştır ki gerçek `.env` yüklenmesin). Demo veri: `analyzer.analyzeFiles(salesBuf, purchaseBuf,
+{salesColumnMap:{date:'A',counterparty:'C',net:'I',vat:'K',gross:'L'}, purchaseColumnMap:{date:'A',
+counterparty:'B',net:'H',vat:'J',gross:'K'}})` + `storage.addToHistory` + `storage.importBusinessPartyTransactions`.
+Kullanıcı testi HTTP fetch + cookie jar ile yapıldı (Playwright'sız). Ekran görüntüsü gerekiyorsa: `playwright-core`
++ ms-playwright cache'indeki chrome-for-testing binary (izole).
 
 ---
 
