@@ -154,6 +154,26 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | Çift `005` migration adı (kozmetik) | Düşük | Dokunulmaz (bkz. Karar 3) |
 
 ## 11. Sonraki Adımlar 👉
+
+### 🔜 SONRAKİ OTURUM — BURADAN BAŞLA (henüz YAPILMADI, CEO seçimi bekliyor)
+Aktif iş yok; uygulama sağlam ve CI yeşil. Yeni oturum bu dosyayı okuyup aşağıdakilerden **birini** CEO'ya
+seçtirmeli (koda geçmeden önce onay al):
+
+- **ÖNERİLEN — Tier 3 kapanışı: onay modalı focus-trap + Escape çakışması** (küçük, düşük risk).
+  `#confirmModal` açıkken klavye odağını modal içinde tut (ileri Tab arka plana kaçmasın) ve
+  `setupKeyboardShortcuts` global Escape'ini `confirmModal` açıkken devre dışı bırak. Az önce yapılan işin
+  doğal devamı, aynı bölge, hızlı kazanım. (Detay: aşağıda "Diğer ertelenenler".)
+- **Alternatif 1 — MemoryStore → kalıcı session store** (orta, teknik borç): sunucu yeniden başlayınca
+  oturumlar düşmesin. Tek kullanıcı/lokal için kritik değil ama "gerçek app" olgunluğu.
+- **Alternatif 2 — Bağımlılık turu (`xlsx` / `sqlite3@6`)** (YÜKSEK RİSK, kırıcı): ayrı, tam test edilen tur
+  gerektirir. Şimdilik risk düşük (lokal, tek kullanıcı, 10MB limit). Acele YOK.
+- **Bekleyen küçük karar:** `data/pre_restore_1771112753452.db` (~270KB eski yedek) silinsin mi? (Bölüm 8.)
+
+**Not:** Büyük frontend refactor (inline `onclick` → `addEventListener`) CSP'den `'unsafe-inline'`
+kaldırmayı sağlar ama geniş kapsamlı; ancak CEO net isterse yapılmalı.
+
+---
+
 **Yapıldı:** Grup 1 (güvenlik) ✅ · Grup 2 finansal ✅ · Grup 3 (sertleştirme) ✅ · Grup 4 değerlendirildi.
 **Geliştirme turu (2026-07-07) ✅:**
 - Mükerrer dosya kontrolü (dosya-hash, `analyzer.js dedupeBuffersByContent`) — 3 test.
@@ -226,6 +246,7 @@ tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-07-08 | ana asistan | **Oturum kapanış notu:** Bölüm 11'e "🔜 SONRAKİ OTURUM — buradan başla" bloğu eklendi (öneri: onay modalı focus-trap + Escape; alternatifler: session store, bağımlılık turu, pre_restore.db kararı). Yeni oturum ambiguity'siz devralsın diye | `PROJE_DURUMU.md` |
 | 2026-07-08 | ana asistan | **Doküman düzeltme turu:** CLAUDE.md/README.md/PROJE_DURUMU.md güncel koda göre uyumlandı. Migration 001→010, `docs/` içeriği (screenshots+superpowers), dosya satır sayıları, npm audit (20 açık/0 kritik), stale "AÇIK" satırlar ✅ olarak düzeltildi (CSP, formül nötrleme, dedup, jsPDF, gradyan, kâr paydası), git init "bekleyen onay"dan çıkarıldı, Tier 3 davranışları/kararları işlendi. Yalnız doküman; kod dosyalarına dokunulmadı | `CLAUDE.md`, `README.md`, `PROJE_DURUMU.md` |
 | 2026-07-08 | ana asistan | **Tier 3 commit + push:** #2 ve #3 iç içe değişiklikleri hunk bazında iki ayrı commit'e ayrıldı (`9754b57` mobil kart, `0b28bea` onay modalı). Toplam orijinalle birebir doğrulandı (268+/29-). GitHub main'e push, CI yeşil (`success`) | `git`, GitHub |
 | 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #3 — confirm() → özel onay modalı:** 17 `confirm()` → `showConfirm()` Promise helper + `#confirmModal` iskeleti + `.btn-danger`. Kod inceleyici RET (Enter odaktan bağımsız siliyordu) → düzeltildi (Enter dalı kaldırıldı). Test-uzmani 3 klavye senaryosu + fare GEÇTİ, 0 err. 136 test + lint temiz. Commit `0b28bea`, push + CI yeşil | `public/app.js`, `public/index.html`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
