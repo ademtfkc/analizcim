@@ -1,5 +1,8 @@
 # Analizcim
 
+[![CI](https://github.com/ademtfkc/analizcim/actions/workflows/ci.yml/badge.svg)](https://github.com/ademtfkc/analizcim/actions/workflows/ci.yml)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
+
 Lokal Excel verileriyle çalışan; satış, alış, kâr, KDV, gider ve tahmin analizlerini daha anlaşılır
 hale getiren, karar odaklı bir finansal analiz uygulaması. Finansal veriler kullanıcının kendi
 makinesinde kalır.
