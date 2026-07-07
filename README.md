@@ -42,11 +42,20 @@ makinesinde kalır.
 
 ## Ekran Görüntüleri
 
-> Ekran görüntüleri henüz eklenmedi. Dashboard ve Tahminler ekranlarının görselleri
-> `docs/screenshots/` altına eklenebilir.
+> ⚠️ Aşağıdaki görsellerdeki tüm rakamlar ve firma isimleri **DEMO / örnek veridir — gerçek değildir.**
+> (Görsellerin üstündeki kırmızı bant bunu belirtir.)
 
-<!-- ![Dashboard](docs/screenshots/dashboard.png) -->
-<!-- ![Tahminler](docs/screenshots/tahminler.png) -->
+**Dashboard**
+
+![Dashboard (demo veri)](docs/screenshots/01-dashboard.png)
+
+**Tahminler**
+
+![Tahminler (demo veri)](docs/screenshots/02-tahminler.png)
+
+**Müşteriler (Cari)**
+
+![Müşteriler (demo veri)](docs/screenshots/03-musteriler.png)
 
 ## Teknolojiler
 
