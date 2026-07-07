@@ -29,6 +29,7 @@
 - **Hedef kitle:** Küçük işletme sahibi, muhasebe/finans kullanıcısı, admin.
 - **Durum:** 🔨 Geliştirme / bakım (çalışan uygulama; kalite & düzen turu yapılıyor)
 - **Canlı adres:** Yok (lokal çalışır, finansal veri kullanıcının makinesinde kalır)
+- **Sürüm kontrolü:** git (main) + **private GitHub deposu**: https://github.com/ademtfkc/analizcim (`.env`/`data/` git'e girmez)
 - **İlgili dokümanlar:** README.md · docs/api.md · docs/openapi.json · CLAUDE.md
 
 ## 2. Teknoloji ve Komutlar
@@ -170,6 +171,7 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-07-07 | ana asistan | **Sürüm kontrolü:** git init (main) + ilk commit + private GitHub deposu (github.com/ademtfkc/analizcim) push. Commit öncesi sır/veri sızıntı denetimi yapıldı (temiz) | `.git`, GitHub |
 | 2026-07-07 | ana asistan | **Geliştirme turu:** dedup, export formül nötrleme, 10 hata sızıntısı, /health, CSP+güvenlik başlıkları, kâr oranı paydası, escape, jsPDF 4.2.1 + kırık PDF export düzeltmesi, gradyan kaldırma. 134 birim test geçti, canlı health+CSP+PDF doğrulandı | `analyzer.js`, `validators.js`, `server.js`, `public/app.js`, `public/styles.css`, `package.json`, +2 yeni test |
 | 2026-07-07 | ana asistan | **Grup 4 (bağımlılık) değerlendirildi:** güvenli fix yok; `--force` sqlite3@6 (kırıcı) istiyor. Canlıyı korumak için değişiklik YAPILMADI, karar+öneri raporlandı | (inceleme) |
 | 2026-07-07 | ana asistan | **Grup 3 (sertleştirme):** session `sameSite`, girişte `regenerate()`, login limiti 200→10, hata sızıntısı kapatıldı. auth 7/7, rate-limiter testi güncellendi, lint temiz | `server.js`, `routes/auth.js`, `middleware/rate-limiters.js`, rate-limiter testi |
