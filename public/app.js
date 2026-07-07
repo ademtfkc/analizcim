@@ -1990,14 +1990,14 @@ function renderBusinessPartyRows(type, parties) {
     empty.style.display = parties.length ? 'none' : 'block';
     tableBody.innerHTML = parties.map((party) => `
         <tr class="business-party-row" onclick="openBusinessPartyDetail('${type}', '${escapeHtml(String(party.id))}')">
-            <td>
+            <td class="bp-cell-name">
                 <strong>${escapeHtml(party.name || '-')}</strong>
                 <span>${type === 'customer' ? 'Müşteri' : 'Tedarikçi'}</span>
             </td>
-            <td>${escapeHtml(formatCurrency(party.totalVolume || 0))}</td>
-            <td>${escapeHtml(String(party.transactionCount || 0))}</td>
-            <td>${escapeHtml(formatDisplayDate(party.lastTransactionDate))}</td>
-            <td><strong class="${customerBalanceClass(party.balance || 0)}">${escapeHtml(formatCurrency(party.balance || 0))}</strong></td>
+            <td data-label="İşlem Hacmi">${escapeHtml(formatCurrency(party.totalVolume || 0))}</td>
+            <td data-label="İşlem">${escapeHtml(String(party.transactionCount || 0))}</td>
+            <td data-label="Son İşlem">${escapeHtml(formatDisplayDate(party.lastTransactionDate))}</td>
+            <td data-label="Bakiye"><strong class="${customerBalanceClass(party.balance || 0)}">${escapeHtml(formatCurrency(party.balance || 0))}</strong></td>
         </tr>`).join('');
 }
 

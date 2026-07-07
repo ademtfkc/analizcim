@@ -5785,6 +5785,74 @@ body {
     }
 }
 
+/* Cari tablosu: mobil/tablet kart görünümü (yatay kaydırma yerine) */
+@media (max-width: 768px) {
+    .business-party-table-wrap {
+        overflow-x: visible;
+    }
+
+    .business-party-table {
+        min-width: 0;
+    }
+
+    .business-party-table thead {
+        display: none;
+    }
+
+    .business-party-table,
+    .business-party-table tbody,
+    .business-party-table tr,
+    .business-party-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .business-party-row {
+        margin-bottom: 0.75rem;
+        padding: 0.85rem 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-radius);
+        background: var(--card-bg);
+        box-shadow: var(--card-shadow);
+    }
+
+    .business-party-table td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.4rem 0;
+        border-bottom: 1px solid var(--border-color);
+        text-align: right;
+    }
+
+    .business-party-table td:last-child {
+        border-bottom: none;
+    }
+
+    .business-party-table td[data-label]::before {
+        content: attr(data-label);
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        text-align: left;
+    }
+
+    /* İsim hücresi = kart başlığı: tam genişlik, etiketsiz */
+    .business-party-table td.bp-cell-name {
+        display: block;
+        text-align: left;
+        padding-top: 0;
+        margin-bottom: 0.25rem;
+    }
+
+    .business-party-table td.bp-cell-name strong {
+        font-size: 1rem;
+    }
+}
+
 .customer-modal-content {
     max-width: 720px;
 }

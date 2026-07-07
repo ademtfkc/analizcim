@@ -297,6 +297,20 @@ describe('UI structure rules', () => {
         assert.match(css, /\.party-dashboard-grid\s*\{/);
     });
 
+    test('business party rows collapse into labeled cards on mobile without horizontal scroll', () => {
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        // Render adds per-cell labels so mobile cards can show "etiket: değer"
+        assert.match(js, /data-label="İşlem Hacmi"/);
+        assert.match(js, /data-label="Bakiye"/);
+        assert.match(js, /class="bp-cell-name"/);
+
+        // Mobile media query turns rows into cards and drops the min-width scroll
+        assert.match(css, /@media \(max-width: 768px\)[\s\S]*\.business-party-table thead\s*\{\s*display: none;/);
+        assert.match(css, /\.business-party-table td\[data-label\]::before\s*\{\s*content: attr\(data-label\)/);
+    });
+
     test('admin users expose status badges and pending empty state', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');
