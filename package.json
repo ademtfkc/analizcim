@@ -16,6 +16,7 @@
     "test:integration": "NODE_ENV=test node --test \"tests/integration/**/*.test.js\"",
     "test:coverage": "c8 node --test \"tests/**/*.test.js\"",
     "test:smoke": "NODE_ENV=test node --test tests/smoke-tabs.test.js",
+    "test:ci": "NODE_ENV=test node --test --test-force-exit \"tests/unit/**/*.test.js\"",
     "smoke": "node scripts/smoke_tabs.js",
     "verify": "npm run lint && npm run test:unit && npm run test:integration && npm run test:smoke",
     "verify:fast": "npm run lint && npm run test:unit && npm run test:smoke",
