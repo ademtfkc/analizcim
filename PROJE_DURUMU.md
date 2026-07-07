@@ -180,8 +180,8 @@ sürükle-bırak dinleyici sızıntısı (`initPredictionsDragDrop` idempotent),
   kart bloğu (`.business-party-table` → thead gizli, satır=kart, hücre=flex "etiket:değer" via
   `::before{content:attr(data-label)}`); `app.js renderBusinessPartyRows` 5 `<td>`'ye `data-label` +
   `bp-cell-name`. Masaüstü tablo aynen. Tema token'lı, sabit renk yok, yeşil/kırmızı bakiye korundu.
-  ui-structure regresyon kilidi testi eklendi (135/135). İzole QA 390/768/1440 GEÇTİ (0 console/network err).
-  Kod inceleyici ONAY. **Commit BEKLİYOR** (CEO commit talebi gelmedi).
+  ui-structure regresyon kilidi testi eklendi. İzole QA 390/768/1440 GEÇTİ (0 console/network err).
+  Kod inceleyici ONAY. **Commit `9754b57` — GitHub'a push'landı, CI yeşil.**
 - **#3 `confirm()` → özel onay modalı** ✅ TAMAM (2026-07-08). 17 `confirm()` → `showConfirm({message,danger,
   confirmText})` Promise helper (`app.js` showError'dan sonra). Yeni `#confirmModal` iskeleti (`index.html`,
   mevcut `.modal-*` token'lı stiller + yeni `.btn-danger`=`var(--danger)`, `.confirm-modal-message`
@@ -190,7 +190,8 @@ sürükle-bırak dinleyici sızıntısı (`initPredictionsDragDrop` idempotent),
   **Kod inceleyici İLK TURDA RET verdi:** `onKey` Enter dalı odaktan bağımsız `cleanup(true)` yapıyordu →
   İptal odaktayken Enter siliyordu. **Düzeltildi** (Enter dalı kaldırıldı, native buton aktivasyonuna bırakıldı).
   Test uzmanı 3 klavye senaryosu (Enter-açılışta-sil / Tab-İptal-Enter-silmez / Escape-silmez) + fare
-  regresyonu GEÇTİ, 0 err. Kod inceleyici koşullu ONAY (reçetesi birebir uygulandı). **Commit BEKLİYOR.**
+  regresyonu GEÇTİ, 0 err. Kod inceleyici koşullu ONAY (reçetesi birebir uygulandı). **Commit `0b28bea` —
+  GitHub'a push'landı, CI yeşil.**
 - **#1 Responsive breakpoint konsolidasyonu** (YÜKSEK RİSK — ATLANDI): 92 `@media`, 18 max-width. Bug değil,
   teknik borç; görsel regresyon testi olmadan riskli. İleride ayrı turda.
 
@@ -222,6 +223,7 @@ tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-07-08 | ana asistan | **Tier 3 commit + push:** #2 ve #3 iç içe değişiklikleri hunk bazında iki ayrı commit'e ayrıldı (`9754b57` mobil kart, `0b28bea` onay modalı). Toplam orijinalle birebir doğrulandı (268+/29-). GitHub main'e push, CI yeşil (`success`) | `git`, GitHub |
 | 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #3 — confirm() → özel onay modalı:** 17 `confirm()` → `showConfirm()` Promise helper + `#confirmModal` iskeleti + `.btn-danger`. Kod inceleyici RET (Enter odaktan bağımsız siliyordu) → düzeltildi (Enter dalı kaldırıldı). Test-uzmani 3 klavye senaryosu + fare GEÇTİ, 0 err. 136 test + lint temiz. Commit bekliyor | `public/app.js`, `public/index.html`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
 | 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #2 — cari tablosu mobilde kart:** `styles.css`'e `@media(max-width:768px)` kart bloğu + `app.js renderBusinessPartyRows`'a `data-label`/`bp-cell-name`. Masaüstü tablo korundu. Regresyon kilidi testi (135/135). İzole QA 390/768/1440 GEÇTİ (0 err), kod inceleyici ONAY. Commit bekliyor | `public/app.js`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
 | 2026-07-08 | ana asistan | **Kullanıcı testi + hata düzeltme turu:** izole demo DB'de 58 HTTP + 10 yazma testi + 2 UI/UX ajanı. 6 gerçek bug düzeltildi (PDF export 500, showSuccess ×10, dashboard yükleme mesajı, sürükle-bırak sızıntısı, mobil buton 44px, empty-icon). 134 test + lint temiz, PDF canlı doğrulandı | `server.js`, `public/app.js`, `public/index.html`, `public/styles.css` |
