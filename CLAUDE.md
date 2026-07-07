@@ -344,6 +344,27 @@ Yeni bir oturum başladığında önce aşağıdakileri kontrol et:
 5. `tests/unit/predictor.test.js` içindeki model seçimi, metrik, horizon, native ARIMA ve feedback regresyonları.
 6. `src/analyzer.js` içindeki Excel karşı taraf başlık önceliği ve cari mapping normalize akışı.
 
+### 2026-07-07 güncellemesi (güvenlik + finansal + doküman turu)
+
+Bu turda doğrulanan/yürürlükteki güncel durum (detaylı geçmiş: `CHANGELOG.md`):
+
+- **Finansal:** Brüt Kâr artık **KDV hariç** hesaplanıyor (`analyzer.calculateSummary`,
+  `storage.getMonthlyProfitLoss`, YoY, `computeAndSaveSummary`); geçmiş `net_profit` `migration 010`
+  ile yeniden hesaplandı. Kâr oranı % paydası satış. `parseNumber` parantezli/sondaki-eksi negatifi okur.
+- **Güvenlik:** `GET /api/backup` `requireAdmin`; IDOR kapatıldı (`storage.buildHistorySqlFilters`
+  userId zorunlu, `||1` yok); oturum `sameSite`+`regenerate`, login limiti 10; CSP + güvenlik başlıkları
+  (`server.js` cors sonrası); export formül nötrleme (`validators.neutralizeSpreadsheetCell`); hata
+  mesajı hijyeni; `/health`+`/api/health` public uçları.
+- **Bağımlılık:** `jsPDF@4.2.1` (kritik açık kapandı); **PDF export onarıldı** (`autoTable` artık
+  `require('jspdf-autotable').default`).
+- **Diğer:** çoklu yükleme mükerrer dosya koruması (`analyzer.dedupeBuffersByContent`); gradyan kaldırıldı.
+- **Sürüm kontrolü:** proje git + **private GitHub deposu** (github.com/ademtfkc/analizcim). `.env`/`data/` git'e girmez.
+- **Cari geçmiş davranışı:** Cari import yalnızca yeni yüklemede çalışır. Geçmiş analizlerin ham işlem
+  satırları saklanmaz (yalnız özet + top-5 karşı taraf); geçmişi cari'ye katmak Excel'in yeniden
+  yüklenmesini gerektirir. (CEO kararı: backfill YAPILMADI.)
+- **Test:** 134 birim testi geçti; lint temiz. (Not: birim testler `--test-force-exit` ile temiz kapanır;
+  soket gerektiren integration'lar sandbox'ta tekil çalıştırılır.)
+
 Son doğrulanan durum:
 
 - `npm run lint` geçti.
@@ -362,11 +383,12 @@ Son doğrulanan durum:
 
 Kalan muhtemel sonraki işler:
 
-- Grafik veri görselleştirme paletlerini tamamen token bazlı hale getirmek.
-- Responsive kırılma noktalarında son görsel polish turu yapmak.
+- Bağımlılık: `xlsx` (npm'de yama yok) ve `sqlite3@6` (kırıcı) geçişini çok kullanıcılı/ağ senaryosunda ayrı, tam test edilen turda ele almak.
+- MemoryStore yerine kalıcı session store (teknik borç).
+- Büyük frontend refactor: inline `onclick` → `addEventListener` (CSP'den `'unsafe-inline'` kaldırılabilsin).
 - Genel integration harness içindeki açık handle / kapanış davranışını temizlemek.
-- Büyük veri setlerinde cari liste ve detay sorgularını performans açısından gözlemlemek.
-- ARIMA sonuçlarını daha büyük ve mevsimsel gerçek veri setlerinde gözlemlemek.
+- Ekran görüntülerini `docs/screenshots/` altına eklemek (README placeholder'ı).
+- Büyük veri setlerinde cari liste/detay performansını ve ARIMA sonuçlarını gözlemlemek.
 
 ## Ayarlar Sayfası Standartları
 

@@ -110,6 +110,8 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | 2026-07-07 | Düzen turu = **cerrahi temizlik** (dev dosyalar bu turda BÖLÜNMEZ) | En düşük risk; çalışan uygulama korunur |
 | 2026-07-07 | Kod inceleme = **derin denetim** (4 uzman ajan) | "Gerçek app" kalite/güvenlik kapısı isteniyor |
 | 2026-07-07 | Çift `005` migration'ı yeniden ADLANDIRILMAZ | Runner dosya adıyla takip ediyor; yeniden ad → gerçek DB'de tekrar çalışma riski |
+| 2026-07-07 | **Cari geçmiş verisi: dokunma (backfill YOK)** | Geçmiş analizlerde ham satır saklanmıyor (yalnız özet+top-5, tarih yok); tam/doğru cari ancak Excel yeniden yüklenerek gelir. Cari kodu/verisi değiştirilmedi |
+| 2026-07-07 | README = tam profesyonel düzen; iç günlükler CHANGELOG.md'ye | "Repoda olması gereken gibi" istendi; doküman işi, kod güvende |
 
 ## 8. Bekleyen Onaylar 🚦
 - **`data/pre_restore_1771112753452.db`** (Şubat'tan kalma eski geri-yükleme yedeği, ~270KB) —
@@ -171,6 +173,7 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-07-07 | ana asistan | **Doküman turu:** README profesyonel yeniden düzen (iç günlükler CHANGELOG.md'ye taşındı), CHANGELOG.md + LICENSE (ISC) eklendi, .env.example eksik değişkenler + doğru default'lar, CLAUDE.md durum bölümü güncellendi. Cari geçmiş davranışı belgelendi | `README.md`, `CHANGELOG.md`, `LICENSE`, `.env.example`, `CLAUDE.md`, `PROJE_DURUMU.md` |
 | 2026-07-07 | ana asistan | **Sürüm kontrolü:** git init (main) + ilk commit + private GitHub deposu (github.com/ademtfkc/analizcim) push. Commit öncesi sır/veri sızıntı denetimi yapıldı (temiz) | `.git`, GitHub |
 | 2026-07-07 | ana asistan | **Geliştirme turu:** dedup, export formül nötrleme, 10 hata sızıntısı, /health, CSP+güvenlik başlıkları, kâr oranı paydası, escape, jsPDF 4.2.1 + kırık PDF export düzeltmesi, gradyan kaldırma. 134 birim test geçti, canlı health+CSP+PDF doğrulandı | `analyzer.js`, `validators.js`, `server.js`, `public/app.js`, `public/styles.css`, `package.json`, +2 yeni test |
 | 2026-07-07 | ana asistan | **Grup 4 (bağımlılık) değerlendirildi:** güvenli fix yok; `--force` sqlite3@6 (kırıcı) istiyor. Canlıyı korumak için değişiklik YAPILMADI, karar+öneri raporlandı | (inceleme) |
