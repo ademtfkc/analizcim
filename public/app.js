@@ -1420,6 +1420,80 @@ function showError(message) {
 }
 
 // ========================================
+// Tema uyumlu onay modalı (native confirm yerine)
+// Promise<boolean> döner: onay=true, iptal/ESC/dış tık/kapat=false
+// ========================================
+function showConfirm(options = {}) {
+    const opts = typeof options === 'string' ? { message: options } : (options || {});
+    const message = opts.message || 'Bu işlemi onaylıyor musunuz?';
+    const title = opts.title || 'Onay';
+    const confirmText = opts.confirmText || 'Onayla';
+    const cancelText = opts.cancelText || 'İptal';
+    const danger = !!opts.danger;
+
+    const overlay = document.getElementById('confirmModal');
+    const titleEl = document.getElementById('confirmModalTitle');
+    const messageEl = document.getElementById('confirmModalMessage');
+    const confirmBtn = document.getElementById('confirmModalConfirm');
+    const cancelBtn = document.getElementById('confirmModalCancel');
+    const closeBtn = document.getElementById('confirmModalClose');
+
+    // Güvenli geri düşüş: modal iskeleti yoksa native confirm'e dön (asla sessizce onaylama)
+    if (!overlay || !titleEl || !messageEl || !confirmBtn || !cancelBtn) {
+        return Promise.resolve(window.confirm(message));
+    }
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    confirmBtn.textContent = confirmText;
+    cancelBtn.textContent = cancelText;
+    confirmBtn.classList.toggle('btn-danger', danger);
+    confirmBtn.classList.toggle('btn-primary', !danger);
+
+    const previousActive = document.activeElement;
+
+    return new Promise((resolve) => {
+        let settled = false;
+
+        function cleanup(result) {
+            if (settled) return;
+            settled = true;
+            overlay.style.display = 'none';
+            confirmBtn.removeEventListener('click', onConfirm);
+            cancelBtn.removeEventListener('click', onCancel);
+            if (closeBtn) closeBtn.removeEventListener('click', onCancel);
+            overlay.removeEventListener('click', onOverlay);
+            document.removeEventListener('keydown', onKey);
+            if (previousActive && typeof previousActive.focus === 'function') {
+                previousActive.focus();
+            }
+            resolve(result);
+        }
+        function onConfirm() { cleanup(true); }
+        function onCancel() { cleanup(false); }
+        function onOverlay(event) { if (event.target === overlay) cleanup(false); }
+        function onKey(event) {
+            // Enter özel olarak ele alınmaz: odaklı düğmenin native click'ine bırakılır.
+            // Açılışta odak Onayla'da (aşağıda confirmBtn.focus()); kullanıcı Tab ile İptal'e
+            // geçerse Enter doğru düğmeyi tetikler. Böylece "İptal odaktayken Enter = sil" hatası olmaz.
+            if (event.key === 'Escape') {
+                cleanup(false);
+            }
+        }
+
+        confirmBtn.addEventListener('click', onConfirm);
+        cancelBtn.addEventListener('click', onCancel);
+        if (closeBtn) closeBtn.addEventListener('click', onCancel);
+        overlay.addEventListener('click', onOverlay);
+        document.addEventListener('keydown', onKey);
+
+        overlay.style.display = 'flex';
+        confirmBtn.focus();
+    });
+}
+window.showConfirm = showConfirm;
+
+// ========================================
 // History filters (search, year, sort)
 // ========================================
 let historySearchDebounce = null;
@@ -1771,7 +1845,7 @@ window.saveCustomer = async function saveCustomer(event) {
 window.deleteCustomer = async function deleteCustomer(customerId) {
     const customer = _customers.find((item) => String(item.id) === String(customerId));
     const name = customer?.fullName || 'bu müşteri';
-    if (!confirm(`${name} silinsin mi? Bu işlem geri alınamaz.`)) return;
+    if (!(await showConfirm({ message: `${name} silinsin mi? Bu işlem geri alınamaz.`, danger: true, confirmText: 'Sil' }))) return;
 
     try {
         const response = await fetch(`/api/customers/${encodeURIComponent(customerId)}`, { method: 'DELETE' });
@@ -2631,7 +2705,7 @@ function clearHistorySelection() {
 
 async function batchDeleteHistory() {
     if (selectedHistoryIds.size === 0) return;
-    if (!confirm(selectedHistoryIds.size + ' kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
+    if (!(await showConfirm({ message: selectedHistoryIds.size + ' kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.', danger: true, confirmText: 'Sil' }))) return;
     try {
         const res = await fetch('/api/history/batch-delete', {
             method: 'POST',
@@ -2845,7 +2919,7 @@ window.restoreTrashEntry = async function (id) {
 };
 
 window.permanentlyDeleteTrash = async function (id) {
-    if (!confirm('Bu kaydı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return;
+    if (!(await showConfirm({ message: 'Bu kaydı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.', danger: true, confirmText: 'Kalıcı Sil' }))) return;
     try {
         const res = await fetch('/api/trash/' + id, { method: 'DELETE' });
         const data = await res.json();
@@ -2863,7 +2937,7 @@ window.permanentlyDeleteTrash = async function (id) {
 };
 
 window.emptyTrash = async function () {
-    if (!confirm('Çöp kutusundaki tüm kayıtları kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return;
+    if (!(await showConfirm({ message: 'Çöp kutusundaki tüm kayıtları kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.', danger: true, confirmText: 'Kalıcı Sil' }))) return;
     try {
         const res = await fetch('/api/trash', { method: 'DELETE' });
         const data = await res.json();
@@ -2913,7 +2987,7 @@ function clearTrashSelection() {
 
 window.batchRestoreTrash = async function () {
     if (_selectedTrashIds.size === 0) return;
-    if (!confirm(_selectedTrashIds.size + ' kaydı geri almak istediğinize emin misiniz?')) return;
+    if (!(await showConfirm({ message: _selectedTrashIds.size + ' kaydı geri almak istediğinize emin misiniz?', confirmText: 'Geri Al' }))) return;
     try {
         const res = await fetch('/api/trash/batch-restore', {
             method: 'POST',
@@ -2937,7 +3011,7 @@ window.batchRestoreTrash = async function () {
 
 window.batchPermanentDeleteTrash = async function () {
     if (_selectedTrashIds.size === 0) return;
-    if (!confirm(_selectedTrashIds.size + ' kaydı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
+    if (!(await showConfirm({ message: _selectedTrashIds.size + ' kaydı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.', danger: true, confirmText: 'Kalıcı Sil' }))) return;
     try {
         const res = await fetch('/api/trash/batch-delete', {
             method: 'POST',
@@ -4020,7 +4094,7 @@ window.viewHistoryEntry = async function (id) {
 };
 
 window.deleteHistoryEntry = async function (id) {
-    if (!confirm('Bu kaydı silmek istediğinizden emin misiniz?')) {
+    if (!(await showConfirm({ message: 'Bu kaydı silmek istediğinizden emin misiniz?', danger: true, confirmText: 'Sil' }))) {
         return;
     }
 
@@ -4039,7 +4113,7 @@ window.deleteHistoryEntry = async function (id) {
 };
 
 async function clearAllHistory() {
-    if (!confirm('Tüm geçmişi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+    if (!(await showConfirm({ message: 'Tüm geçmişi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.', danger: true, confirmText: 'Sil' }))) {
         return;
     }
 
@@ -7730,7 +7804,7 @@ async function archiveSelectedYear() {
     const select = document.getElementById('archiveYearSelect');
     const year = select?.value;
     if (!year) return;
-    if (!confirm(`${year} yılına ait tüm verileri arşivlemek istediğinize emin misiniz? Bu işlem verileri ana veritabanından taşır.`)) return;
+    if (!(await showConfirm({ message: `${year} yılına ait tüm verileri arşivlemek istediğinize emin misiniz? Bu işlem verileri ana veritabanından taşır.`, confirmText: 'Arşivle' }))) return;
     try {
         const res = await fetch('/api/archive/' + year, { method: 'POST' });
         const data = await res.json();
@@ -7749,7 +7823,7 @@ async function restoreSelectedArchive() {
     const select = document.getElementById('archiveYearSelect');
     const year = select?.value;
     if (!year) return;
-    if (!confirm(`${year} yılı arşivini geri yüklemek istediğinize emin misiniz?`)) return;
+    if (!(await showConfirm({ message: `${year} yılı arşivini geri yüklemek istediğinize emin misiniz?`, confirmText: 'Geri Yükle' }))) return;
     try {
         const res = await fetch('/api/archive/' + year + '/restore', { method: 'POST' });
         const data = await res.json();
@@ -7768,7 +7842,7 @@ async function deleteSelectedArchive() {
     const select = document.getElementById('archiveYearSelect');
     const year = select?.value;
     if (!year) return;
-    if (!confirm(`${year} yılı arşivini kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) return;
+    if (!(await showConfirm({ message: `${year} yılı arşivini kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`, danger: true, confirmText: 'Sil' }))) return;
     try {
         const res = await fetch('/api/archive/' + year, { method: 'DELETE' });
         const data = await res.json();
@@ -7888,7 +7962,7 @@ function updatePendingBadge(count) {
 }
 
 window.approvePendingUser = async function (id, username) {
-    if (!confirm(`"${username}" kullanıcısını onaylamak istediğinize emin misiniz? Onay sonrası sisteme giriş yapabilecektir.`)) return;
+    if (!(await showConfirm({ message: `"${username}" kullanıcısını onaylamak istediğinize emin misiniz? Onay sonrası sisteme giriş yapabilecektir.`, confirmText: 'Onayla' }))) return;
     try {
         const response = await fetch(`/api/admin/users/${id}/approve`, { method: 'POST' });
         const data = await response.json();
@@ -7906,7 +7980,7 @@ window.approvePendingUser = async function (id, username) {
 };
 
 window.rejectPendingUser = async function (id, username) {
-    if (!confirm(`"${username}" kullanıcısının kaydını reddetmek istediğinize emin misiniz? Bu kullanıcı sisteme giriş yapamayacaktır.`)) return;
+    if (!(await showConfirm({ message: `"${username}" kullanıcısının kaydını reddetmek istediğinize emin misiniz? Bu kullanıcı sisteme giriş yapamayacaktır.`, danger: true, confirmText: 'Reddet' }))) return;
     try {
         const response = await fetch(`/api/admin/users/${id}/reject`, { method: 'POST' });
         const data = await response.json();
@@ -8007,7 +8081,7 @@ function renderAdminUsers(users) {
 
 window.toggleUserRole = async function(userId, currentRole) {
     const newRole = currentRole ? 'user' : 'admin';
-    if (!confirm('Kullanıcı rolünü "' + newRole + '" olarak değiştirmek istediğinize emin misiniz?')) {
+    if (!(await showConfirm({ message: 'Kullanıcı rolünü "' + newRole + '" olarak değiştirmek istediğinize emin misiniz?', confirmText: 'Değiştir' }))) {
         return;
     }
 
@@ -8031,7 +8105,7 @@ window.toggleUserRole = async function(userId, currentRole) {
 };
 
 window.deleteUser = async function(userId) {
-    if (!confirm('Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
+    if (!(await showConfirm({ message: 'Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!', danger: true, confirmText: 'Sil' }))) {
         return;
     }
 
@@ -8296,7 +8370,7 @@ function renderBackupsList(backups, meta) {
 }
 
 window.restoreBackupConfirm = async function (name) {
-    if (!confirm('Bu yedekten geri yükleme yapılacak. Mevcut veritabanınız otomatik olarak önceden yedeklenir, ancak devam etmek istediğinize emin misiniz?\n\nYedek: ' + name)) {
+    if (!(await showConfirm({ message: 'Bu yedekten geri yükleme yapılacak. Mevcut veritabanınız otomatik olarak önceden yedeklenir, ancak devam etmek istediğinize emin misiniz?\n\nYedek: ' + name, confirmText: 'Geri Yükle' }))) {
         return;
     }
     try {
@@ -8319,7 +8393,7 @@ window.restoreBackupConfirm = async function (name) {
 };
 
 window.deleteBackupConfirm = async function (name) {
-    if (!confirm('Bu yedeği silmek istediğinize emin misiniz? Bu işlem geri alınamaz.\n\nYedek: ' + name)) {
+    if (!(await showConfirm({ message: 'Bu yedeği silmek istediğinize emin misiniz? Bu işlem geri alınamaz.\n\nYedek: ' + name, danger: true, confirmText: 'Sil' }))) {
         return;
     }
     try {

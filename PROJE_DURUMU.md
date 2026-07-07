@@ -175,15 +175,31 @@ ajanı. 6 gerçek bug düzeltildi (CHANGELOG'da detay): PDF export 500 (`server.
 sürükle-bırak dinleyici sızıntısı (`initPredictionsDragDrop` idempotent), mobil buton 44px, empty-icon temizliği.
 134 test + lint temiz, CI yeşil (commit `b39820d`).
 
-### YENİ OTURUM — Sıradaki iş: Tier 3 (kullanıcı seçti, henüz YAPILMADI)
-- **#2 Cari tablosu mobilde kart görünümü** (ÖNERİLEN, orta risk): `styles.css:5671-5678` `.business-party-table`
-  (`min-width:720px`, 390px'te yatay kaydırma). Mobilde her cari = kart. En iyi değer/risk.
-- **#3 `confirm()` → özel onay modalı** (orta-büyük): `app.js` 17 yer (1770, 2630, 2844, 2862, 2912, 2936, 4019,
-  4038, 7721, 7740, 7759, 7879, 7897, 7998, 8022, 8287, 8310). Silme onayı gating'i birebir korunmalı.
-- **#1 Responsive breakpoint konsolidasyonu** (YÜKSEK RİSK — önerilmez): 92 `@media`, 18 max-width →
-  tek ölçek. 16.9k satırlık CSS; her kırılma noktasında görsel regresyon testi ister. Teknik borç, bug değil.
+### Tier 3 turu (2026-07-08) — CEO kararı: A) önce #2, sonra #3; #1 atlandı
+- **#2 Cari tablosu mobilde kart görünümü** ✅ TAMAM (2026-07-08). `styles.css`'e `@media (max-width:768px)`
+  kart bloğu (`.business-party-table` → thead gizli, satır=kart, hücre=flex "etiket:değer" via
+  `::before{content:attr(data-label)}`); `app.js renderBusinessPartyRows` 5 `<td>`'ye `data-label` +
+  `bp-cell-name`. Masaüstü tablo aynen. Tema token'lı, sabit renk yok, yeşil/kırmızı bakiye korundu.
+  ui-structure regresyon kilidi testi eklendi (135/135). İzole QA 390/768/1440 GEÇTİ (0 console/network err).
+  Kod inceleyici ONAY. **Commit BEKLİYOR** (CEO commit talebi gelmedi).
+- **#3 `confirm()` → özel onay modalı** ✅ TAMAM (2026-07-08). 17 `confirm()` → `showConfirm({message,danger,
+  confirmText})` Promise helper (`app.js` showError'dan sonra). Yeni `#confirmModal` iskeleti (`index.html`,
+  mevcut `.modal-*` token'lı stiller + yeni `.btn-danger`=`var(--danger)`, `.confirm-modal-message`
+  `white-space:pre-line`). Mesajlar `textContent` (XSS güvenli). İptal/ESC/dış tık/X=false, Onayla=true; modal
+  yoksa `window.confirm` fallback. Silme işlemleri kırmızı, diğerleri normal. Regresyon kilidi testi (136 test).
+  **Kod inceleyici İLK TURDA RET verdi:** `onKey` Enter dalı odaktan bağımsız `cleanup(true)` yapıyordu →
+  İptal odaktayken Enter siliyordu. **Düzeltildi** (Enter dalı kaldırıldı, native buton aktivasyonuna bırakıldı).
+  Test uzmanı 3 klavye senaryosu (Enter-açılışta-sil / Tab-İptal-Enter-silmez / Escape-silmez) + fare
+  regresyonu GEÇTİ, 0 err. Kod inceleyici koşullu ONAY (reçetesi birebir uygulandı). **Commit BEKLİYOR.**
+- **#1 Responsive breakpoint konsolidasyonu** (YÜKSEK RİSK — ATLANDI): 92 `@media`, 18 max-width. Bug değil,
+  teknik borç; görsel regresyon testi olmadan riskli. İleride ayrı turda.
 
 ### Diğer ertelenenler (backlog)
+- **Onay modalı focus-trap yok:** ileri Tab odağı modal dışına (arka plan butonuna) kaçırıyor. Enter yine de
+  silme tetiklemiyor (zararsız), ama küçük erişilebilirlik iyileştirmesi — `#confirmModal` açıkken focus-trap.
+- **Escape çakışması (düşük):** `setupKeyboardShortcuts` global Escape `confirmModal`'dan habersiz; confirm modalı
+  başka modal üstünde açılırsa alttaki de kapanabilir. Gating bozulmuyor. Mevcut çağrı noktaları satır butonlarından
+  tetikleniyor (modal içinden değil), pratik risk düşük.
 - Bağımlılık: `xlsx` (npm fix yok), `sqlite3@6` (kırıcı) — çok kullanıcılı senaryoda ayrı tur.
 - MemoryStore → kalıcı session store · tahmin "layout" ölü kodu (`initPredictionsLayout`, zararsız no-op) · CONTRIBUTING/issue şablonları.
 
@@ -196,12 +212,18 @@ cwd'den çalıştır ki gerçek `.env` yüklenmesin). Demo veri: `analyzer.analy
 counterparty:'B',net:'H',vat:'J',gross:'K'}})` + `storage.addToHistory` + `storage.importBusinessPartyTransactions`.
 Kullanıcı testi HTTP fetch + cookie jar ile yapıldı (Playwright'sız). Ekran görüntüsü gerekiyorsa: `playwright-core`
 + ms-playwright cache'indeki chrome-for-testing binary (izole).
+**UYARI (2026-07-08):** QA'da `NODE_ENV=production` KULLANMA. `express-session` `cookie.secure=true` iken düz HTTP'de
+çerezi hiç göndermez → login imkansız. İzole QA'yı `NODE_ENV` set etmeden (veya `test`) çalıştır. Diğer izolasyon
+(geçici DB, loopback, repo-dışı cwd) aynı. Cari (kart) QA'sı için `customers`/`suppliers`/`party_transactions`
+tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 
 ---
 
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #3 — confirm() → özel onay modalı:** 17 `confirm()` → `showConfirm()` Promise helper + `#confirmModal` iskeleti + `.btn-danger`. Kod inceleyici RET (Enter odaktan bağımsız siliyordu) → düzeltildi (Enter dalı kaldırıldı). Test-uzmani 3 klavye senaryosu + fare GEÇTİ, 0 err. 136 test + lint temiz. Commit bekliyor | `public/app.js`, `public/index.html`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
+| 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #2 — cari tablosu mobilde kart:** `styles.css`'e `@media(max-width:768px)` kart bloğu + `app.js renderBusinessPartyRows`'a `data-label`/`bp-cell-name`. Masaüstü tablo korundu. Regresyon kilidi testi (135/135). İzole QA 390/768/1440 GEÇTİ (0 err), kod inceleyici ONAY. Commit bekliyor | `public/app.js`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
 | 2026-07-08 | ana asistan | **Kullanıcı testi + hata düzeltme turu:** izole demo DB'de 58 HTTP + 10 yazma testi + 2 UI/UX ajanı. 6 gerçek bug düzeltildi (PDF export 500, showSuccess ×10, dashboard yükleme mesajı, sürükle-bırak sızıntısı, mobil buton 44px, empty-icon). 134 test + lint temiz, PDF canlı doğrulandı | `server.js`, `public/app.js`, `public/index.html`, `public/styles.css` |
 | 2026-07-07 | ana asistan | **Doküman turu:** README profesyonel yeniden düzen (iç günlükler CHANGELOG.md'ye taşındı), CHANGELOG.md + LICENSE (ISC) eklendi, .env.example eksik değişkenler + doğru default'lar, CLAUDE.md durum bölümü güncellendi. Cari geçmiş davranışı belgelendi | `README.md`, `CHANGELOG.md`, `LICENSE`, `.env.example`, `CLAUDE.md`, `PROJE_DURUMU.md` |
 | 2026-07-07 | ana asistan | **Sürüm kontrolü:** git init (main) + ilk commit + private GitHub deposu (github.com/ademtfkc/analizcim) push. Commit öncesi sır/veri sızıntı denetimi yapıldı (temiz) | `.git`, GitHub |

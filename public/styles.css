@@ -4659,6 +4659,28 @@ body {
     background: var(--bg-card-hover);
 }
 
+.btn-danger {
+    padding: 0.6rem 1.2rem;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-danger:hover {
+    filter: brightness(1.05);
+}
+
+.confirm-modal-message {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
 /* Dashboard header actions & export */
 .dashboard-header-actions {
     display: flex;

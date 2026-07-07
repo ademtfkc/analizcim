@@ -311,6 +311,29 @@ describe('UI structure rules', () => {
         assert.match(css, /\.business-party-table td\[data-label\]::before\s*\{\s*content: attr\(data-label\)/);
     });
 
+    test('destructive actions use the themed confirm modal instead of native confirm()', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        // Reusable Promise-based helper + themed modal skeleton exist
+        assert.match(js, /function showConfirm\(/);
+        assert.match(html, /id="confirmModal"/);
+        assert.match(html, /id="confirmModalMessage"/);
+        assert.match(html, /id="confirmModalConfirm"/);
+        assert.match(html, /id="confirmModalCancel"/);
+
+        // Every gated action awaits the helper (17 call sites)
+        assert.ok((js.match(/await showConfirm\(/g) || []).length >= 17);
+
+        // Regression lock: no bare `if (!confirm(` gates remain (native confirm banned except helper fallback)
+        assert.doesNotMatch(js, /if\s*\(!confirm\(/);
+
+        // Danger variant + multiline message support are tokenized, not hardcoded
+        assert.match(css, /\.btn-danger\s*\{[\s\S]*background: var\(--danger\)/);
+        assert.match(css, /\.confirm-modal-message\s*\{[\s\S]*white-space: pre-line/);
+    });
+
     test('admin users expose status badges and pending empty state', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');

@@ -451,6 +451,22 @@
                 </div>
             </div>
 
+            <!-- Genel Onay Modalı (native confirm yerine) -->
+            <div class="modal-overlay" id="confirmModal" style="display: none;" role="dialog"
+                aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMessage" aria-modal="true">
+                <div class="modal-content modal-content-compact">
+                    <div class="modal-header">
+                        <h3 id="confirmModalTitle">Onay</h3>
+                        <button type="button" class="modal-close" id="confirmModalClose" aria-label="Kapat">&times;</button>
+                    </div>
+                    <p id="confirmModalMessage" class="confirm-modal-message"></p>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="confirmModalCancel">İptal</button>
+                        <button type="button" class="btn-primary" id="confirmModalConfirm">Onayla</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- History Section -->
             <section class="history-section" id="historySection" style="display: none;">
                 <div class="history-header">
