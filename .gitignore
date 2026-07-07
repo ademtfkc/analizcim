@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment (gizli anahtarlar)
+.env
+.env.*.local
+
+# Veritabanı (lokal veri)
+data/*.db
+data/*.sqlite
+data/backups/
+data/temp/
+
+# Oturum / çerez kalıntıları (curl vb. testlerden)
+cookies.txt
+*.cookie
+
+# Logs & OS
+*.log
+.DS_Store
+
+# Araç kalıntıları
+.omo/
+.playwright-mcp/
+
+# Backup
+*.bak

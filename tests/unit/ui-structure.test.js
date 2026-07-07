@@ -1,0 +1,325 @@
+const { describe, test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const rootDir = path.resolve(__dirname, '../..');
+
+function readPublicFile(file) {
+    return fs.readFileSync(path.join(rootDir, 'public', file), 'utf8');
+}
+
+function getRuleBody(css, selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'm'));
+    return match ? match[1] : '';
+}
+
+describe('UI structure rules', () => {
+    test('account actions and theme controls live in settings instead of the top header', () => {
+        const html = readPublicFile('index.html');
+        const admin = html.slice(html.indexOf('<section class="admin-section"'), html.indexOf('</section>', html.indexOf('<section class="admin-section"')));
+
+        assert.doesNotMatch(html, /<header class="header">/);
+        assert.match(admin, /id="adminAccountTab"/);
+        assert.match(admin, /openPasswordModal/);
+        assert.match(admin, /id="themePreferenceControl"/);
+        assert.match(admin, /data-theme-choice="system"/);
+        assert.match(admin, /data-theme-choice="light"/);
+        assert.match(admin, /data-theme-choice="dark"/);
+        assert.match(admin, /logout\(\)/);
+    });
+
+    test('compare and topn year controls do not define gradient backgrounds', () => {
+        const css = readPublicFile('styles.css');
+        const selectors = ['.compare-controls-main', '.year-select-large', '.topn-filters', '.topn-filters select'];
+
+        for (const selector of selectors) {
+            assert.doesNotMatch(getRuleBody(css, selector), /gradient/i, selector);
+        }
+    });
+
+    test('payable KDV keeps the value red even after numeric coloring', () => {
+        const css = readPublicFile('styles.css');
+
+        assert.match(css, /\.dashboard-kdv-item\.net\.payable\s+\.dashboard-kdv-value(?:\.numeric-positive)?[\s\S]*?color:\s*var\(--danger\)\s*!important/);
+    });
+
+    test('topn company names expose the full name on hover', () => {
+        const js = readPublicFile('app.js');
+
+        assert.match(js, /class="name-cell"\s+title="\$\{safeNameTitle\}"/);
+        assert.match(js, /function escapeAttribute/);
+    });
+
+    test('dashboard loads the VAT carryover helper before the app bundle', () => {
+        const html = readPublicFile('index.html');
+        const helperIndex = html.indexOf('<script src="js/vat-ledger.js"></script>');
+        const appIndex = html.indexOf('<script src="app.js"></script>');
+
+        assert.ok(helperIndex > -1);
+        assert.ok(appIndex > helperIndex);
+        assert.match(html, /id="dashKdvNetHint"/);
+    });
+
+    test('analysis results clear selected upload files and render explicit VAT status', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+
+        assert.match(html, /id="netTaxHint"/);
+        assert.match(js, /function renderAnalysisVatSummary/);
+        assert.match(js, /resetFileInputs\(\);\s*}\s*$/m);
+        assert.match(js, /renderAnalysisVatSummary\(result\)/);
+    });
+
+    test('history groups start collapsed and month rows open summary modal', () => {
+        const js = readPublicFile('app.js');
+
+        assert.match(js, /history-year-content collapsed/);
+        assert.match(js, /year-toggle-icon">▶/);
+        assert.match(js, /history-month-summary/);
+        assert.match(js, /openHistoryMonthSummary\(/);
+        assert.match(js, /En Çok Satış Yapılan Müşteri/);
+    });
+
+    test('prediction layout uses consistent full-card grid spacing', () => {
+        const css = readPublicFile('styles.css');
+
+        assert.match(css, /\.predictions-layout\s+\.pred-card-resize-wrapper\s*\{[\s\S]*?display:\s*flex/);
+        assert.match(css, /\.predictions-layout\s+\.pred-card-resize-wrapper\s+\.pred-card\s*\{[\s\S]*?flex:\s*1\s+1\s+auto/);
+        assert.match(css, /\.predictions-layout\s+\.pred-card\s*\{[\s\S]*?min-height:\s*100%/);
+    });
+
+    test('prediction page has a metric guide and no marketing overview bubbles', () => {
+        const html = readPublicFile('index.html');
+
+        assert.match(html, /id="predictionMetricsGuide"/);
+        ['QoQ', 'MoM', 'YoY', 'CMGR', 'CV', 'R²', 'SEE', 'P10', 'P50', 'P90'].forEach(term => {
+            assert.match(html, new RegExp(term.replace('²', '\\u00b2')));
+        });
+        assert.doesNotMatch(html, /Trend, güven ve risk aynı anda okunur/);
+        assert.doesNotMatch(html, /Sürüklenebilir kart yapısı ekip çalışma stiline uyum sağlar/);
+        assert.doesNotMatch(html, /Öneri ve senaryolar operasyona çevrilebilir çıktılar üretir/);
+    });
+
+    test('admin uses compact sidebar workspace and removes command banner', () => {
+        const html = readPublicFile('index.html');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /class="admin-workspace"/);
+        assert.match(html, /class="admin-sidebar"/);
+        assert.match(html, /class="admin-main"/);
+        assert.doesNotMatch(html, /admin-command-bar/);
+        assert.match(css, /\.admin-workspace\s*\{/);
+        assert.match(css, /\.admin-sidebar\s*\{/);
+    });
+
+    test('global top header is removed and nav tabs use sidebar svg labels', () => {
+        const html = readPublicFile('index.html');
+
+        assert.doesNotMatch(html, /<header class="header">/);
+        assert.doesNotMatch(html, /class="header-meta"/);
+        ['#icon-layout-dashboard', '#icon-bar-chart', '#icon-wallet', '#icon-arrows-left-right', '#icon-trending-up', '#icon-trophy', '#icon-clock', '#icon-settings'].forEach(iconRef => {
+            assert.match(html, new RegExp(iconRef.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+        });
+        ['Dashboard', 'Analiz', 'Gider', 'Karşılaştırma', 'Tahminler', 'En Çok', 'Geçmiş', 'Ayarlar'].forEach(label => {
+            assert.match(html, new RegExp(label));
+        });
+        assert.match(html, /Hesap Değiştir/);
+        assert.match(html, /Çıkış Yap/);
+    });
+
+    test('sidebar account menu keeps visible labels and history date range exposes explicit field labels', () => {
+        const html = readPublicFile('index.html');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /class="history-date-range"/);
+        assert.match(html, /for="historyDateFrom">Başlangıç Tarihi</);
+        assert.match(html, /for="historyDateTo">Bitiş Tarihi</);
+        assert.doesNotMatch(css, /body\.sidebar-collapsed\s+\.sidebar-account-action\s+span\s*\{\s*display:\s*none/i);
+        assert.match(css, /\.sidebar-account-action span\s*\{[\s\S]*?color:\s*inherit/);
+    });
+
+    test('desktop sidebar uses a fixed rail that expands into a tokenized overlay panel', () => {
+        const css = readPublicFile('styles.css');
+        const js = readPublicFile('app.js');
+
+        assert.match(css, /--sidebar-width:\s*240px;\s*\/\* Desktop sidebar panel width \*\//);
+        assert.match(css, /--sidebar-rail-width:\s*72px/);
+        assert.match(css, /--sidebar-overlay-width:\s*calc\(var\(--sidebar-width\) \+ 156px\)/);
+        assert.match(css, /--transition-shell:\s*0\.2s cubic-bezier\(0\.65,\s*0,\s*0\.35,\s*1\)/);
+        assert.match(css, /\.sidebar\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?width:\s*var\(--sidebar-rail-width\);[\s\S]*?transition:\s*width var\(--transition-shell\), min-width var\(--transition-shell\), box-shadow var\(--transition-shell\), background var\(--transition-shell\)/);
+        assert.match(css, /\.sidebar\.open\s*\{[\s\S]*?width:\s*var\(--sidebar-width\)/);
+        assert.match(css, /\.app-shell-toggle\s*\{[\s\S]*?display:\s*none/);
+        assert.match(css, /\.sidebar-overlay\.visible\s*\{[\s\S]*?background:\s*var\(--sidebar-overlay-strip-bg\);[\s\S]*?backdrop-filter:\s*blur\(1\.5px\);[\s\S]*?box-shadow:\s*var\(--sidebar-overlay-shadow\)/);
+        assert.match(css, /@media \(min-width:\s*1024px\)\s*\{[\s\S]*?\.sidebar:not\(\.open\)\s+\.sidebar-brand-copy[\s\S]*?display:\s*none/);
+        assert.match(css, /@media \(max-width:\s*1023px\)\s*\{[\s\S]*?\.app-shell-toggle\s*\{[\s\S]*?top:\s*max\(1rem,\s*calc\(env\(safe-area-inset-top,\s*0px\) \+ 0\.5rem\)\);[\s\S]*?left:\s*max\(1rem,\s*calc\(env\(safe-area-inset-left,\s*0px\) \+ 0\.5rem\)\)/);
+        assert.match(css, /@media \(max-width:\s*1023px\)\s*\{[\s\S]*?\.sidebar\s*\{[\s\S]*?transition:\s*transform var\(--transition-shell\), box-shadow var\(--transition-shell\);[\s\S]*?transform:\s*translateX\(-100%\);[\s\S]*?\.sidebar\.open\s*\{[\s\S]*?transform:\s*translateX\(0\)/);
+        assert.match(css, /@media \(max-width:\s*1023px\)\s*\{[\s\S]*?\.sidebar-overlay\.visible\s*\{[\s\S]*?background:\s*var\(--overlay-bg\)/);
+        assert.match(js, /document\.body\.classList\.toggle\('sidebar-open', isOpen\)/);
+        assert.match(js, /sidebarCollapseBtn\?\.addEventListener\('click', window\.toggleSidebar\)/);
+    });
+
+    test('login form keeps readable placeholders and resolves system theme preference', () => {
+        const html = readPublicFile('login.html');
+
+        assert.match(html, /id="username"[\s\S]*placeholder="ornek\.kullanici"/);
+        assert.match(html, /id="password"[\s\S]*placeholder="••••••••"/);
+        assert.match(html, /function resolveEffectiveTheme\(themePreference\)/);
+        assert.match(html, /document\.documentElement\.setAttribute\('data-theme-preference', normalized\)/);
+        assert.match(html, /if \(\(localStorage\.getItem\('theme'\) \|\| 'system'\) === 'system'\)/);
+    });
+
+    test('theme cleanup bridges legacy aliases to token variables and removes blue admin rings', () => {
+        const css = readPublicFile('styles.css');
+        const login = readPublicFile('login.html');
+
+        assert.match(css, /--bg-primary:\s*var\(--background,\s*#ffffff\)/);
+        assert.match(css, /--positive:\s*#16a34a/);
+        assert.match(css, /--success:\s*var\(--positive\)/);
+        assert.match(css, /--tooltip-bg:\s*color-mix\(in srgb,\s*var\(--popover\)/);
+        assert.match(css, /:focus-visible\s*\{[\s\S]*?outline:\s*2px solid var\(--ring,\s*var\(--accent-primary\)\)/);
+        assert.match(css, /--ring-soft:\s*color-mix\(in srgb,\s*var\(--ring\)\s*18%,\s*transparent\)/);
+        assert.match(css, /Theme Token Cleanup Final/);
+        assert.match(css, /\.admin-tab\.active,\s*[\s\S]*?\.theme-choice-btn\.active\s*\{[\s\S]*?border-color:\s*var\(--ring-strong\)\s*!important/);
+        assert.match(css, /\.modal-content \.form-input:focus[\s\S]*?box-shadow:\s*0 0 0 2px var\(--ring-soft\)\s*!important/);
+        assert.match(login, /\.form-input:focus\s*\{[\s\S]*?border-color:\s*var\(--ring\)/);
+        assert.match(login, /\.theme-toggle-login:hover\s*\{[\s\S]*?border-color:\s*var\(--ring\)/);
+    });
+
+    test('favicon is explicitly linked for both app and login screens', () => {
+        const indexHtml = readPublicFile('index.html');
+        const loginHtml = readPublicFile('login.html');
+        const faviconSvg = readPublicFile('favicon.svg');
+
+        assert.match(indexHtml, /rel="icon" href="\/favicon\.svg" type="image\/svg\+xml"/);
+        assert.match(loginHtml, /rel="icon" href="\/favicon\.svg" type="image\/svg\+xml"/);
+        assert.match(faviconSvg, /<svg/);
+    });
+
+    test('sidebar tab switch uses a safe mobile-only close helper and admin polling is view scoped', () => {
+        const js = readPublicFile('app.js');
+
+        assert.match(js, /function closeMobileSidebar\(\)\s*\{[\s\S]*?sidebar\?\.classList\.contains\('open'\)[\s\S]*?matchMedia\('\(max-width: 1023px\)'\)\.matches[\s\S]*?setSidebarOpen\(false\)/);
+        assert.match(js, /window\.closeMobileSidebar = closeMobileSidebar/);
+        assert.match(js, /function isPendingUsersViewActive\(\)\s*\{[\s\S]*?currentTab === 'admin'[\s\S]*?dataset\.adminTab === 'users'/);
+        assert.match(js, /syncPendingUsersPolling\(\{ forceLoad: targetTab === 'users' \}\)/);
+        assert.match(js, /if \(typeof window\.loadPendingUsers === 'function' && isPendingUsersViewActive\(\)\) window\.loadPendingUsers\(\)/);
+        assert.doesNotMatch(js, /fetch\('\/api\/admin\/pending-users'\)\.then/);
+    });
+
+    test('stylesheet contains no gradient effects anywhere', () => {
+        const css = readPublicFile('styles.css');
+
+        assert.doesNotMatch(css, /gradient/i);
+    });
+
+    test('business statistics subtabs keep readable text contrast', () => {
+        const css = readPublicFile('styles.css');
+
+        assert.match(css, /\.bstat-subtab\s*\{[\s\S]*?color:\s*var\(--text-primary\)/);
+        assert.match(css, /\.bstat-subtab\.active\s*\{[\s\S]*?background:\s*var\(--bg-secondary\)/);
+    });
+
+    test('analysis upload exposes guidance and selected file summaries', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /class="upload-guidance"/);
+        assert.match(html, /id="salesFileSummary"/);
+        assert.match(html, /id="purchaseFileSummary"/);
+        assert.match(html, /YYYY_AA_tip\.xlsx/);
+        assert.match(js, /function updateSelectedFileSummary/);
+        assert.match(js, /resetSelectedFileSummaries/);
+        assert.match(css, /\.upload-guidance\s*\{/);
+        assert.match(css, /\.selected-file-summary\s*\{/);
+    });
+
+    test('expenses screen exposes period context and combined total without backend changes', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /id="expensesPeriodSummary"/);
+        assert.match(html, /id="expensePeriodFixedTotal"/);
+        assert.match(html, /id="expensePeriodVariableTotal"/);
+        assert.match(html, /id="expensePeriodCombinedTotal"/);
+        assert.match(js, /function updateExpensePeriodSummary/);
+        assert.match(js, /updateExpensePeriodSummary\(year, month, fixedTotal, variableTotal\)/);
+        assert.match(css, /\.expenses-period-summary\s*\{/);
+    });
+
+    test('customers module exposes sidebar entry, workspace, dashboard widgets and handlers', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /id="tabCustomers"/);
+        assert.match(html, /id="customersSection"/);
+        assert.match(html, /id="customerForm"/);
+        assert.match(html, /id="dashboardCustomersSection"/);
+        assert.match(html, /id="dashTotalCustomers"/);
+        assert.match(html, /id="dashboardRecentCustomersList"/);
+        assert.match(html, /id="dashboardTopCustomer"/);
+        assert.match(js, /function loadCustomers\(/);
+        assert.match(js, /function saveCustomer\(/);
+        assert.match(js, /function deleteCustomer\(/);
+        assert.match(js, /function loadCustomerDashboardSummary\(/);
+        assert.match(js, /switchTab\('customers'\)/);
+        assert.match(css, /\.customers-section\s*\{/);
+        assert.match(css, /\.customers-grid\s*\{/);
+        assert.match(css, /\.customer-form-grid\s*\{/);
+        assert.match(css, /\.dashboard-customers-section\s*\{/);
+    });
+
+    test('business parties expose supplier tab, analytics detail view and dashboard widgets', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /id="tabSuppliers"/);
+        assert.match(html, /id="suppliersSection"/);
+        assert.match(html, /id="partyDetailSection"/);
+        assert.match(html, /id="partyMonthlyChart"/);
+        assert.match(html, /id="partyTrendChart"/);
+        assert.match(html, /id="dashTotalSuppliers"/);
+        assert.match(html, /id="dashboardTopCustomersList"/);
+        assert.match(html, /id="dashboardTopSuppliersList"/);
+        assert.match(html, /id="dashboardRecentPartiesList"/);
+        assert.match(js, /function loadBusinessParties\(/);
+        assert.match(js, /function openBusinessPartyDetail\(/);
+        assert.match(js, /function renderPartyDetailCharts\(/);
+        assert.match(js, /function loadBusinessPartyDashboardSummary\(/);
+        assert.match(js, /switchTab\('suppliers'\)/);
+        assert.match(css, /\.party-detail-section\s*\{/);
+        assert.match(css, /\.business-party-table\s*\{/);
+        assert.match(css, /\.party-dashboard-grid\s*\{/);
+    });
+
+    test('admin users expose status badges and pending empty state', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /id="pendingUsersEmpty"/);
+        assert.match(js, /function getUserStatusBadge/);
+        assert.match(js, /pendingUsersEmpty/);
+        assert.match(js, /admin-status-badge/);
+        assert.match(css, /\.admin-status-badge\s*\{/);
+        assert.match(css, /\.pending-users-empty\s*\{/);
+    });
+
+    test('system tab exposes recent audit operations list', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /id="auditLogList"/);
+        assert.match(html, /Son Operasyonlar/);
+        assert.match(js, /window\.loadAuditLogs\s*=\s*async function/);
+        assert.match(js, /function renderAuditLogs/);
+        assert.match(css, /\.audit-log-list\s*\{/);
+        assert.match(css, /\.audit-log-item\s*\{/);
+    });
+});

@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizcim - Excel Satış/Alış Analiz</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+    <script src="vendor/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- SVG Icon Sprite -->
+        <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+            <defs>
+                <symbol id="icon-bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></symbol>
+                <symbol id="icon-layout-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></symbol>
+                <symbol id="icon-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
+                <symbol id="icon-arrows-left-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></symbol>
+                <symbol id="icon-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+                <symbol id="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 6 9Z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 18 9Z"/><path d="M12 14v4"/><path d="M8 22h8"/><path d="M12 18c-3.3 0-6-2.7-6-6V4h12v8c0 3.3-2.7 6-6 6Z"/></symbol>
+                <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+                <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.32-1.915"/><circle cx="12" cy="12" r="3"/></symbol>
+                <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+                <symbol id="icon-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+                <symbol id="icon-dollar-sign" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+                <symbol id="icon-shopping-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></symbol>
+                <symbol id="icon-trending-up-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol>
+                <symbol id="icon-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></symbol>
+                <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+            </defs>
+        </svg>
+
+        <!-- Sidebar + Content Layout -->
+        <div class="app-layout">
+            <button class="sidebar-toggle app-shell-toggle" id="sidebarToggle" aria-label="Menüyü aç" type="button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar" id="sidebar" aria-label="Ana menü">
+                <div class="sidebar-topbar">
+                    <div class="sidebar-brand" title="Analizcim">
+                        <span class="sidebar-brand-mark">A</span>
+                        <div class="sidebar-brand-copy">
+                            <strong>Analizcim</strong>
+                            <span>Finans workspace</span>
+                        </div>
+                    </div>
+                    <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" aria-label="Sidebar daralt" title="Sidebar daralt">
+                        <svg class="collapse-icon collapse-icon-left" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        <svg class="collapse-icon collapse-icon-right" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                </div>
+                <div class="sidebar-scroll">
+                    <nav class="sidebar-nav">
+                        <div class="sidebar-nav-group">
+                            <button class="nav-tab active" id="tabDashboard" aria-label="Dashboard" title="Dashboard">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-layout-dashboard"></use></svg>
+                                <span class="nav-label">Dashboard</span>
+                            </button>
+                            <button class="nav-tab" id="tabAnalyze" aria-label="Analiz" title="Analiz">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-bar-chart"></use></svg>
+                                <span class="nav-label">Analiz</span>
+                            </button>
+                        </div>
+                        <div class="sidebar-nav-group">
+                            <button class="nav-tab" id="tabPredictions" aria-label="Tahminler" title="Tahminler">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-trending-up"></use></svg>
+                                <span class="nav-label">Tahminler</span>
+                            </button>
+                            <button class="nav-tab" id="tabCompare" aria-label="Karşılaştırma" title="Karşılaştırma">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-arrows-left-right"></use></svg>
+                                <span class="nav-label">Karşılaştırma</span>
+                            </button>
+                            <button class="nav-tab" id="tabExpenses" aria-label="Gider" title="Gider">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-wallet"></use></svg>
+                                <span class="nav-label">Gider</span>
+                            </button>
+                            <button class="nav-tab" id="tabCustomers" aria-label="Müşteriler" title="Müşteriler">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-users"></use></svg>
+                                <span class="nav-label">Müşteriler</span>
+                            </button>
+                            <button class="nav-tab" id="tabSuppliers" aria-label="Tedarikçiler" title="Tedarikçiler">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-shopping-cart"></use></svg>
+                                <span class="nav-label">Tedarikçiler</span>
+                            </button>
+                            <button class="nav-tab" id="tabTopN" aria-label="En Çok" title="En Çok">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-trophy"></use></svg>
+                                <span class="nav-label">En Çok</span>
+                            </button>
+                        </div>
+                        <div class="sidebar-nav-group sidebar-nav-group-system">
+                            <button class="nav-tab" id="tabHistory" aria-label="Geçmiş" title="Geçmiş">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-clock"></use></svg>
+                                <span class="nav-label">Geçmiş</span>
+                                <span class="history-count" id="historyCount" style="display: none;">0</span>
+                            </button>
+                            <button class="nav-tab" id="tabAdmin" aria-label="Ayarlar" title="Ayarlar">
+                                <span class="nav-tab-accent" aria-hidden="true"></span>
+                                <svg class="nav-icon" aria-hidden="true"><use href="#icon-settings"></use></svg>
+                                <span class="nav-label">Ayarlar</span>
+                                <span class="pending-notification-badge" id="adminPendingBadge" style="display:none;">0</span>
+                            </button>
+                        </div>
+                    </nav>
+                </div>
+                <div class="sidebar-account-section">
+                    <div class="sidebar-user-card">
+                        <button class="sidebar-account-trigger" id="sidebarAccountTrigger" type="button" aria-label="Hesap menüsünü aç" title="Hesap" aria-haspopup="menu" aria-expanded="false" aria-controls="sidebarAccountMenu">
+                            <div class="sidebar-user" id="sidebarUser"></div>
+                            <svg class="sidebar-account-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        <div class="sidebar-account-menu" id="sidebarAccountMenu" role="menu" aria-label="Hesap işlemleri">
+                            <button class="sidebar-account-action" type="button" id="sidebarSwitchAccountAction" role="menuitem">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 20h5V4h-5"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+                                <span>Hesap Değiştir</span>
+                            </button>
+                            <button class="sidebar-account-action danger" type="button" id="sidebarLogoutAction" role="menuitem">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                <span>Çıkış Yap</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content" role="main">
+            <!-- Upload Section -->
+            <section class="upload-section" id="uploadSection" style="display: none;">
+                <h2>Dosya Yükleme</h2>
+                <p class="section-desc">Analiz etmek istediğiniz Excel dosyalarını aşağıya sürükleyin veya tıklayarak
+                    seçin.</p>
+
+                <div class="upload-guidance" aria-label="Excel dosya rehberi">
+                    <div class="upload-guidance-copy">
+                        <strong>Dosya rehberi</strong>
+                        <span>Excel veya CSV yükleyin. Önerilen ad: <code>YYYY_AA_tip.xlsx</code> örn. <code>2026_01_satis.xlsx</code>.</span>
+                    </div>
+                    <div class="upload-guidance-pills">
+                        <span>Tarih</span>
+                        <span>Tutar</span>
+                        <span>KDV</span>
+                        <span>Tür/Cari opsiyonel</span>
+                    </div>
+                </div>
+
+                <div class="upload-cards">
+                    <!-- Sales File Upload -->
+                    <div class="upload-card" id="salesUpload">
+                        <div class="upload-dropzone" data-type="sales">
+                            <div class="upload-icon">S</div>
+                            <h3>Satış Raporu</h3>
+                            <p>Aylık satış Excel/CSV dosyanızı yükleyin</p>
+                            <span class="file-name" id="salesFileName">Dosya seçilmedi</span>
+                            <span class="selected-file-summary" id="salesFileSummary">Satış dosyası bekleniyor</span>
+                            <input type="file" id="salesFile" accept=".xlsx,.xls,.csv" hidden>
+                        </div>
+                    </div>
+
+                    <!-- Purchase File Upload -->
+                    <div class="upload-card" id="purchaseUpload">
+                        <div class="upload-dropzone" data-type="purchase">
+                            <div class="upload-icon">A</div>
+                            <h3>Alış Raporu</h3>
+                            <p>Aylık alış Excel/CSV dosyanızı yükleyin</p>
+                            <span class="file-name" id="purchaseFileName">Dosya seçilmedi</span>
+                            <span class="selected-file-summary" id="purchaseFileSummary">Alış dosyası bekleniyor</span>
+                            <input type="file" id="purchaseFile" accept=".xlsx,.xls,.csv" hidden>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Merge Upload Section -->
+                <div class="merge-upload-section" id="mergeUploadSection" style="display: none;">
+                    <div class="upload-cards">
+                        <div class="upload-card">
+                            <div class="upload-dropzone" data-type="sales-merge">
+                                <div class="upload-icon">S+</div>
+                                <h3>Çoklu Satış Raporları</h3>
+                                <p>Aynı döneme ait birden çok satış dosyası seçin</p>
+                                <span class="file-name" id="mergeSalesFileName">Dosya seçilmedi</span>
+                                <span class="selected-file-summary" id="mergeSalesFileSummary">Birden çok dosya seçilebilir</span>
+                                <input type="file" id="mergeSalesFiles" accept=".xlsx,.xls,.csv" multiple hidden>
+                            </div>
+                        </div>
+                        <div class="upload-card">
+                            <div class="upload-dropzone" data-type="purchase-merge">
+                                <div class="upload-icon">A+</div>
+                                <h3>Çoklu Alış Raporları</h3>
+                                <p>Aynı döneme ait birden çok alış dosyası seçin</p>
+                                <span class="file-name" id="mergePurchaseFileName">Dosya seçilmedi</span>
+                                <span class="selected-file-summary" id="mergePurchaseFileSummary">Birden çok dosya seçilebilir</span>
+                                <input type="file" id="mergePurchaseFiles" accept=".xlsx,.xls,.csv" multiple hidden>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="analyze-btn" id="mergeAnalyzeBtn" disabled>
+                        <span class="btn-text">Birleştirerek Analiz Et</span>
+                    </button>
+                </div>
+
+                <div class="upload-actions">
+                    <button type="button" class="btn-secondary upload-config-btn" id="columnMapBtn">
+                        Sütun Eşleme
+                    </button>
+                    <span class="upload-config-status" id="columnMapStatus">Varsayılan eşleme aktif</span>
+                    <button type="button" class="btn-secondary upload-config-btn" id="mergeModeToggle" style="margin-left:auto;">
+                        Çoklu Dosya Birleştirme
+                    </button>
+                </div>
+
+                <button class="analyze-btn" id="analyzeBtn" disabled>
+                    <span class="btn-text">Analiz Et</span>
+                </button>
+            </section>
+
+            <!-- Results Section (Hidden initially) -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2>Analiz Sonuçları</h2>
+
+                <!-- Summary Card -->
+                <div class="summary-card" id="summaryCard">
+                    <div class="summary-icon">Özet</div>
+                    <p class="summary-text" id="summaryText"></p>
+                    <span class="timestamp" id="timestamp"></span>
+                </div>
+
+                <!-- Outlier Warning Banner -->
+                <div class="outlier-warning" id="outlierWarning" style="display: none;">
+                    <div class="outlier-warning-header">
+                        <span class="outlier-warning-icon">!</span>
+                        <span class="outlier-warning-count" id="outlierWarningCount">0</span>
+                        <span class="outlier-warning-text">aykırı değer tespit edildi</span>
+                        <button class="outlier-detail-toggle" id="outlierDetailToggle">Detay</button>
+                    </div>
+                    <div class="outlier-details" id="outlierDetails" style="display: none;">
+                        <table class="outlier-table">
+                            <thead>
+                                <tr>
+                                    <th>Satır</th>
+                                    <th>Alan</th>
+                                    <th>Değer</th>
+                                    <th>Beklenen</th>
+                                    <th>Sapma</th>
+                                    <th>Yöntem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="outlierTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <!-- Sales Stats -->
+                    <div class="stat-card sales-card" id="salesStats" style="display: none;">
+                        <div class="stat-header">
+                            <span class="stat-icon">S</span>
+                            <h3>Satış Özeti</h3>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-amount">
+                                <span class="label">Toplam Satış</span>
+                                <span class="value" id="totalSales">-</span>
+                            </div>
+                            <div class="stat-details">
+                                <div class="detail-item">
+                                    <span class="label">İşlem Sayısı</span>
+                                    <span class="value" id="salesCount">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Toplam KDV</span>
+                                    <span class="value kdv-value" id="salesTax">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="top-items">
+                            <h4>En Çok Satış Yapılan Firmalar</h4>
+                            <ul id="topSalesProducts"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Purchase Stats -->
+                    <div class="stat-card purchase-card" id="purchaseStats" style="display: none;">
+                        <div class="stat-header">
+                            <span class="stat-icon">A</span>
+                            <h3>Alış Özeti</h3>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-amount">
+                                <span class="label">Toplam Alış</span>
+                                <span class="value" id="totalPurchase">-</span>
+                            </div>
+                            <div class="stat-details">
+                                <div class="detail-item">
+                                    <span class="label">İşlem Sayısı</span>
+                                    <span class="value" id="purchaseCount">-</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="label">Toplam KDV</span>
+                                    <span class="value kdv-value" id="purchaseTax">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="top-items">
+                            <h4>En Çok Alış Yapılan Firmalar</h4>
+                            <ul id="topPurchaseProducts"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profit/Loss Card -->
+                <div class="profit-loss-card" id="profitLossCard" style="display: none;">
+                    <div class="pl-content">
+                        <span class="pl-label">Brüt Kâr/Zarar</span>
+                        <span class="pl-value" id="profitLossValue">-</span>
+                        <span class="pl-percentage" id="profitLossPercentage"></span>
+                    </div>
+                    <div class="pl-indicator" id="plIndicator"></div>
+                </div>
+
+                <!-- KDV Summary Card -->
+                <div class="kdv-summary-card" id="kdvSummaryCard" style="display: none;">
+                    <div class="kdv-header">
+                        <span class="kdv-icon">KDV</span>
+                        <h3>KDV Özeti</h3>
+                    </div>
+                    <div class="kdv-grid">
+                        <div class="kdv-item">
+                            <span class="kdv-label">Satış KDV</span>
+                            <span class="kdv-value sales" id="totalSalesTax">-</span>
+                        </div>
+                        <div class="kdv-item">
+                            <span class="kdv-label">Alış KDV</span>
+                            <span class="kdv-value purchase" id="totalPurchaseTax">-</span>
+                        </div>
+                        <div class="kdv-item net">
+                            <span class="kdv-label">Net KDV (Ödenecek/Devreden)</span>
+                            <span class="kdv-value" id="netTax">-</span>
+                            <span class="kdv-hint" id="netTaxHint"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="results-actions">
+                    <button class="btn-secondary" id="exportSummaryPdfBtn">
+                        PDF Özet
+                    </button>
+                    <button class="reset-btn" id="resetBtn">
+                        Yeni Analiz
+                    </button>
+                </div>
+            </section>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loader"></div>
+                <p>Dosyalar analiz ediliyor...</p>
+            </div>
+
+            <!-- Error / Success Toast (aria-live for screen readers) -->
+            <div class="error-toast" id="errorToast" role="alert" aria-live="polite" aria-atomic="true">
+                <span class="error-icon">!</span>
+                <span class="error-message" id="errorMessage"></span>
+            </div>
+
+            <!-- Column Mapping Modal -->
+            <div class="modal-overlay" id="columnMapModal" style="display: none;" role="dialog"
+                aria-labelledby="columnMapTitle" aria-modal="true">
+                <div class="modal-content modal-content-wide">
+                    <h3 id="columnMapTitle">Sütun Eşleme Sihirbazı</h3>
+                    <p class="section-desc">Excel başlıklarınız standart değilse aşağıdaki sütun harflerini düzenleyin.
+                        Tüm alanlar için A-Z arası tek harf girin.</p>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="mapEnabledCheckbox">
+                        Özel eşlemeyi analizlerde kullan
+                    </label>
+
+                    <div class="column-map-grid">
+                        <div class="column-map-section">
+                            <h4>Satış Raporu</h4>
+                            <div class="column-map-fields horizontal">
+                                <div class="map-field">
+                                    <label class="form-label" for="mapSalesDate">Tarih</label>
+                                    <input class="form-input map-input" id="mapSalesDate" maxlength="1" value="A">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapSalesCounterparty">Firma</label>
+                                    <input class="form-input map-input" id="mapSalesCounterparty" maxlength="1" value="C">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapSalesNet">Net</label>
+                                    <input class="form-input map-input" id="mapSalesNet" maxlength="1" value="I">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapSalesVat">KDV</label>
+                                    <input class="form-input map-input" id="mapSalesVat" maxlength="1" value="K">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapSalesGross">Brüt</label>
+                                    <input class="form-input map-input" id="mapSalesGross" maxlength="1" value="L">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="column-map-section">
+                            <h4>Alış Raporu</h4>
+                            <div class="column-map-fields horizontal">
+                                <div class="map-field">
+                                    <label class="form-label" for="mapPurchaseDate">Tarih</label>
+                                    <input class="form-input map-input" id="mapPurchaseDate" maxlength="1" value="A">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapPurchaseCounterparty">Firma</label>
+                                    <input class="form-input map-input" id="mapPurchaseCounterparty" maxlength="1"
+                                        value="B">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapPurchaseNet">Net</label>
+                                    <input class="form-input map-input" id="mapPurchaseNet" maxlength="1" value="H">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapPurchaseVat">KDV</label>
+                                    <input class="form-input map-input" id="mapPurchaseVat" maxlength="1" value="J">
+                                </div>
+                                <div class="map-field">
+                                    <label class="form-label" for="mapPurchaseGross">Brüt</label>
+                                    <input class="form-input map-input" id="mapPurchaseGross" maxlength="1" value="K">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="columnMapResetBtn">Varsayılanı Doldur</button>
+                        <button type="button" class="btn-secondary" id="columnMapCancelBtn">İptal</button>
+                        <button type="button" class="btn-primary" id="columnMapSaveBtn">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <section class="history-section" id="historySection" style="display: none;">
+                <div class="history-header">
+                    <div class="section-title-block">
+                        <span class="section-kicker">Archive & Audit Trail</span>
+                        <h2>Analiz Geçmişi</h2>
+                    </div>
+                    <div class="history-header-actions">
+                        <button type="button" class="export-history-btn" id="exportHistoryBtn" style="display: none;"
+                            onclick="exportHistoryExcel()">
+                            Excel
+                        </button>
+                        <button type="button" class="export-history-btn" id="exportHistoryJsonBtn" style="display: none;"
+                            onclick="exportHistoryJson()">
+                            JSON
+                        </button>
+                        <button type="button" class="history-trash-toggle" id="historyTrashToggle" style="display:none"
+                            onclick="toggleTrashMode()" title="Çöp kutusu">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            Çöp Kutusu
+                            <span class="trash-badge" id="trashBadge">0</span>
+                        </button>
+                        <button class="clear-history-btn" id="clearHistoryBtn" style="display: none;"
+                            onclick="clearAllHistory()">
+                            Tümünü Temizle
+                        </button>
+                    </div>
+                </div>
+                <div class="history-overview-strip">
+                    <div class="history-overview-copy">
+                        <strong>Analiz arşiviniz burada.</strong>
+                        Dönem, dosya ve performans etkisine göre kayıtları hızla tarayın.
+                    </div>
+                    <span class="history-overview-meta">Arama, filtreleme ve export destekli kayıt görünümü</span>
+                </div>
+
+                <div class="history-filters" id="historyFilters">
+                    <input type="search" id="historySearch" class="history-search-input"
+                        placeholder="Dosya adı veya özette ara..." aria-label="Geçmişte ara">
+                    <select id="historyYearFilter" class="year-select history-filter-select" aria-label="Yıl filtresi">
+                        <option value="">Tüm yıllar</option>
+                    </select>
+                    <select id="historySort" class="year-select history-filter-select" aria-label="Sıralama">
+                        <option value="date_desc">Tarih (yeni → eski)</option>
+                        <option value="date_asc">Tarih (eski → yeni)</option>
+                        <option value="sales_desc">Satış (yüksek → düşük)</option>
+                        <option value="sales_asc">Satış (düşük → yüksek)</option>
+                        <option value="profit_desc">Kâr (yüksek → düşük)</option>
+                        <option value="profit_asc">Kâr (düşük → yüksek)</option>
+                    </select>
+                    <select id="historyTypeFilter" class="history-filter-select" aria-label="Rapor tipi">
+                        <option value="">Tüm tipler</option>
+                        <option value="sales">Sadece satış</option>
+                        <option value="purchase">Sadece alış</option>
+                    </select>
+                    <input type="number" id="historyAmountMin" class="history-search-input" placeholder="Min. tutar" min="0" step="0.01" aria-label="Minimum tutar" style="width:120px">
+                    <input type="number" id="historyAmountMax" class="history-search-input" placeholder="Maks. tutar" min="0" step="0.01" aria-label="Maximum tutar" style="width:120px">
+                    <div class="history-date-range" aria-label="Tarih aralığı">
+                        <div class="history-filter-field history-date-field">
+                            <label class="history-filter-label" for="historyDateFrom">Başlangıç Tarihi</label>
+                            <input type="month" id="historyDateFrom" class="history-filter-select history-date-input" aria-label="Başlangıç tarihi">
+                        </div>
+                        <div class="history-filter-field history-date-field">
+                            <label class="history-filter-label" for="historyDateTo">Bitiş Tarihi</label>
+                            <input type="month" id="historyDateTo" class="history-filter-select history-date-input" aria-label="Bitiş tarihi">
+                        </div>
+                    </div>
+                    <span class="history-total-count" id="historyTotalCount" aria-live="polite"></span>
+                </div>
+
+                <label class="history-select-all-label" style="display:none" id="historySelectAllLabel">
+                    <input type="checkbox" id="historySelectAll" onchange="toggleHistorySelectAll()"> Tümünü seç
+                </label>
+
+                <div class="history-batch-bar" id="historyBatchBar" style="display:none;">
+                    <div class="history-batch-info">
+                        <span class="history-batch-count" id="historyBatchCount">0 seçili</span>
+                    </div>
+                    <div class="history-batch-actions">
+                        <button type="button" class="history-batch-btn" id="historyBatchDeleteBtn" onclick="batchDeleteHistory()" title="Seçilen kayıtları sil">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            Seçilenleri Sil
+                        </button>
+                        <button type="button" class="history-batch-btn" id="historyBatchExportBtn" onclick="batchExportHistoryExcel()" title="Seçilen kayıtları Excel'e aktar">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Seçilenleri Excel
+                        </button>
+                        <button type="button" class="history-batch-btn history-batch-cancel" id="historyBatchCancelBtn" onclick="clearHistorySelection()">İptal</button>
+                    </div>
+                </div>
+
+                <div class="history-loading-skeleton" id="historyLoadingSkeleton" style="display: none;">
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                    <div class="skeleton-card"></div>
+                </div>
+
+                <div class="history-empty" id="historyEmpty">
+                    <span class="empty-icon">Arşiv</span>
+                    <p>Henüz kayıtlı analiz yok</p>
+                    <span class="empty-hint">Analiz sekmesinden dosya yükleyip başarılı analiz yaptığınızda kayıtlar burada listelenir.</span>
+                </div>
+
+                <div class="history-list" id="historyList"></div>
+
+                <div class="history-pagination-bar" id="historyPaginationBar" style="display: none;">
+                    <div class="pagination-info">
+                        <span id="historyPaginationInfo">0 kayıt</span>
+                    </div>
+                    <div class="pagination-controls">
+                        <div class="pagination-page-size">
+                            <label for="historyPageSize">Sayfa boyutu:</label>
+                            <select id="historyPageSize" class="pagination-size-select" aria-label="Sayfa boyutu">
+                                <option value="25">25</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        <div class="pagination-nav">
+                            <button type="button" class="pagination-btn" id="historyPagePrev" onclick="historyGoToPage('prev')" disabled title="Önceki sayfa">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                            </button>
+                            <div class="pagination-pages" id="historyPageNumbers"></div>
+                            <button type="button" class="pagination-btn" id="historyPageNext" onclick="historyGoToPage('next')" disabled title="Sonraki sayfa">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trash Section -->
+            <section class="history-section" id="trashSection" style="display: none;">
+                <div class="history-header">
+                    <div class="section-title-block">
+                        <span class="section-kicker">Recovery & Cleanup</span>
+                        <h2>Çöp Kutusu</h2>
+                    </div>
+                    <div class="history-header-actions">
+                        <button type="button" class="export-history-btn" onclick="backToHistory()">
+                            ← Geçmişe Dön
+                        </button>
+                        <button type="button" class="clear-history-btn trash-empty-btn" onclick="emptyTrash()" title="Çöp kutusunu boşalt">
+                            Çöp Kutusunu Boşalt
+                        </button>
+                    </div>
+                </div>
+                <div class="history-overview-strip">
+                    <div class="history-overview-copy">
+                        <strong>Silinen analiz kayıtları.</strong>
+                        Geri alabilir veya kalıcı olarak silebilirsiniz.
+                    </div>
+                    <span class="history-overview-meta">Kayıtlar 30 gün sonra otomatik temizlenir</span>
+                </div>
+
+                <label class="history-select-all-label" id="trashSelectAllLabel" style="display:none">
+                    <input type="checkbox" id="trashSelectAll" onchange="toggleTrashSelectAll()"> Tümünü seç
+                </label>
+
+                <div class="history-batch-bar" id="trashBatchBar" style="display:none;">
+                    <div class="history-batch-info">
+                        <span class="history-batch-count" id="trashBatchCount">0 seçili</span>
+                    </div>
+                    <div class="history-batch-actions">
+                        <button type="button" class="history-batch-btn" id="trashBatchRestoreBtn" onclick="batchRestoreTrash()" title="Seçilen kayıtları geri al">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                            Seçilenleri Geri Al
+                        </button>
+                        <button type="button" class="history-batch-btn" id="trashBatchDeleteBtn" onclick="batchPermanentDeleteTrash()" title="Seçilen kayıtları kalıcı sil">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            Seçilenleri Kalıcı Sil
+                        </button>
+                        <button type="button" class="history-batch-btn history-batch-cancel" onclick="clearTrashSelection()">İptal</button>
+                    </div>
+                </div>
+
+                <div class="history-empty" id="trashEmpty">
+                    <span class="empty-icon">Boş</span>
+                    <p>Çöp kutusu boş</p>
+                    <span class="empty-hint">Sildiğiniz kayıtlar burada görünür.</span>
+                </div>
+
+                <div class="history-list" id="trashList"></div>
+            </section>
+
+            <!-- Dashboard Section -->
+            <section class="dashboard-section" id="dashboardSection" style="display: block;">
+                <div class="dashboard-header-row">
+                    <div class="section-title-block">
+                        <span class="section-kicker">Finans Paneli</span>
+                        <h2>Yönetim Paneli</h2>
+                    </div>
+                    <div class="dashboard-header-actions" aria-label="Dashboard işlemleri">
+                        <button type="button" class="dashboard-action-btn primary dashboard-primary-action" onclick="switchTab('analyze')" title="Yeni Excel veya CSV dosyası yükle">
+                            Excel Yükle
+                        </button>
+                        <div class="dashboard-control-group" aria-label="Dönem filtreleri">
+                            <div class="dashboard-year-selector" id="dashboardYearSelectorWrapper">
+                                <label for="yearSelect" class="dashboard-year-label">Yıl</label>
+                                <select id="yearSelect" class="year-select">
+                                    <!-- Options will be populated by JS -->
+                                </select>
+                            </div>
+                            <div class="dashboard-range-selector" id="dashboardRangeSelector" style="display:none;">
+                                <label for="rangeStart">Aralık</label>
+                                <input type="month" id="rangeStart">
+                                <span class="range-separator">→</span>
+                                <input type="month" id="rangeEnd">
+                                <button type="button" id="rangeClearBtn" class="range-clear-btn" title="Temizle">✕</button>
+                            </div>
+                            <button type="button" id="rangeToggleBtn" class="dashboard-action-btn" title="Özel tarih aralığı">Özel Aralık</button>
+                        </div>
+                        <div class="dashboard-control-group dashboard-report-actions" aria-label="Rapor ve görünüm işlemleri">
+                            <button type="button" class="dashboard-action-btn export-btn" onclick="exportDashboardExcel()"
+                                title="Seçili yılı Excel'e aktar">
+                                Excel'e Aktar
+                            </button>
+                            <button type="button" class="dashboard-action-btn" onclick="exportDashboardPdf()" title="Dashboard PDF raporu">
+                                PDF Raporu
+                            </button>
+                            <button type="button" class="dashboard-action-btn" onclick="toggleDashboardWidgetConfig()" title="Widget düzeni">
+                                Widget Düzeni
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="section-desc">Seçili dönem için finansal özet, veri yükleme ve rapor işlemleri.</p>
+
+                <!-- Widget Config Panel -->
+                <div class="dashboard-widget-config" id="dashboardWidgetConfig" style="display:none;">
+                    <div class="dashboard-widget-config-header">
+                        <span>Dashboard Widget Düzeni</span>
+                        <button type="button" class="dashboard-widget-config-close" onclick="toggleDashboardWidgetConfig()">✕</button>
+                    </div>
+                    <p class="dashboard-widget-config-desc">Widget'ları sürükleyerek sıralayın veya göster/gizle yapın.</p>
+                    <div class="dashboard-widget-config-list" id="dashboardWidgetConfigList"></div>
+                </div>
+
+                <div class="dashboard-overview-panel" id="dashboardExecutiveSummary">
+                    <div class="dashboard-overview-copy">
+                        <span class="overview-label">Yönetici Özeti</span>
+                        <h3>Genel Finansal Durum</h3>
+                        <p id="dashboardExecutiveText">Seçili dönem için finansal durum yükleniyor.</p>
+                    </div>
+                    <div class="dashboard-overview-grid" id="dashboardExecutiveSignals">
+                        <div class="overview-stat">
+                            <span class="overview-stat-value">-</span>
+                            <span class="overview-stat-label">Kârlılık</span>
+                        </div>
+                        <div class="overview-stat">
+                            <span class="overview-stat-value">-</span>
+                            <span class="overview-stat-label">KDV</span>
+                        </div>
+                        <div class="overview-stat">
+                            <span class="overview-stat-value">-</span>
+                            <span class="overview-stat-label">Trend</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-next-action" id="dashboardNextAction">
+                        <span class="next-action-label">Önerilen aksiyon</span>
+                        <strong>Finansal görünümü kontrol et</strong>
+                    </div>
+                </div>
+
+                <!-- Dashboard Stats Grid -->
+                <div class="dashboard-stats" id="dashboardStats" data-widget-id="widget-stats">
+                    <div class="dashboard-card total-sales">
+                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-dollar-sign"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashTotalSales">₺0</span>
+                            <span class="dashboard-card-label">Toplam Satış</span>
+                            <span class="dashboard-card-hint">Gelir tarafı</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card total-purchase">
+                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-shopping-cart"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashTotalPurchase">₺0</span>
+                            <span class="dashboard-card-label">Toplam Alış</span>
+                            <span class="dashboard-card-hint">Maliyet tabanı</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card total-profit" id="dashProfitCard">
+                        <div class="dashboard-card-icon" id="dashProfitIcon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-trending-up-small"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashTotalProfit">₺0</span>
+                            <span class="dashboard-card-label" id="dashProfitLabel">Brüt Kâr</span>
+                            <span class="dashboard-card-hint">Satış eksi alış</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card total-profit" id="dashNetProfitCard">
+                        <div class="dashboard-card-icon" id="dashNetProfitIcon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-check-circle"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashNetProfit">₺0</span>
+                            <span class="dashboard-card-label" id="dashNetProfitLabel">Net Kâr</span>
+                            <span class="dashboard-card-hint">Gider sonrası sonuç</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card total-analyses">
+                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-file-text"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashTotalAnalyses">0</span>
+                            <span class="dashboard-card-label">Toplam Analiz</span>
+                            <span class="dashboard-card-hint">İş hacmi kapsamı</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card total-expenses" id="dashExpensesCard">
+                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-credit-card"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashTotalExpenses">₺0</span>
+                            <span class="dashboard-card-label">Toplam Gider</span>
+                            <span class="dashboard-card-hint">Operasyon gideri</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card total-customers" id="dashCustomersCard" onclick="switchTab('customers')" role="button" tabindex="0">
+                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-users"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashTotalCustomers">0</span>
+                            <span class="dashboard-card-label">Toplam Müşteri</span>
+                            <span class="dashboard-card-hint">Cari portföy</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-card total-purchase" id="dashSuppliersCard" onclick="switchTab('suppliers')" role="button" tabindex="0">
+                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-shopping-cart"></use></svg></div>
+                        <div class="dashboard-card-content">
+                            <span class="dashboard-card-value" id="dashTotalSuppliers">0</span>
+                            <span class="dashboard-card-label">Toplam Tedarikçi</span>
+                            <span class="dashboard-card-hint">Alış kaynakları</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="dashboard-forecast-widget" id="dashboardForecastWidget" data-widget-id="widget-forecast" onclick="switchTab('predictions')">
+                    <span class="forecast-widget-status" id="dashboardForecastAlert" aria-hidden="true"></span>
+                    <span class="forecast-widget-label">Tahmin Özeti</span>
+                    <strong id="dashboardForecastValue">Yükleniyor</strong>
+                    <span class="forecast-widget-meta">
+                        <span id="dashboardForecastTrend">Trend bekleniyor</span>
+                        <span id="dashboardForecastModel">En iyi model</span>
+                    </span>
+                </button>
+
+                <div class="dashboard-ratios-section" id="dashboardRatiosSection" data-widget-id="widget-ratios" style="display: none;">
+                    <h3>Finansal Sağlık</h3>
+                    <div class="dashboard-ratios-grid" id="dashboardRatiosGrid">
+                        <div class="dashboard-ratio-card">
+                            <span class="ratio-value" id="ratioGrossMargin">-%</span>
+                            <span class="ratio-label">Brüt Kar Marjı</span>
+                            <span class="ratio-desc" id="ratioGrossMarginDesc"></span>
+                        </div>
+                        <div class="dashboard-ratio-card">
+                            <span class="ratio-value" id="ratioNetMargin">-%</span>
+                            <span class="ratio-label">Net Kar Marjı</span>
+                            <span class="ratio-desc" id="ratioNetMarginDesc"></span>
+                        </div>
+                        <div class="dashboard-ratio-card">
+                            <span class="ratio-value" id="ratioExpenseRatio">-%</span>
+                            <span class="ratio-label">Faaliyet Gider Oranı</span>
+                            <span class="ratio-desc" id="ratioExpenseRatioDesc"></span>
+                        </div>
+                        <div class="dashboard-ratio-card">
+                            <span class="ratio-value" id="ratioVatBurden">-%</span>
+                            <span class="ratio-label">KDV Yükü</span>
+                            <span class="ratio-desc" id="ratioVatBurdenDesc"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Net Ciro Section (KDV Hariç) - üstte -->
+                <div class="dashboard-subtotal-section" data-widget-id="widget-subtotal">
+                    <h3>KDV Hariç Ciro (<span id="dashYearDisplayNet">Tüm Yıllar</span>)</h3>
+                    <div class="dashboard-subtotal-grid">
+                        <div class="dashboard-subtotal-item">
+                            <span class="dashboard-subtotal-label">Satış Net Ciro</span>
+                            <span class="dashboard-subtotal-value sales" id="dashSalesSubtotal">₺0</span>
+                            <span class="dashboard-subtotal-hint">Yıllık KDV hariç satış tutarı</span>
+                        </div>
+                        <div class="dashboard-subtotal-item">
+                            <span class="dashboard-subtotal-label">Alış Net Tutar</span>
+                            <span class="dashboard-subtotal-value purchase" id="dashPurchaseSubtotal">₺0</span>
+                            <span class="dashboard-subtotal-hint">Yıllık KDV hariç giren mal</span>
+                        </div>
+                        <div class="dashboard-subtotal-item net">
+                            <span class="dashboard-subtotal-label">Net Fark</span>
+                            <span class="dashboard-subtotal-value" id="dashSubtotalDiff">₺0</span>
+                            <span class="dashboard-subtotal-hint">Satış - Alış (KDV hariç)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kar/Zarar Detaylı Analiz (Aylık Bazlı) -->
+                <div class="dashboard-profit-loss-section" id="dashboardProfitLossSection" data-widget-id="widget-pl" style="display: none;">
+                    <h3>Kar/Zarar Analizi (<span id="dashYearDisplayPL">Tüm Yıllar</span>)</h3>
+                    <div class="dashboard-pl-totals" id="dashboardPLTotals">
+                        <div class="dashboard-pl-total-item">
+                            <span class="dashboard-pl-label">Toplam Satış</span>
+                            <span class="dashboard-pl-value sales" id="plTotalSales">₺0</span>
+                        </div>
+                        <div class="dashboard-pl-total-item">
+                            <span class="dashboard-pl-label">Toplam Alış</span>
+                            <span class="dashboard-pl-value purchase" id="plTotalPurchases">₺0</span>
+                        </div>
+                        <div class="dashboard-pl-total-item">
+                            <span class="dashboard-pl-label">Brüt Kâr</span>
+                            <span class="dashboard-pl-value" id="plGrossProfit">₺0</span>
+                        </div>
+                        <div class="dashboard-pl-total-item">
+                            <span class="dashboard-pl-label">Toplam Gider</span>
+                            <span class="dashboard-pl-value expense" id="plTotalExpenses">₺0</span>
+                        </div>
+                        <div class="dashboard-pl-total-item net">
+                            <span class="dashboard-pl-label">Net Kâr</span>
+                            <span class="dashboard-pl-value" id="plNetProfit">₺0</span>
+                        </div>
+                        <div class="dashboard-pl-total-item">
+                            <span class="dashboard-pl-label">Kâr Marjı</span>
+                            <span class="dashboard-pl-value" id="plProfitMargin">%0</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-pl-table-container">
+                        <table class="dashboard-pl-table" id="dashboardPLTable">
+                            <thead>
+                                <tr>
+                                    <th>Ay</th>
+                                    <th>Satış</th>
+                                    <th>Alış</th>
+                                    <th>Brüt Kâr</th>
+                                    <th>Gider</th>
+                                    <th>Net Kâr</th>
+                                    <th>Marj %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboardPLTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- KDV Summary Dashboard -->
+                <div class="dashboard-kdv-section" data-widget-id="widget-kdv">
+                    <h3>KDV Özeti (<span id="dashYearDisplayKdv">Tüm Yıllar</span>)</h3>
+                    <div class="dashboard-kdv-grid">
+                        <div class="dashboard-kdv-item">
+                            <span class="dashboard-kdv-label">Toplam Satış KDV</span>
+                            <span class="dashboard-kdv-value sales" id="dashTotalSalesTax">₺0</span>
+                            <span class="dashboard-kdv-hint">Satışlardan doğan KDV</span>
+                        </div>
+                        <div class="dashboard-kdv-item">
+                            <span class="dashboard-kdv-label">Toplam Alış KDV</span>
+                            <span class="dashboard-kdv-value purchase" id="dashTotalPurchaseTax">₺0</span>
+                            <span class="dashboard-kdv-hint">Mahsup edilecek KDV</span>
+                        </div>
+                        <div class="dashboard-kdv-item net" id="dashKdvNetItem">
+                            <span class="dashboard-kdv-label" id="dashKdvNetLabel">Net KDV Durumu</span>
+                            <span class="dashboard-kdv-value" id="dashNetTax">₺0</span>
+                            <span class="dashboard-kdv-hint" id="dashKdvNetHint"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Trend Chart -->
+                <div class="dashboard-chart-section" data-widget-id="widget-chart">
+                    <div class="dashboard-chart-header">
+                        <div>
+                            <h3>Satış, Alış ve Net Kâr Trendi</h3>
+                            <span class="dashboard-chart-subtitle" id="dashboardChartSubtitle">Aylık performans karşılaştırması</span>
+                        </div>
+                        <div class="chart-type-selector" id="chartTypeSelector">
+                            <button type="button" class="chart-type-btn active" data-type="line" title="Çizgi Grafik">
+                                Çizgi
+                            </button>
+                            <button type="button" class="chart-type-btn" data-type="bar" title="Bar Grafik">
+                                Bar
+                            </button>
+                            <button type="button" class="chart-type-btn" data-type="pie" title="Pasta Grafik">
+                                Pasta
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="salesTrendChart"></canvas>
+                    </div>
+                    <div class="dashboard-chart-insights" id="dashboardChartInsights"></div>
+                </div>
+
+                <!-- Son Eklenen Analizler -->
+                <div class="dashboard-recent-section" id="dashboardRecentSection" data-widget-id="widget-recent">
+                    <div class="section-subheader">
+                        <h3>Son Eklenen Analizler</h3>
+                        <button type="button" class="dashboard-inline-link" onclick="switchTab('history')">Tümünü Gör</button>
+                    </div>
+                    <ul class="dashboard-recent-list" id="dashboardRecentList"></ul>
+                </div>
+
+                <div class="dashboard-customers-section" id="dashboardCustomersSection" data-widget-id="widget-customers">
+                    <div class="section-subheader">
+                        <h3>Müşteri Yönetimi</h3>
+                        <button type="button" class="dashboard-inline-link" onclick="switchTab('customers')">Müşterilere Git</button>
+                    </div>
+                    <div class="dashboard-customers-grid party-dashboard-grid">
+                        <div class="dashboard-customer-panel">
+                            <span class="dashboard-customer-label">Son Eklenen 5 Müşteri</span>
+                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentCustomersList">
+                                <li class="recent-empty">Henüz müşteri eklenmemiş</li>
+                            </ul>
+                        </div>
+                        <div class="dashboard-customer-panel dashboard-top-customer" id="dashboardTopCustomer">
+                            <span class="dashboard-customer-label">En Yüksek Bakiyeli Müşteri</span>
+                            <strong>-</strong>
+                            <span class="dashboard-customer-balance">₺0</span>
+                        </div>
+                        <div class="dashboard-customer-panel">
+                            <span class="dashboard-customer-label">En Yüksek Hacimli 3 Müşteri</span>
+                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardTopCustomersList">
+                                <li class="recent-empty">Henüz müşteri hareketi yok</li>
+                            </ul>
+                        </div>
+                        <div class="dashboard-customer-panel">
+                            <span class="dashboard-customer-label">En Yüksek Hacimli 3 Tedarikçi</span>
+                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardTopSuppliersList">
+                                <li class="recent-empty">Henüz tedarikçi hareketi yok</li>
+                            </ul>
+                        </div>
+                        <div class="dashboard-customer-panel">
+                            <span class="dashboard-customer-label">Son Eklenen 5 Cari</span>
+                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentPartiesList">
+                                <li class="recent-empty">Henüz cari hareketi yok</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="dashboard-actions" data-widget-id="widget-actions">
+                    <button class="dashboard-action-btn primary" onclick="switchTab('analyze')">
+                        Yeni Analiz Yap
+                    </button>
+                    <button class="dashboard-action-btn" onclick="switchTab('history')">
+                        Geçmişi Görüntüle
+                    </button>
+                </div>
+
+                <!-- Dashboard Empty State -->
+                <div class="dashboard-empty" id="dashboardEmpty" style="display: none;">
+                    <span class="empty-icon">Boş</span>
+                    <p>Henüz analiz yapılmamış</p>
+                    <span class="empty-hint">Satış veya alış dosyanızı yüklediğinizde özet, grafik ve KDV bilgileri burada oluşur.</span>
+                    <button class="analyze-btn btn-push-down" onclick="switchTab('analyze')">
+                        <span>İlk Analizimi Yap</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="customers-section" id="customersSection" style="display: none;">
+                <div class="customers-header">
+                    <div>
+                        <span class="section-kicker">Cari Portföy</span>
+                        <h2>Müşteri Yönetimi</h2>
+                        <p class="section-desc">Müşteri bilgilerini tek yerde tutun; bakiye ve işlem geçmişi alanı fatura modülü için hazır kalsın.</p>
+                    </div>
+                    <button type="button" class="dashboard-action-btn primary" onclick="openCustomerModal()">Yeni Müşteri</button>
+                </div>
+
+                <div class="customers-toolbar">
+                    <label class="sr-only" for="customerSearchInput">Müşteri ara</label>
+                    <input type="search" id="customerSearchInput" class="form-input customer-search-input" placeholder="İsim, e-posta, telefon veya vergi no ara">
+                    <select id="customerBalanceFilter" class="form-input">
+                        <option value="all">Tüm bakiyeler</option>
+                        <option value="positive">Alacak bakiyesi</option>
+                        <option value="negative">Borç bakiyesi</option>
+                        <option value="zero">Bakiyesi sıfır</option>
+                    </select>
+                    <select id="customerSortSelect" class="form-input">
+                        <option value="created_desc">En yeni</option>
+                        <option value="created_asc">En eski</option>
+                        <option value="name_asc">İsim A-Z</option>
+                        <option value="name_desc">İsim Z-A</option>
+                        <option value="balance_desc">Bakiye yüksek</option>
+                        <option value="balance_asc">Bakiye düşük</option>
+                    </select>
+                </div>
+
+                <div class="customers-grid" id="customersGrid"></div>
+                <div class="customers-empty" id="customersEmpty" style="display: none;">
+                    <span class="empty-icon">Boş</span>
+                    <p>Henüz müşteri eklenmemiş</p>
+                    <span class="empty-hint">İlk müşteriyi ekleyerek cari portföyünüzü oluşturmaya başlayın.</span>
+                    <button type="button" class="dashboard-action-btn primary" onclick="openCustomerModal()">Müşteri Ekle</button>
+                </div>
+
+                <div class="business-party-panel">
+                    <div class="section-subheader">
+                        <div>
+                            <h3>Excel Hareketlerinden Müşteriler</h3>
+                            <p class="section-desc">Satış faturalarından otomatik çıkarılan müşteri hacmi ve son işlem bilgisi.</p>
+                        </div>
+                    </div>
+                    <div class="business-party-filters">
+                        <input type="search" id="customerPartySearchInput" class="form-input" placeholder="Müşteri adı ara">
+                        <input type="month" id="customerPartyDateFrom" class="form-input" aria-label="Başlangıç ayı">
+                        <input type="month" id="customerPartyDateTo" class="form-input" aria-label="Bitiş ayı">
+                        <input type="number" id="customerPartyMinVolume" class="form-input" min="0" step="100" placeholder="Min. hacim">
+                        <select id="customerPartySortSelect" class="form-input">
+                            <option value="volume_desc">Hacim yüksek</option>
+                            <option value="volume_asc">Hacim düşük</option>
+                            <option value="name_asc">İsim A-Z</option>
+                            <option value="name_desc">İsim Z-A</option>
+                            <option value="recent_desc">Son işlem</option>
+                        </select>
+                    </div>
+                    <div class="business-party-table-wrap">
+                        <table class="business-party-table">
+                            <thead>
+                                <tr>
+                                    <th>Müşteri</th>
+                                    <th>İşlem Hacmi</th>
+                                    <th>İşlem</th>
+                                    <th>Son İşlem</th>
+                                    <th>Bakiye</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customerPartyTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="customers-empty" id="customerPartyEmpty" style="display: none;">
+                        <span class="empty-icon">Boş</span>
+                        <p>Henüz müşteri bulunamadı. Excel dosyası yükleyerek otomatik ekleyebilirsiniz.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="customers-section" id="suppliersSection" style="display: none;">
+                <div class="customers-header">
+                    <div>
+                        <span class="section-kicker">Alış Kaynakları</span>
+                        <h2>Tedarikçiler</h2>
+                        <p class="section-desc">Alış faturalarından otomatik çıkarılan tedarikçi hacmi, bakiye ve hareketleri.</p>
+                    </div>
+                    <button type="button" class="dashboard-action-btn primary" onclick="switchTab('analyze')">Excel Yükle</button>
+                </div>
+
+                <div class="business-party-panel">
+                    <div class="business-party-filters">
+                        <input type="search" id="supplierPartySearchInput" class="form-input" placeholder="Tedarikçi adı ara">
+                        <input type="month" id="supplierPartyDateFrom" class="form-input" aria-label="Başlangıç ayı">
+                        <input type="month" id="supplierPartyDateTo" class="form-input" aria-label="Bitiş ayı">
+                        <input type="number" id="supplierPartyMinVolume" class="form-input" min="0" step="100" placeholder="Min. hacim">
+                        <select id="supplierPartySortSelect" class="form-input">
+                            <option value="volume_desc">Hacim yüksek</option>
+                            <option value="volume_asc">Hacim düşük</option>
+                            <option value="name_asc">İsim A-Z</option>
+                            <option value="name_desc">İsim Z-A</option>
+                            <option value="recent_desc">Son işlem</option>
+                        </select>
+                    </div>
+                    <div class="business-party-table-wrap">
+                        <table class="business-party-table">
+                            <thead>
+                                <tr>
+                                    <th>Tedarikçi</th>
+                                    <th>İşlem Hacmi</th>
+                                    <th>İşlem</th>
+                                    <th>Son İşlem</th>
+                                    <th>Bakiye</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supplierPartyTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="customers-empty" id="supplierPartyEmpty" style="display: none;">
+                        <span class="empty-icon">Boş</span>
+                        <p>Henüz tedarikçi bulunamadı. Excel dosyası yükleyerek otomatik ekleyebilirsiniz.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="party-detail-section" id="partyDetailSection" style="display: none;">
+                <div class="customers-header">
+                    <div>
+                        <span class="section-kicker" id="partyDetailKicker">Cari Detay</span>
+                        <h2 id="partyDetailTitle">Cari Detay</h2>
+                        <p class="section-desc" id="partyDetailSubtitle">Aylık hacim, trend, bakiye ve hareket dökümü.</p>
+                    </div>
+                    <button type="button" class="dashboard-action-btn" onclick="backToPartyList()">Geri</button>
+                </div>
+                <div class="party-metrics-grid">
+                    <div class="party-metric-card"><span>Toplam Hacim</span><strong id="partyTotalVolume">₺0</strong></div>
+                    <div class="party-metric-card"><span>Net Bakiye</span><strong id="partyBalance">₺0</strong></div>
+                    <div class="party-metric-card"><span>Son İşlem</span><strong id="partyLastTransaction">-</strong></div>
+                    <div class="party-metric-card"><span>Ortalama Tutar</span><strong id="partyAverageAmount">₺0</strong></div>
+                </div>
+                <div class="party-charts-grid">
+                    <div class="dashboard-chart-card">
+                        <div class="section-subheader"><h3>Aylık İşlem Hacmi</h3></div>
+                        <div class="chart-container"><canvas id="partyMonthlyChart"></canvas></div>
+                    </div>
+                    <div class="dashboard-chart-card">
+                        <div class="section-subheader"><h3>Son 12 Ay Trend</h3></div>
+                        <div class="chart-container"><canvas id="partyTrendChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="business-party-panel">
+                    <div class="section-subheader"><h3>Hareket Dökümü</h3></div>
+                    <div class="business-party-table-wrap">
+                        <table class="business-party-table">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Fatura Türü</th>
+                                    <th>Tutar</th>
+                                    <th>KDV</th>
+                                    <th>Açıklama</th>
+                                </tr>
+                            </thead>
+                            <tbody id="partyTransactionsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Expenses Section (Gider) -->
+            <section class="expenses-section" id="expensesSection" style="display: none;">
+                <div class="expenses-header">
+                    <div class="expenses-header-left">
+                        <span class="section-kicker">Margin Control</span>
+                        <h2>Gider Yönetimi</h2>
+                        <p class="section-desc">Sabit ve değişken giderlerinizi dönem bazlı takip edin, net kâr
+                            marjınızı analiz edin.</p>
+                    </div>
+                    <div class="expenses-header-right">
+                        <div class="expenses-period-selector">
+                            <div class="expenses-period-group">
+                                <label for="expenseLocalYear">Yıl</label>
+                                <select id="expenseLocalYear" class="year-select" aria-label="Yıl">
+                                    <option value="">Yıl seçin</option>
+                                </select>
+                            </div>
+                            <div class="expenses-period-group">
+                                <label for="expenseLocalMonth">Ay</label>
+                                <select id="expenseLocalMonth" class="month-select" aria-label="Ay">
+                                    <option value="all">Tüm yıl</option>
+                                    <option value="1">Ocak</option>
+                                    <option value="2">Şubat</option>
+                                    <option value="3">Mart</option>
+                                    <option value="4">Nisan</option>
+                                    <option value="5">Mayıs</option>
+                                    <option value="6">Haziran</option>
+                                    <option value="7">Temmuz</option>
+                                    <option value="8">Ağustos</option>
+                                    <option value="9">Eylül</option>
+                                    <option value="10">Ekim</option>
+                                    <option value="11">Kasım</option>
+                                    <option value="12">Aralık</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="expenses-overview-banner">
+                    <div class="expenses-overview-copy">
+                        <span class="overview-label">Gider Kontrolü</span>
+                        <h3>Brüt kârı, gider yapısını ve net sonucu aynı çalışma alanında yönetin.</h3>
+                    </div>
+                    <div class="expenses-overview-points">
+                        <span class="overview-point">Sabit ve değişken kırılım</span>
+                        <span class="overview-point">Dönem bazlı marj takibi</span>
+                        <span class="overview-point">Hızlı veri girişi</span>
+                    </div>
+                </div>
+
+                <div class="expenses-period-summary" id="expensesPeriodSummary" aria-live="polite">
+                    <div>
+                        <span class="period-summary-label">Seçili dönem</span>
+                        <strong id="expensePeriodLabel">-</strong>
+                    </div>
+                    <div>
+                        <span class="period-summary-label">Sabit</span>
+                        <strong id="expensePeriodFixedTotal">₺0</strong>
+                    </div>
+                    <div>
+                        <span class="period-summary-label">Değişken</span>
+                        <strong id="expensePeriodVariableTotal">₺0</strong>
+                    </div>
+                    <div>
+                        <span class="period-summary-label">Toplam</span>
+                        <strong id="expensePeriodCombinedTotal">₺0</strong>
+                    </div>
+                </div>
+
+                <!-- Summary Cards (Dashboard Style) -->
+                <div class="expenses-summary-cards">
+                    <div class="expenses-summary-card gross">
+                        <div class="expenses-card-icon">BK</div>
+                        <div class="expenses-card-content">
+                            <span class="expenses-card-value" id="expenseSummaryGross">₺0</span>
+                            <span class="expenses-card-label">Brüt Kâr</span>
+                        </div>
+                    </div>
+                    <div class="expenses-summary-card fixed">
+                        <div class="expenses-card-icon">SG</div>
+                        <div class="expenses-card-content">
+                            <span class="expenses-card-value" id="expenseSummaryFixed">₺0</span>
+                            <span class="expenses-card-label">Sabit Giderler</span>
+                        </div>
+                    </div>
+                    <div class="expenses-summary-card variable">
+                        <div class="expenses-card-icon">DG</div>
+                        <div class="expenses-card-content">
+                            <span class="expenses-card-value" id="expenseSummaryVariable">₺0</span>
+                            <span class="expenses-card-label">Değişken Giderler</span>
+                        </div>
+                    </div>
+                    <div class="expenses-summary-card net">
+                        <div class="expenses-card-icon" id="expenseNetIcon">NK</div>
+                        <div class="expenses-card-content">
+                            <span class="expenses-card-value" id="expenseSummaryNet">₺0</span>
+                            <span class="expenses-card-label" id="expenseNetLabel">Net Kâr</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart + Blocks Layout -->
+                <div class="expenses-main-layout">
+                    <!-- Pie Chart -->
+                    <div class="expenses-chart-section">
+                        <h3>Gider Dağılımı</h3>
+                        <div class="expenses-chart-container">
+                            <canvas id="expensesPieChart"></canvas>
+                            <div class="expenses-chart-empty" id="expensesChartEmpty" style="display: none;">
+                                <span class="empty-icon">Grafik</span>
+                                <p>Gider ekledikçe dağılım burada görünür</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expense Blocks -->
+                    <div class="expenses-blocks-container">
+                        <!-- Fixed Expenses Block -->
+                        <div class="expenses-block-card">
+                            <div class="expenses-block-header">
+                                <div class="expenses-block-title">
+                                    <span class="expenses-block-icon">SG</span>
+                                    <h3>Sabit Giderler</h3>
+                                </div>
+                                <span class="expenses-block-hint">Kira, sigorta, maaş gibi her ay düzenli
+                                    ödemeler</span>
+                            </div>
+                            <div class="expense-rows" id="expenseFixedRows"></div>
+                            <button type="button" class="expense-add-row-btn" id="expenseFixedAdd">
+                                <span class="add-icon">+</span> Sabit gider ekle
+                            </button>
+                            <div class="expense-subtotal">
+                                <span class="expense-subtotal-label">Sabit Gider Toplamı</span>
+                                <span class="expense-subtotal-value" id="expenseFixedSubtotal">₺0</span>
+                            </div>
+                        </div>
+
+                        <!-- Variable Expenses Block -->
+                        <div class="expenses-block-card">
+                            <div class="expenses-block-header">
+                                <div class="expenses-block-title">
+                                    <span class="expenses-block-icon">DG</span>
+                                    <h3>Değişken Giderler</h3>
+                                </div>
+                                <span class="expenses-block-hint">Elektrik, yakıt, pazarlama gibi aydan aya değişen
+                                    maliyetler</span>
+                            </div>
+                            <div class="expense-rows" id="expenseVariableRows"></div>
+                            <button type="button" class="expense-add-row-btn" id="expenseVariableAdd">
+                                <span class="add-icon">+</span> Değişken gider ekle
+                            </button>
+                            <div class="expense-subtotal">
+                                <span class="expense-subtotal-label">Değişken Gider Toplamı</span>
+                                <span class="expense-subtotal-value" id="expenseVariableSubtotal">₺0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="topn-analysis-container" id="topnAnalysisContainer" style="display: none;">
+                    <!-- Pareto Analysis -->
+                    <div class="topn-pareto-card">
+                        <h3>Pareto Analizi (80/20)</h3>
+                        <p class="pareto-summary" id="paretoSummary">İlk 5 firma toplam cironun %0'ını oluşturuyor</p>
+                        <div class="pareto-progress-container">
+                            <div class="pareto-progress-bar" id="paretoProgressBar" style="width: 0%"></div>
+                        </div>
+                        <div class="chart-container chart-container-pareto">
+                            <canvas id="topnParetoChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Trend Chart -->
+                    <div class="topn-trend-card" id="topnTrendCard" style="display: none;">
+                        <h3 id="topnTrendTitle">Aylık Trend</h3>
+                        <div class="chart-container chart-container-pareto">
+                            <canvas id="topnTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Comparison Section (New Standalone Page) -->
+            <section class="compare-section" id="compareSection" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title-block">
+                        <span class="section-kicker">Year-over-Year Intelligence</span>
+                        <h2>Yıl Karşılaştırma</h2>
+                    </div>
+                </div>
+                <p class="section-desc">İki yılın satış, maliyet ve net kâr değişimini aylık görünümle karşılaştırın.</p>
+
+                <!-- Year Selection Controls -->
+                <div class="compare-controls-main">
+                    <div class="compare-year-card">
+                        <span class="compare-year-label">Birinci Yıl</span>
+                        <select id="compareYear1" class="year-select-large"></select>
+                    </div>
+                    <div class="compare-vs-column">
+                        <span class="compare-control-spacer" aria-hidden="true">Birinci Yıl</span>
+                        <div class="compare-vs-badge">VS</div>
+                    </div>
+                    <div class="compare-year-card">
+                        <span class="compare-year-label">İkinci Yıl</span>
+                        <select id="compareYear2" class="year-select-large"></select>
+                    </div>
+                    <div class="compare-action-column">
+                        <span class="compare-control-spacer" aria-hidden="true">Birinci Yıl</span>
+                        <button type="button" class="compare-btn" onclick="loadCompare()">
+                            Karşılaştır
+                        </button>
+                    </div>
+                </div>
+
+                <!-- YoY Delta Cards -->
+                <div class="compare-delta-grid" id="compareDeltaCards" style="display: none;">
+                    <div class="compare-delta-card" id="compareSalesDeltaCard">
+                        <span class="compare-delta-label">Satış Farkı</span>
+                        <strong id="compareSalesDeltaValue">-</strong>
+                        <small id="compareSalesDeltaMeta">-</small>
+                    </div>
+                    <div class="compare-delta-card" id="compareCostDeltaCard">
+                        <span class="compare-delta-label">Maliyet Farkı</span>
+                        <strong id="compareCostDeltaValue">-</strong>
+                        <small id="compareCostDeltaMeta">-</small>
+                    </div>
+                    <div class="compare-delta-card" id="compareNetDeltaCard">
+                        <span class="compare-delta-label">Net Kâr Farkı</span>
+                        <strong id="compareNetDeltaValue">-</strong>
+                        <small id="compareNetDeltaMeta">-</small>
+                    </div>
+                </div>
+
+                <!-- Monthly Grouped Chart -->
+                <div class="compare-chart-section" id="compareChartSection" style="display: none;">
+                    <div class="compare-widget-header">
+                        <div>
+                            <span class="section-kicker">Aylık Performans</span>
+                            <h3>Satış ve Alış Karşılaştırması</h3>
+                        </div>
+                        <span class="compare-chart-meta" id="compareChartMeta">-</span>
+                    </div>
+                    <div class="compare-chart-wrap">
+                        <canvas id="compareMonthlyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Monthly Comparison Table -->
+                <div class="compare-monthly-section" id="compareMonthlySection" style="display: none;">
+                    <div class="compare-widget-header">
+                        <div>
+                            <span class="section-kicker">Detay Tablo</span>
+                            <h3>Aylık Satış Karşılaştırması</h3>
+                        </div>
+                    </div>
+                    <div class="compare-table-wrap">
+                        <table class="compare-table monthly-table" id="compareMonthlyTable">
+                            <thead>
+                                <tr>
+                                    <th>Ay</th>
+                                    <th id="compareMonthY1Label">-</th>
+                                    <th id="compareMonthY2Label">-</th>
+                                    <th>Fark</th>
+                                    <th>Büyüme %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compareMonthlyBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="compare-empty" id="compareEmpty">
+                    <span class="empty-icon">Karşılaştır</span>
+                    <p>Yıl seçerek karşılaştırma yapın</p>
+                    <span class="empty-hint">Yukarıdaki menüden iki farklı yıl seçip "Karşılaştır" butonuna
+                        tıklayın</span>
+                </div>
+            </section>
+
+            <!-- Predictions Section -->
+            <section class="prediction-section" id="predictionsSection" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title-block">
+                        <span class="section-kicker">Karar Masası</span>
+                        <h2>Tahminler</h2>
+                        <span class="beta-badge">BETA</span>
+                    </div>
+                    <div class="prediction-filter-bar prediction-command-bar" aria-label="Tahmin filtreleri">
+                        <label class="prediction-filter-field" for="predictionPeriodSelect">
+                            <span>Dönem</span>
+                            <select id="predictionPeriodSelect" class="predictions-layout-select">
+                                <option value="12">Son 12 ay</option>
+                                <option value="6">Son 6 ay</option>
+                                <option value="all">Tüm veri</option>
+                            </select>
+                        </label>
+                        <label class="prediction-filter-field" for="predictionModelSelect">
+                            <span>Model</span>
+                            <select id="predictionModelSelect" class="predictions-layout-select">
+                                <option value="auto">En İyi Model</option>
+                                <option value="linear">Linear Regresyon</option>
+                                <option value="exponentialSmoothing">Exponential Smoothing</option>
+                                <option value="holtWinters">Holt-Winters</option>
+                                <option value="arima">ARIMA</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <p class="section-desc">Satış ritmi, risk sinyalleri, model güveni ve aksiyon önerilerini tek karar ekranında izleyin.</p>
+
+                <div class="prediction-main-card" id="predictionMainCard">
+                    <!-- Loading state -->
+                    <div class="prediction-loading">
+                        <span class="loading-spinner">•</span>
+                        <p>Veriler analiz ediliyor...</p>
+                    </div>
+
+                    <!-- Content (hidden by default) -->
+                    <div class="prediction-content" style="display: none;">
+
+                        <div class="prediction-feedback-card" id="predictionFeedbackCard">
+                            <div class="prediction-feedback-main">
+                                <span class="prediction-section-label">Operasyon Sinyali</span>
+                                <h3 id="accountantFeedbackSummary">Tahmin özeti hazırlanıyor.</h3>
+                                <p id="accountantFeedbackAction">Satış verileri okunduktan sonra aksiyon önerisi burada görünür.</p>
+                                <p class="prediction-critical-warning" id="accountantFeedbackWarning" style="display:none;"></p>
+                            </div>
+                            <div class="prediction-feedback-grid">
+                                <div>
+                                    <span>Güven Aralığı</span>
+                                    <strong id="accountantFeedbackInterval">-</strong>
+                                </div>
+                                <div>
+                                    <span>Trend Şiddeti</span>
+                                    <strong id="accountantFeedbackTrend">-</strong>
+                                </div>
+                                <div>
+                                    <span>Mevsimsellik</span>
+                                    <strong id="accountantFeedbackSeasonality">-</strong>
+                                </div>
+                                <div>
+                                    <span>Geçen Yıl</span>
+                                    <strong id="accountantFeedbackComparison">-</strong>
+                                </div>
+                                <div>
+                                    <span>Seçilen Model</span>
+                                    <strong id="accountantFeedbackModel">-</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Executive Summary -->
+                        <div class="prediction-executive-hero" id="ceoSummaryCard">
+                            <div class="prediction-executive-main">
+                                <span class="prediction-section-label">3 Aylık Karar Özeti</span>
+                                <h3>Beklenti, risk ve güven tek bakışta</h3>
+                                <p class="ceo-summary-text" id="ceoSummaryText"></p>
+                                <div class="prediction-primary-insight" id="execPrimaryInsight">
+                                    Analiz tamamlandığında en önemli içgörü burada görünecek.
+                                </div>
+                                <p class="prediction-why-line" id="execWhyLine">
+                                    Model çıktısı, yakın dönem satış ritmi, risk skoru ve veri kalitesi birlikte değerlendirilerek oluşturulur.
+                                </p>
+                            </div>
+                            <div class="prediction-executive-side">
+                                <div class="prediction-exec-metric">
+                                    <span class="prediction-exec-label">3 Aylık Satış Beklentisi</span>
+                                    <strong id="execTotalExpectation">-</strong>
+                                </div>
+                                <div class="prediction-exec-mini-grid">
+                                    <div class="prediction-exec-mini">
+                                        <span>Beklenen Değişim</span>
+                                        <strong id="execGrowth">-</strong>
+                                    </div>
+                                    <div class="prediction-exec-mini">
+                                        <span>Risk Seviyesi</span>
+                                        <strong id="execRisk">-</strong>
+                                    </div>
+                                    <div class="prediction-exec-mini">
+                                        <span>Model Güveni</span>
+                                        <strong id="execConfidence">-</strong>
+                                    </div>
+                                    <div class="prediction-exec-mini">
+                                        <span>Veri Kalitesi</span>
+                                        <strong id="execDataQuality">-</strong>
+                                    </div>
+                                </div>
+                                <div class="ceo-outlook" id="ceoOutlook">
+                                    <span class="outlook-label">Piyasa Görünümü:</span>
+                                    <span class="outlook-value" id="outlookValue"></span>
+                                </div>
+                                <button type="button" class="dashboard-action-btn primary" id="refreshPredictionsBtn"
+                                    title="Tahminleri güncel verilerle yeniden hesapla">
+                                    <span>Tahminleri Güncelle</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Top Stats Grid -->
+                        <div class="prediction-stats-grid prediction-grid">
+                            <div class="pred-stat-card card" title="Önümüzdeki 3 tahmin ayının toplam satış beklentisi.">
+                                <span class="pred-stat-label">Toplam Beklenti</span>
+                                <span class="pred-stat-value" id="predAmount">₺0</span>
+                                <span class="prediction-trend" id="predTrend">
+                                    <span class="trend-icon">-</span>
+                                    <span class="trend-text">-</span>
+                                </span>
+                                <span class="pred-stat-hint" id="predAmountHint">3 aylık satış projeksiyonu</span>
+                            </div>
+
+                            <div class="pred-stat-card card" title="Son veri ritmine göre beklenen ortalama aylık büyüme.">
+                                <span class="pred-stat-label">Ort. Aylık Büyüme</span>
+                                <span class="pred-stat-value" id="predGrowth">0%</span>
+                                <span class="pred-stat-hint" id="predGrowthHint">Yakın dönem trendi</span>
+                            </div>
+
+                            <div class="pred-stat-card card" title="Modelin geçmiş veriyi açıklama ve tahmin üretme güven düzeyi.">
+                                <span class="pred-stat-label">Tahmin Güven Oranı</span>
+                                <span class="pred-stat-value" id="predConfidence">0%</span>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" id="predConfidenceBar" style="width: 0%"></div>
+                                </div>
+                                <span class="pred-stat-hint" id="predConfidenceHint">Model açıklama gücü</span>
+                            </div>
+
+                            <div class="pred-stat-card card risk-card" id="riskCard" title="Tahmin dönemindeki genel belirsizlik seviyesi.">
+                                <span class="pred-stat-label">Risk Seviyesi</span>
+                                <span class="pred-stat-value" id="riskLevel">-</span>
+                                <div class="risk-indicator" id="riskIndicator"></div>
+                                <span class="pred-stat-hint" id="riskLevelHint">Risk skoru bekleniyor</span>
+                            </div>
+
+                            <div class="pred-stat-card card break-even-card" id="breakEvenCard" title="Aylık sabit ve değişken giderlere göre başabaş satış eşiği.">
+                                <span class="pred-stat-label">Başabaş Durumu</span>
+                                <span class="pred-stat-value" id="breakEvenAmount">-</span>
+                                <span class="pred-stat-hint" id="breakEvenHint"></span>
+                            </div>
+
+                            <div class="pred-stat-card card seasonality-card" id="seasonalityCard" title="Satışlarda tekrar eden dönemsel hareket olup olmadığı.">
+                                <span class="pred-stat-label">Mevsimsellik</span>
+                                <span class="pred-stat-value" id="seasonalityStatus">-</span>
+                                <span class="pred-stat-hint" id="seasonalityHint"></span>
+                            </div>
+                        </div>
+
+                        <div class="forecast-horizon-grid" id="forecastHorizonGrid" aria-label="Tahmin dönemleri"></div>
+
+                        <div class="model-comparison-card pred-card" id="modelComparisonCard">
+                            <div class="model-comparison-header">
+                                <div>
+                                    <span class="prediction-section-label">Model Seçimi</span>
+                                    <h3>Model Karşılaştırması</h3>
+                                </div>
+                                <span id="modelSelectionReason">En iyi model hesaplanıyor.</span>
+                            </div>
+                            <div class="model-comparison-table-wrap">
+                                <table class="model-comparison-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Model</th>
+                                            <th>MAE</th>
+                                            <th>RMSE</th>
+                                            <th>MAPE</th>
+                                            <th>Durum</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="modelComparisonBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="predictions-canvas" id="predictionsCanvas">
+                            <div class="predictions-layout" id="predictionsGrid">
+                                <div class="prediction-table-container pred-card pred-table" draggable="true"
+                                    data-card-id="table">
+                                    <span class="prediction-section-label">A) Tahmin</span>
+                                    <h3>3 Aylık Satış Tahmini</h3>
+                                    <table class="prediction-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ay</th>
+                                                <th>Satış</th>
+                                                <th>Alış</th>
+                                                <th>Brüt Kâr</th>
+                                                <th>Değişim</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="predictionTableBody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="prediction-chart-container pred-card pred-chart" draggable="true"
+                                    data-card-id="chart">
+                                    <span class="prediction-section-label">B) Trend</span>
+                                    <h3>Satış ve Kâr Eğilimi</h3>
+                                    <div class="pred-chart-canvas-wrap">
+                                        <canvas id="predictionChart"></canvas>
+                                    </div>
+                                    <div class="prediction-chart-empty" id="predictionChartEmpty" style="display:none;">
+                                        Bu grafik için yeterli geçmiş veri bulunamadı. Daha güvenilir görünüm için en az 6–12 aylık düzenli satış verisi önerilir.
+                                    </div>
+                                    <div class="prediction-chart-insights" id="predictionChartInsights">
+                                        <strong>Grafikten çıkan ana sinyal</strong>
+                                        <ul id="predictionChartInsightList"></ul>
+                                    </div>
+                                </div>
+
+                                <div class="risk-factors-card pred-card" id="riskFactorsCard" draggable="true"
+                                    data-card-id="risk-factors" style="display: none;">
+                                    <span class="prediction-section-label">C) Risk</span>
+                                    <h3>Risk Öncelikleri</h3>
+                                    <div class="risk-score-summary" id="riskScoreSummary"></div>
+                                    <div class="risk-factors-list" id="riskFactorsList"></div>
+                                </div>
+
+                                <div class="scenarios-card pred-card" id="scenariosCard" draggable="true"
+                                    data-card-id="scenarios" style="display: none;">
+                                    <span class="prediction-section-label">D) Senaryo</span>
+                                    <h3>Senaryo Analizi</h3>
+                                    <p class="scenarios-hint">Kötümser, baz ve iyimser görünüm; geçmiş tahmin sapmalarına göre hesaplanır.</p>
+                                    <div class="scenario-cards" id="scenarioCards"></div>
+                                </div>
+
+                                <div class="financial-health-card pred-card" id="financialHealthCard" draggable="true"
+                                    data-card-id="financial-health" style="display: none;">
+                                    <span class="prediction-section-label">E) Finansal Göstergeler</span>
+                                    <h3>Finansal Sağlık Göstergeleri</h3>
+                                    <div class="fhealth-grid" id="financialHealthGrid"></div>
+                                </div>
+
+                                <div class="growth-metrics-card pred-card" id="growthMetricsCard" draggable="true"
+                                    data-card-id="growth-metrics" style="display: none;">
+                                    <span class="prediction-section-label">E) Finansal Göstergeler</span>
+                                    <h3>Büyüme & Momentum</h3>
+                                    <div class="growth-grid" id="growthMetricsGrid"></div>
+                                </div>
+
+                                <div class="decision-impact-card pred-card" id="decisionImpactCard" draggable="true"
+                                    data-card-id="decision-impact" style="display: none;">
+                                    <span class="prediction-section-label">F) Karar Etkisi</span>
+                                    <h3>Karar Etkisi</h3>
+                                    <div class="decision-impact-grid" id="decisionImpactGrid"></div>
+                                </div>
+
+                                <div class="ceo-actions pred-card" id="ceoActions" draggable="true"
+                                    data-card-id="actions">
+                                    <span class="prediction-section-label">G) Aksiyon</span>
+                                    <h3>Aksiyon Planı</h3>
+                                    <div class="action-items prediction-grid" id="actionItemsList"></div>
+                                </div>
+
+                                <div class="cfo-missing-areas pred-card" id="cfoMissingAreas" draggable="true"
+                                    data-card-id="cfo-missing" style="display: none;">
+                                    <span class="prediction-section-label">G) Aksiyon</span>
+                                    <h3>CFO Analizi - İyileştirme Alanları</h3>
+                                    <div class="missing-areas-list prediction-grid" id="missingAreasList"></div>
+                                </div>
+
+                            </div>
+
+                            <details class="prediction-details-panel" id="predictionModelDetails">
+                                <summary>
+                                    <span>
+                                        <strong>Model ve Veri Detayları</strong>
+                                        <small>Veri kalitesi, model açıklaması ve teknik metrikler</small>
+                                    </span>
+                                </summary>
+                                <div class="prediction-details-grid">
+                                    <div class="data-quality-card pred-card" id="dataQualityCard" style="display: none;">
+                                        <span class="prediction-section-label">H) Model Güvenilirliği</span>
+                                        <h3>Veri Kalitesi</h3>
+                                        <div class="data-quality-grid" id="dataQualityGrid"></div>
+                                    </div>
+
+                                    <div class="model-explain-card pred-card" id="modelExplainCard" style="display: none;">
+                                        <span class="prediction-section-label">H) Model Güvenilirliği</span>
+                                        <h3>Model Açıklaması</h3>
+                                        <div class="model-explain-list" id="modelExplainList"></div>
+                                    </div>
+
+                                    <div class="business-stats-card pred-card prediction-technical-card" id="businessStatsCard" style="display: none;">
+                                        <span class="prediction-section-label">I) Teknik Detaylar</span>
+                                        <h3>İstatistiksel Analiz</h3>
+                                        <div class="bstat-subtabs">
+                                            <button type="button" class="bstat-subtab active" data-bstat="sales">Satış</button>
+                                            <button type="button" class="bstat-subtab" data-bstat="purchase">Alış</button>
+                                            <button type="button" class="bstat-subtab" data-bstat="profit">Brüt Kâr</button>
+                                        </div>
+                                        <div class="bstat-body">
+                                            <div class="bstat-grid" id="bstatSalesGrid"></div>
+                                            <div class="bstat-grid" id="bstatPurchaseGrid" style="display:none;"></div>
+                                            <div class="bstat-grid" id="bstatProfitGrid" style="display:none;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="regression-quality-card pred-card" id="regressionQualityCard" style="display: none;">
+                                        <span class="prediction-section-label">I) Teknik Detaylar</span>
+                                        <h3>Model Kalitesi</h3>
+                                        <div class="regq-grid" id="regressionQualityGrid"></div>
+                                        <p class="regq-interpretation" id="regressionInterpretation"></p>
+                                    </div>
+                                </div>
+
+                                <div class="prediction-metrics-guide" id="predictionMetricsGuide">
+                                    <h3>Kısaltma Kılavuzu</h3>
+                                    <div class="metrics-guide-grid">
+                                        <div><strong>MoM</strong><span>Bir önceki aya göre değişim.</span></div>
+                                        <div><strong>QoQ</strong><span>Son 3 ayın önceki 3 aya göre değişimi.</span></div>
+                                        <div><strong>YoY</strong><span>Aynı ayın önceki yıla göre değişimi.</span></div>
+                                        <div><strong>CMGR</strong><span>Bileşik aylık büyüme oranı.</span></div>
+                                        <div><strong>CV</strong><span>Varyasyon katsayısı; oynaklığı gösterir.</span></div>
+                                        <div><strong>R²</strong><span>Modelin verideki hareketi açıklama oranı.</span></div>
+                                        <div><strong>SEE</strong><span>Tahmin modelinin standart hata tutarı.</span></div>
+                                        <div><strong>P10</strong><span>Kötümser senaryo; veriye göre düşük olasılık bandı.</span></div>
+                                        <div><strong>P50</strong><span>Baz senaryo; orta değer projeksiyonu.</span></div>
+                                        <div><strong>P90</strong><span>İyimser senaryo; üst olasılık bandı.</span></div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prediction-info">
+                    <p><strong>Not:</strong> Bu alan yön vermek için hazırlanır; sonuçlar geçmiş verinin istatistiksel
+                        okumalarına dayanır ve gerçek piyasa koşullarıyla birlikte değerlendirilmelidir.</p>
+                </div>
+
+            </section>
+
+            <!-- Top N Section -->
+            <section class="topn-section" id="topnSection" style="display: none;">
+                <div class="section-header">
+                    <div class="section-title-block">
+                        <span class="section-kicker">Performance Rankings</span>
+                        <h2>En Çok Satılan Firmalar ve Ürünler</h2>
+                    </div>
+                </div>
+                <div class="topn-overview-banner">
+                    <div class="topn-overview-copy">
+                        <span class="overview-label">Öne Çıkanlar</span>
+                        <p>En yüksek hacmi oluşturan müşteri ve tedarikçileri tek bakışta görün; yoğunlaşma risklerini ve lider hesapları daha hızlı fark edin.</p>
+                    </div>
+                    <div class="topn-overview-points">
+                        <span class="overview-point">Yıl bazlı sıralama ve dağılım görünürlüğü</span>
+                        <span class="overview-point">İlk 3 için daha belirgin liderlik hissi</span>
+                        <span class="overview-point">Operasyon toplantılarında hızlı referans ekranı</span>
+                    </div>
+                </div>
+
+                <div class="topn-filters">
+                    <div class="filter-group">
+                        <label for="topnYear">Yıl:</label>
+                        <select id="topnYear" onchange="loadTopNData()">
+                        </select>
+                    </div>
+                    <div class="topn-stats" id="topnStats" style="display: none;">
+                        <span class="topn-stat-badge" id="topnAvgOrderSize">Ortalama İşlem: ₺0</span>
+                    </div>
+                </div>
+
+                <div class="topn-container">
+                    <!-- Top Customers -->
+                    <div class="topn-panel">
+                        <div class="topn-panel-header">
+                            <h3>En Çok Satış Yapılan Firmalar</h3>
+                        </div>
+                        <div class="topn-list" id="topnCustomersList">
+                            <div class="loading-skeleton">
+                                <div class="skeleton-row"></div>
+                                <div class="skeleton-row"></div>
+                                <div class="skeleton-row"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Products -->
+                    <div class="topn-panel">
+                        <div class="topn-panel-header">
+                            <h3>En Çok Alınan Tedarikçiler</h3>
+                        </div>
+                        <div class="topn-list" id="topnProductsList">
+                            <div class="loading-skeleton">
+                                <div class="skeleton-row"></div>
+                                <div class="skeleton-row"></div>
+                                <div class="skeleton-row"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Admin Section -->
+            <section class="admin-section" id="adminSection" style="display: none;">
+                <div class="admin-header">
+                    <div class="section-title-block">
+                        <span class="section-kicker">Preferences & Workspace</span>
+                        <h2>Ayarlar</h2>
+                    </div>
+                    <p class="section-desc">Uygulama görünümü, hesap ve veri tercihlerini yönetin.</p>
+                </div>
+
+                <div class="admin-workspace">
+                    <aside class="admin-sidebar" aria-label="Ayarlar menüsü">
+                        <span class="admin-sidebar-title">Ayarlar</span>
+                        <div class="admin-tabs">
+                            <button class="admin-tab active" data-admin-tab="account">Genel</button>
+                            <button class="admin-tab admin-only" data-admin-tab="users">Kullanıcılar</button>
+                            <button class="admin-tab admin-only" data-admin-tab="data">Veri Yönetimi</button>
+                            <button class="admin-tab admin-only" data-admin-tab="archive">Arşiv</button>
+                            <button class="admin-tab admin-only" data-admin-tab="system">Gelişmiş</button>
+                        </div>
+                        <div class="admin-actions-row admin-only">
+                            <button class="admin-action-btn" id="adminRefreshBtn" onclick="loadAdminData()">
+                                Yenile
+                            </button>
+                            <button class="admin-action-btn" id="adminBackupBtn" onclick="createBackup()">
+                                Yedekle
+                            </button>
+                        </div>
+                    </aside>
+
+                    <div class="admin-main">
+                        <!-- Admin Stats -->
+                        <div class="admin-stats admin-only" id="adminStats">
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon">KU</div>
+                                <div class="admin-stat-content">
+                                    <span class="admin-stat-value" id="adminTotalUsers">-</span>
+                                    <span class="admin-stat-label">Toplam Kullanıcı</span>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon">AN</div>
+                                <div class="admin-stat-content">
+                                    <span class="admin-stat-value" id="adminTotalAnalyses">-</span>
+                                    <span class="admin-stat-label">Toplam Analiz</span>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon">VT</div>
+                                <div class="admin-stat-content">
+                                    <span class="admin-stat-value" id="adminDbSize">-</span>
+                                    <span class="admin-stat-label">Veritabanı Boyutu</span>
+                                </div>
+                            </div>
+                            <div class="admin-stat-card">
+                                <div class="admin-stat-icon">YD</div>
+                                <div class="admin-stat-content">
+                                    <span class="admin-stat-value" id="adminLastBackup">-</span>
+                                    <span class="admin-stat-label">Son Yedekleme</span>
+                                </div>
+                            </div>
+                        </div>
+
+                <!-- Account Tab -->
+                <div class="admin-tab-content" id="adminAccountTab">
+                    <div class="admin-tab-header">
+                        <h3>Genel Ayarlar</h3>
+                    </div>
+                    <div class="settings-stack">
+                        <div class="admin-data-card settings-card settings-card-wide">
+                            <div class="admin-data-content">
+                                <h4>Görünüm</h4>
+                                <p>Tema tercihi uygulama genelinde geçerlidir.</p>
+                            </div>
+                            <div class="theme-preference-control" id="themePreferenceControl" role="radiogroup" aria-label="Tema seçimi">
+                                <button class="theme-choice-btn" type="button" data-theme-choice="system">Sistem</button>
+                                <button class="theme-choice-btn" type="button" data-theme-choice="light">Açık</button>
+                                <button class="theme-choice-btn" type="button" data-theme-choice="dark">Koyu</button>
+                            </div>
+                        </div>
+                        <div class="admin-data-cards settings-dual-grid">
+                            <div class="admin-data-card settings-card">
+                                <div class="admin-data-content">
+                                    <h4>Hesap</h4>
+                                    <p>Oturum ve hesap işlemlerini yönetin.</p>
+                                </div>
+                                <div class="settings-account-summary" id="settingsAccountSummary"></div>
+                                <div class="settings-action-row">
+                                    <button class="admin-data-btn" onclick="openPasswordModal()">Şifre Değiştir</button>
+                                    <button class="admin-data-btn danger" onclick="window.logout()">Çıkış Yap</button>
+                                </div>
+                            </div>
+                            <div class="admin-data-card settings-card">
+                                <div class="admin-data-content">
+                                    <h4>Uygulama Bilgisi</h4>
+                                    <p>Bu çalışma alanının temel bilgileri.</p>
+                                </div>
+                                <div class="settings-info-list">
+                                    <div class="settings-info-row">
+                                        <span>Uygulama</span>
+                                        <strong>Analizcim</strong>
+                                    </div>
+                                    <div class="settings-info-row">
+                                        <span>Çalışma tipi</span>
+                                        <strong>Lokal Excel Analiz Uygulaması</strong>
+                                    </div>
+                                    <div class="settings-info-row">
+                                        <span>Tema kaynağı</span>
+                                        <strong id="settingsThemeSource">-</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="admin-data-card settings-card admin-only">
+                            <div class="admin-data-content">
+                                <h4>Veri Yönetimi</h4>
+                                <p>Geçmiş, gider ve özet verilerine hızlı erişim.</p>
+                            </div>
+                            <div class="settings-action-row">
+                                <button class="admin-data-btn" onclick="openSettingsTab('data')">Veri Yönetimi</button>
+                                <button class="admin-data-btn" onclick="openSettingsTab('system')">Gelişmiş</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Tab -->
+                <div class="admin-tab-content admin-only" id="adminUsersTab" style="display: none;">
+                    <!-- Pending Users (Onay Bekleyenler) -->
+                    <div class="pending-users-section" id="pendingUsersSection" style="display: none;">
+                        <div class="admin-tab-header">
+                            <h3>Onay Bekleyen Kullanıcılar <span class="pending-count-badge" id="pendingUsersBadge">0</span></h3>
+                        </div>
+                        <p class="admin-backup-hint">
+                            Bu kullanıcılar kayıt olmuş ancak henüz sisteme giriş yapabilmeleri için onay vermemişsiniz.
+                            Onaylarsanız giriş yapabilirler; reddederseniz girişleri engellenir.
+                        </p>
+                        <div class="pending-users-list" id="pendingUsersList"></div>
+                        <div class="pending-users-empty" id="pendingUsersEmpty" style="display: none;">
+                            <p>Onay bekleyen kullanıcı yok.</p>
+                            <span>Yeni kayıt talepleri geldiğinde burada görünecek.</span>
+                        </div>
+                    </div>
+
+                    <div class="admin-tab-header">
+                        <h3>Kullanıcı Yönetimi</h3>
+                        <button class="admin-add-btn" id="adminAddUserBtn" onclick="openAddUserModal()">
+                            Yeni Kullanıcı Ekle
+                        </button>
+                    </div>
+                    <div class="admin-users-list" id="adminUsersList">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-row"></div>
+                            <div class="skeleton-row"></div>
+                            <div class="skeleton-row"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Tab -->
+                <div class="admin-tab-content admin-only" id="adminDataTab" style="display: none;">
+                    <div class="admin-tab-header">
+                        <h3>Veri Yönetimi</h3>
+                    </div>
+                    <div class="admin-data-cards">
+                        <div class="admin-data-card">
+                            <div class="admin-data-icon">AN</div>
+                            <div class="admin-data-content">
+                                <h4>Analiz Kayıtları</h4>
+                                <p>Tüm analiz kayıtlarını görüntüle ve yönet</p>
+                                <span class="admin-data-count" id="adminAnalysesCount">-</span>
+                            </div>
+                            <button class="admin-data-btn" onclick="switchTab('history')">Görüntüle</button>
+                        </div>
+                        <div class="admin-data-card">
+                            <div class="admin-data-icon">OZ</div>
+                            <div class="admin-data-content">
+                                <h4>Özet Veriler</h4>
+                                <p>Aylık özet tablolarını yönet</p>
+                                <span class="admin-data-count" id="adminSummariesCount">-</span>
+                            </div>
+                            <button class="admin-data-btn" onclick="loadAdminSummaries()">Görüntüle</button>
+                        </div>
+                        <div class="admin-data-card">
+                            <div class="admin-data-icon">GD</div>
+                            <div class="admin-data-content">
+                                <h4>Gider Kalemleri</h4>
+                                <p>Sabit ve değişken giderleri yönet</p>
+                                <span class="admin-data-count" id="adminExpensesCount">-</span>
+                            </div>
+                            <button class="admin-data-btn" onclick="switchTab('expenses')">Görüntüle</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Archive Tab -->
+                <div class="admin-tab-content admin-only" id="adminArchiveTab" style="display: none;">
+                    <div class="admin-tab-header">
+                        <h3>Yıllık Veri Arşivleme</h3>
+                        <p class="section-desc">Eski yıllara ait verileri ana veritabanından ayırarak arşivleyin. Arşivlenen veriler geri yüklenebilir.</p>
+                    </div>
+                    <div class="admin-data-cards archive-section">
+                        <div class="admin-data-card">
+                            <div class="admin-data-content">
+                                <h4>Yıl Seçin</h4>
+                                <p>Arşivlemek veya geri yüklemek istediğiniz yılı seçin.</p>
+                            </div>
+                            <div class="admin-data-controls">
+                                <select id="archiveYearSelect" class="admin-select">
+                                    <option value="">— Yıl Seçin —</option>
+                                </select>
+                                <button class="admin-data-btn" id="archiveYearBtn" onclick="archiveSelectedYear()" disabled>Arşivle</button>
+                                <button class="admin-data-btn" id="restoreArchiveBtn" onclick="restoreSelectedArchive()" disabled>Geri Yükle</button>
+                                <button class="admin-data-btn danger" id="deleteArchiveBtn" onclick="deleteSelectedArchive()" disabled>Arşivi Sil</button>
+                            </div>
+                        </div>
+                        <div class="admin-data-card">
+                            <div class="admin-data-content">
+                                <h4>Arşivlenmiş Yıllar</h4>
+                                <p>Arşivlenen yıllar, dosya boyutları ve kayıt bilgileri.</p>
+                            </div>
+                        </div>
+                        <div class="archive-list" id="archiveList">
+                            <div class="history-empty">Henüz arşivlenmiş yıl bulunmuyor.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Tab -->
+                <div class="admin-tab-content admin-only" id="adminSystemTab" style="display: none;">
+                    <div class="admin-tab-header">
+                        <h3>Gelişmiş / Teknik Detaylar</h3>
+                    </div>
+                    <p class="admin-backup-hint">Günlük kullanım gerektirmeyen teknik bilgiler ve bakım araçları burada tutulur.</p>
+                    <div class="admin-system-info">
+                        <div class="admin-info-row">
+                            <span class="admin-info-label">Uygulama Versiyonu</span>
+                            <span class="admin-info-value">1.0.0</span>
+                        </div>
+                        <div class="admin-info-row">
+                            <span class="admin-info-label">Node.js Versiyonu</span>
+                            <span class="admin-info-value" id="adminNodeVersion">-</span>
+                        </div>
+                        <div class="admin-info-row">
+                            <span class="admin-info-label">Veritabanı Dosyası</span>
+                            <span class="admin-info-value">/data/analiz.db</span>
+                        </div>
+                        <div class="admin-info-row">
+                            <span class="admin-info-label">Oturum Süresi</span>
+                            <span class="admin-info-value">24 saat</span>
+                        </div>
+                    </div>
+
+                    <!-- Backup Manager -->
+                    <div class="admin-backup-section">
+                        <div class="admin-tab-header">
+                            <h3>Yedek Yönetimi</h3>
+                            <div class="admin-backup-actions">
+                                <button class="admin-add-btn" id="adminCreateBackupBtn" onclick="createServerBackup()">
+                                    Yeni Yedek Al
+                                </button>
+                                <button class="admin-action-btn" onclick="loadBackupsList()">
+                                    Yenile
+                                </button>
+                            </div>
+                        </div>
+                        <p class="admin-backup-hint" id="adminBackupInfoHint">
+                            Yedekler sunucuda saklanır. Sistem her <strong>5 günde bir</strong> otomatik yedek alır ve
+                            hafızada en fazla <strong>2 yedek</strong> tutar. Yeni yedek alındığında en eski yedek otomatik
+                            olarak silinir.
+                        </p>
+                        <div class="admin-backups-list" id="adminBackupsList">
+                            <div class="admin-empty"><p>Yükleniyor...</p></div>
+                        </div>
+                    </div>
+
+                    <div class="admin-backup-section">
+                        <div class="admin-tab-header">
+                            <h3>Son Operasyonlar</h3>
+                            <div class="admin-backup-actions">
+                                <button class="admin-action-btn" onclick="loadAuditLogs()">
+                                    Yenile
+                                </button>
+                            </div>
+                        </div>
+                        <p class="admin-backup-hint">
+                            Kullanıcı, arşiv ve yedek işlemleri burada zaman sırasıyla görünür.
+                        </p>
+                        <div class="audit-log-list" id="auditLogList">
+                            <div class="admin-empty"><p>Yükleniyor...</p></div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        </div>
+        <!-- /app-layout -->
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Analizcim © 2024 - Lokal Excel Analiz Uygulaması</p>
+        </footer>
+
+        <!-- Analiz Detay Modal (Son eklenen / detay görüntüleme) -->
+        <div class="modal-overlay" id="analysisDetailModal" style="display: none;" role="dialog"
+            aria-labelledby="analysisDetailModalTitle" aria-modal="true">
+            <div class="modal-content modal-content-wide">
+                <div class="modal-header">
+                    <h3 id="analysisDetailModalTitle">Analiz Detayı</h3>
+                    <button type="button" class="modal-close" onclick="closeAnalysisDetailModal()"
+                        aria-label="Kapat">&times;</button>
+                </div>
+                <div class="analysis-detail-body" id="analysisDetailBody">
+                    <!-- Doldurulacak -->
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAnalysisDetailModal()">Kapat</button>
+                    <button type="button" class="btn-primary" id="analysisDetailViewFullBtn" style="display: none;">Tam
+                        Görünümde Aç</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yeni Kullanıcı Ekle Modal -->
+        <div class="modal-overlay" id="addUserModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Yeni Kullanıcı Ekle</h3>
+                    <button type="button" class="modal-close" onclick="closeAddUserModal()"
+                        aria-label="Kapat">&times;</button>
+                </div>
+                <p class="modal-lead">Yeni ekip üyesini doğru rol ve güvenli parola politikasıyla sisteme ekleyin.</p>
+                <form id="addUserForm" onsubmit="submitAddUser(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="newUsername">Kullanıcı Adı</label>
+                        <input type="text" id="newUsername" class="form-input" required minlength="3" maxlength="50"
+                            autocomplete="username">
+                        <span class="form-hint">En az 3 karakter, sadece harf, rakam ve alt çizgi</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="newUserPassword">Şifre</label>
+                        <input type="password" id="newUserPassword" class="form-input" required minlength="8"
+                            autocomplete="new-password">
+                        <span class="form-hint">En az 8 karakter, büyük/küçük harf, rakam ve özel karakter (!@#$%^&*)</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="newUserRole">Rol</label>
+                        <select id="newUserRole" class="form-input">
+                            <option value="user">Kullanıcı</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div id="addUserModalError" class="modal-error" style="display: none;"></div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeAddUserModal()">İptal</button>
+                        <button type="submit" class="btn-primary">Kullanıcı Ekle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal-overlay customer-modal-overlay" id="customerModal" style="display: none;">
+            <div class="modal-content customer-modal-content">
+                <div class="modal-header">
+                    <h3 id="customerModalTitle">Yeni Müşteri</h3>
+                    <button type="button" class="modal-close" onclick="closeCustomerModal()" aria-label="Kapat">&times;</button>
+                </div>
+                <p class="modal-lead">Temel cari bilgileri kaydedin. Bakiye yeni kayıtta 0 başlar.</p>
+                <form id="customerForm" onsubmit="saveCustomer(event)">
+                    <input type="hidden" id="customerId">
+                    <div class="customer-form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="customerFirstName">Ad</label>
+                            <input type="text" id="customerFirstName" class="form-input" required maxlength="80" autocomplete="given-name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="customerLastName">Soyad</label>
+                            <input type="text" id="customerLastName" class="form-input" required maxlength="80" autocomplete="family-name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="customerPhone">Telefon</label>
+                            <input type="tel" id="customerPhone" class="form-input" placeholder="+90 5xx xxx xx xx" autocomplete="tel">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="customerEmail">E-posta</label>
+                            <input type="email" id="customerEmail" class="form-input" autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="customerTaxNumber">Vergi Numarası</label>
+                            <input type="text" id="customerTaxNumber" class="form-input" maxlength="32">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="customerBalance">Bakiye</label>
+                            <input type="number" id="customerBalance" class="form-input" value="0" step="0.01">
+                            <span class="form-hint">Yeni müşteride 0 olarak kaydedilir; düzenlemede güncellenebilir.</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="customerAddress">Adres</label>
+                        <textarea id="customerAddress" class="form-input" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="customerNotes">Not</label>
+                        <textarea id="customerNotes" class="form-input" rows="2"></textarea>
+                    </div>
+                    <div id="customerModalError" class="modal-error" style="display: none;"></div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeCustomerModal()">İptal</button>
+                        <button type="submit" class="btn-primary">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal-overlay customer-modal-overlay" id="customerDetailModal" style="display: none;">
+            <div class="modal-content customer-modal-content">
+                <div class="modal-header">
+                    <h3 id="customerDetailTitle">Müşteri Detayı</h3>
+                    <button type="button" class="modal-close" onclick="closeCustomerDetailModal()" aria-label="Kapat">&times;</button>
+                </div>
+                <div id="customerDetailBody" class="customer-detail-body"></div>
+            </div>
+        </div>
+
+        <!-- Şifre Değiştir Modal -->
+        <div class="modal-overlay" id="passwordModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Şifre Değiştir</h3>
+                    <button type="button" class="modal-close" onclick="closePasswordModal()"
+                        aria-label="Kapat">&times;</button>
+                </div>
+                <p class="modal-lead">Hesabınız için daha güçlü bir parola belirleyin ve erişim güvenliğini güncel tutun.</p>
+                <form id="passwordChangeForm" onsubmit="submitPasswordChange(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="currentPassword">Mevcut Şifre</label>
+                        <input type="password" id="currentPassword" class="form-input" required
+                            autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="newPassword">Yeni Şifre</label>
+                        <input type="password" id="newPassword" class="form-input" required minlength="8"
+                            autocomplete="new-password">
+                        <span class="form-hint">En az 8 karakter, büyük/küçük harf, rakam ve özel karakter içermeli</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="confirmPassword">Yeni Şifre Tekrar</label>
+                        <input type="password" id="confirmPassword" class="form-input" required minlength="8"
+                            autocomplete="new-password">
+                    </div>
+                    <div id="passwordModalError" class="modal-error" style="display: none;"></div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closePasswordModal()">İptal</button>
+                        <button type="submit" class="btn-primary">Şifreyi Güncelle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Edit Modal -->
+    <div id="historyEditModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeHistoryEditModal()">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyEditModalTitle">
+            <div class="modal-header">
+                <h3 id="historyEditModalTitle">Kaydı Düzenle</h3>
+                <button type="button" class="modal-close" onclick="closeHistoryEditModal()" aria-label="Kapat">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editHistoryId">
+                <div class="form-group">
+                    <label for="editDisplayDate">Tarih</label>
+                    <input type="text" id="editDisplayDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Satış Tutarı (TL)</label>
+                    <input type="number" id="editSalesAmount" class="form-input" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Satış KDV (TL)</label>
+                    <input type="number" id="editSalesTax" class="form-input" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Alış Tutarı (TL)</label>
+                    <input type="number" id="editPurchaseAmount" class="form-input" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Alış KDV (TL)</label>
+                    <input type="number" id="editPurchaseTax" class="form-input" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Özet</label>
+                    <textarea id="editSummary" class="form-input" rows="3" style="resize:vertical"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-secondary" onclick="closeHistoryEditModal()">İptal</button>
+                <button type="button" class="modal-btn-primary" onclick="saveHistoryEdit()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/vat-ledger.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

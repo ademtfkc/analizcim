@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap | Analizcim</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: var(--bg-primary);
+            padding: 1.5rem;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 460px;
+            padding: 2.6rem;
+            background: color-mix(in srgb, var(--bg-card) 96%, transparent);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .login-container {
+            background: var(--bg-card);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.1rem;
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .login-logo {
+            width: 2.5rem;
+            height: 2.5rem;
+            margin: 0 auto 0.2rem;
+            display: block;
+            color: var(--accent-primary);
+        }
+
+        .login-kicker {
+            display: inline-flex;
+            justify-content: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .login-title {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            letter-spacing: -0.03em;
+        }
+
+        .login-subtitle {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.98rem;
+            line-height: 1.55;
+        }
+
+        .login-trust-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.55rem;
+            margin-top: 0.2rem;
+        }
+
+        .login-pill {
+            padding: 0.38rem 0.75rem;
+            border-radius: 999px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .form-group {
+            display: grid;
+            gap: 0.5rem;
+            margin-bottom: 1.15rem;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .form-input {
+            width: 100%;
+            min-height: 52px;
+            padding: 0.88rem 0.95rem;
+            border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
+            background: color-mix(in srgb, var(--bg-secondary) 82%, var(--bg-card));
+            color: var(--text-primary);
+            caret-color: var(--text-primary);
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: inset 0 1px 0 color-mix(in srgb, var(--bg-card) 72%, transparent);
+            transition: all var(--transition-fast);
+        }
+
+        [data-theme="dark"] .form-input {
+            background: color-mix(in srgb, var(--bg-secondary) 86%, var(--bg-card));
+            border-color: color-mix(in srgb, var(--border-color) 92%, transparent);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+            opacity: 1;
+        }
+
+        .form-input:-webkit-autofill,
+        .form-input:-webkit-autofill:hover,
+        .form-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-primary);
+            box-shadow: 0 0 0 1000px color-mix(in srgb, var(--bg-secondary) 82%, var(--bg-card)) inset;
+            transition: background-color 9999s ease-out 0s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--ring);
+            box-shadow: none;
+        }
+
+        .form-input:focus-visible {
+            outline: 2px solid var(--ring);
+            outline-offset: 2px;
+        }
+
+        .theme-icon-sun,
+        .theme-icon-moon {
+            display: none;
+        }
+        [data-theme="light"] .theme-icon-sun { display: block; }
+        [data-theme="dark"] .theme-icon-moon { display: block; }
+
+        .login-btn {
+            width: 100%;
+            min-height: 52px;
+            padding: 0.95rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .login-btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        .login-status {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.85rem 1rem;
+            border-left: 3px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.88rem;
+            line-height: 1.5;
+            background: var(--surface-muted);
+        }
+
+        .login-status-pending {
+            background: var(--surface-warning-soft);
+            border-left-color: color-mix(in srgb, var(--warning) 72%, var(--border-color));
+        }
+
+        .login-status-success {
+            background: var(--surface-success-soft);
+            border-left-color: color-mix(in srgb, var(--success) 72%, var(--border-color));
+        }
+
+        /* Theme Toggle for Login */
+        .theme-toggle-login {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        [data-theme="dark"] .theme-toggle-login {
+            background: var(--bg-secondary);
+        }
+
+        .theme-toggle-login:hover {
+            background: var(--bg-hover);
+            border-color: var(--ring);
+        }
+
+        .login-switch-note {
+            text-align: center;
+            margin-top: 1.25rem;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        .login-switch-note a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-hint {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 640px) {
+            .login-container {
+                padding: 2rem 1.25rem;
+                border-radius: 24px;
+            }
+
+            .login-title {
+                font-size: 1.7rem;
+            }
+
+            .login-pill {
+                width: 100%;
+                justify-content: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <button class="theme-toggle-login" id="themeToggle" aria-label="Tema Değiştir">
+        <svg class="theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <div class="login-container">
+        <div class="login-header">
+            <span class="login-kicker">Güvenli Finans Çalışma Alanı</span>
+            <svg class="login-logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+            <h1 class="login-title">Analizcim</h1>
+            <p class="login-subtitle" id="subtitleText">Verilerinizi güvenli, hızlı ve düzenli biçimde yönetin.</p>
+            <div class="login-trust-row">
+                <span class="login-pill">Yerel veri işleme</span>
+                <span class="login-pill">Rol bazlı erişim</span>
+                <span class="login-pill">KDV ve kârlılık takibi</span>
+            </div>
+        </div>
+
+        <!-- Giriş Formu -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label" for="username">Kullanıcı Adı</label>
+                <input type="text" id="username" class="form-input" required autocomplete="username" placeholder="ornek.kullanici">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Şifre</label>
+                <input type="password" id="password" class="form-input" required autocomplete="current-password" placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="login-btn">Giriş Yap</button>
+            <div id="errorMessage" class="error-message"></div>
+            <div id="pendingNotice" class="login-status login-status-pending">
+                Hesabınız admin onayı bekliyor. Onaylandıktan sonra giriş yapabilirsiniz.
+            </div>
+            <div class="login-switch-note">
+                Hesabınız yok mu?
+                <a href="#" id="goToRegister">Kayıt Ol</a>
+            </div>
+        </form>
+
+        <!-- Kayıt Formu (gizli) -->
+        <form id="registerForm" style="display:none;">
+            <div class="form-group">
+                <label class="form-label" for="regUsername">Kullanıcı Adı</label>
+                <input type="text" id="regUsername" class="form-input" required minlength="3" maxlength="50" autocomplete="username" placeholder="yeni_kullanici">
+                <span class="login-hint">En az 3 karakter, sadece harf, rakam ve alt çizgi</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="regPassword">Şifre</label>
+                <input type="password" id="regPassword" class="form-input" required minlength="8" autocomplete="new-password" placeholder="Güçlü bir şifre oluşturun">
+                <span class="login-hint">En az 8 karakter, büyük/küçük harf, rakam ve özel karakter</span>
+            </div>
+
+            <button type="submit" class="login-btn">Kayıt Ol</button>
+            <div id="registerError" class="error-message"></div>
+            <div id="registerSuccess" class="login-status login-status-success">
+                Kayıt alındı. Hesabınız admin tarafından onaylandıktan sonra giriş yapabilirsiniz.
+            </div>
+            <div class="login-switch-note">
+                Zaten hesabınız var mı?
+                <a href="#" id="goToLogin">Giriş Yap</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Theme Logic (Login uses the same preference key as the app shell)
+        const themeToggle = document.getElementById('themeToggle');
+        const themeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+        function resolveEffectiveTheme(themePreference) {
+            if (themePreference === 'light' || themePreference === 'dark') return themePreference;
+            return themeQuery.matches ? 'dark' : 'light';
+        }
+
+        function setTheme(themePreference) {
+            const normalized = themePreference === 'light' || themePreference === 'dark' || themePreference === 'system'
+                ? themePreference
+                : 'system';
+            const effectiveTheme = resolveEffectiveTheme(normalized);
+            document.documentElement.setAttribute('data-theme', effectiveTheme);
+            document.documentElement.setAttribute('data-theme-preference', normalized);
+            localStorage.setItem('theme', normalized);
+            const sunIcon = themeToggle.querySelector('.theme-icon-sun');
+            const moonIcon = themeToggle.querySelector('.theme-icon-moon');
+            if (sunIcon && moonIcon) {
+                sunIcon.style.display = effectiveTheme === 'light' ? 'block' : 'none';
+                moonIcon.style.display = effectiveTheme === 'dark' ? 'block' : 'none';
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        setTheme(savedTheme);
+
+        themeQuery.addEventListener('change', () => {
+            if ((localStorage.getItem('theme') || 'system') === 'system') {
+                setTheme('system');
+            }
+        });
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const preference = document.documentElement.getAttribute('data-theme-preference') || 'system';
+            if (preference === 'system') {
+                setTheme(current === 'dark' ? 'light' : 'dark');
+                return;
+            }
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        // Form toggling
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const subtitleText = document.getElementById('subtitleText');
+
+        document.getElementById('goToRegister').addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            subtitleText.textContent = 'Ekip erişimini başlatmak için güvenli bir kullanıcı hesabı oluşturun.';
+            document.getElementById('registerError').style.display = 'none';
+            document.getElementById('registerSuccess').style.display = 'none';
+        });
+
+        document.getElementById('goToLogin').addEventListener('click', (e) => {
+            e.preventDefault();
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            subtitleText.textContent = 'Verilerinizi güvenli, hızlı ve düzenli biçimde yönetin.';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('pendingNotice').style.display = 'none';
+        });
+
+        // Login Logic
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMessage');
+            const pendingNotice = document.getElementById('pendingNotice');
+            const submitBtn = loginForm.querySelector('.login-btn');
+
+            errorMsg.style.display = 'none';
+            pendingNotice.style.display = 'none';
+            submitBtn.textContent = 'Giriş yapılıyor...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    window.location.href = '/';
+                } else if (response.status === 403 && data.status === 'pending') {
+                    // Hesap henüz onaylanmamış
+                    pendingNotice.style.display = 'block';
+                    errorMsg.style.display = 'none';
+                } else {
+                    errorMsg.textContent = data.error || 'Giriş başarısız.';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                errorMsg.textContent = 'Sunucu hatası.';
+                errorMsg.style.display = 'block';
+            } finally {
+                submitBtn.textContent = 'Giriş Yap';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Register Logic
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const errorMsg = document.getElementById('registerError');
+            const successMsg = document.getElementById('registerSuccess');
+            const submitBtn = registerForm.querySelector('.login-btn');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            submitBtn.textContent = 'Kayıt olunuyor...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    successMsg.style.display = 'block';
+                    // Formu temizle
+                    document.getElementById('regUsername').value = '';
+                    document.getElementById('regPassword').value = '';
+                } else {
+                    errorMsg.textContent = data.error || 'Kayıt başarısız.';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                errorMsg.textContent = 'Sunucu hatası.';
+                errorMsg.style.display = 'block';
+            } finally {
+                submitBtn.textContent = 'Kayıt Ol';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

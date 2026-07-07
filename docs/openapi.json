@@ -1,0 +1,1599 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Analizcim API",
+    "description": "Excel analiz uygulaması için REST API. Bu API, satış ve alış dosyalarını analiz etmek, geçmişi yönetmek, tahminler oluşturmak ve kullanıcı yönetimi için kullanılır.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "email": "support@analizcim.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Yerel geliştirme sunucusu"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Kimlik Doğrulama",
+      "description": "Kullanıcı giriş, kayıt ve çıkış işlemleri"
+    },
+    {
+      "name": "Analiz",
+      "description": "Excel dosya analizi endpoint'leri"
+    },
+    {
+      "name": "Geçmiş",
+      "description": "Analiz geçmişi yönetimi"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard verileri ve özetler"
+    },
+    {
+      "name": "Tahminler",
+      "description": "Gelecek tahminleri"
+    },
+    {
+      "name": "Karşılaştırma",
+      "description": "Yıl karşılaştırma"
+    },
+    {
+      "name": "Giderler",
+      "description": "Sabit ve değişken gider yönetimi"
+    },
+    {
+      "name": "Kullanıcı Yönetimi",
+      "description": "Kullanıcı yönetimi (admin only)"
+    },
+    {
+      "name": "Özetler",
+      "description": "Aylık önceden hesaplanmış özetler"
+    },
+    {
+      "name": "Kullanıcı Tercihleri",
+      "description": "Kullanıcı tercihleri yönetimi"
+    },
+    {
+      "name": "Dışa Aktarım",
+      "description": "Excel dışa aktarım endpoint'leri"
+    }
+  ],
+  "paths": {
+    "/login": {
+      "post": {
+        "tags": ["Kimlik Doğrulama"],
+        "summary": "Kullanıcı girişi",
+        "description": "Kullanıcı adı ve şifre ile giriş yapar. Rate limit: 15 dakikada 5 istek.",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Kullanıcı adı",
+                    "example": "admin"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Şifre",
+                    "format": "password",
+                    "example": "GucluSifre123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Giriş başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "username": {
+                          "type": "string",
+                          "example": "admin"
+                        },
+                        "is_admin": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation hatası",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Kullanıcı adı gereklidir."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Geçersiz kimlik bilgileri",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Geçersiz kullanıcı adı veya şifre."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit aşıldı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Çok fazla giriş denemesi. 15 dakika sonra tekrar deneyin."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/register": {
+      "post": {
+        "tags": ["Kimlik Doğrulama"],
+        "summary": "Yeni kullanıcı kaydı",
+        "description": "Yeni bir kullanıcı hesabı oluşturur.",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Kullanıcı adı (3-30 karakter, alfanumerik + alt çizgi)",
+                    "example": "yeni_kullanici"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Şifre (en az 8 karakter, 1 büyük harf, 1 küçük harf, 1 rakam, 1 özel karakter)",
+                    "format": "password",
+                    "example": "Sifre123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kayıt başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "username": {
+                          "type": "string",
+                          "example": "yeni_kullanici"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation hatası",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Kullanıcı adı 3-30 karakter arasında olmalıdır."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": ["Kimlik Doğrulama"],
+        "summary": "Kullanıcı çıkışı",
+        "description": "Mevcut oturumu sonlandırır.",
+        "operationId": "logout",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Çıkış başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/change-password": {
+      "post": {
+        "tags": ["Kimlik Doğrulama"],
+        "summary": "Şifre değiştirme",
+        "description": "Kullanıcının mevcut şifresini değiştirir.",
+        "operationId": "changePassword",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentPassword", "newPassword"],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "description": "Mevcut şifre",
+                    "format": "password",
+                    "example": "EskiSifre123!"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "description": "Yeni şifre",
+                    "format": "password",
+                    "example": "YeniSifre123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Şifre değiştirildi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Şifre başarıyla değiştirildi."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Hatalı şifre veya validation hatası",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Mevcut şifre hatalı."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze": {
+      "post": {
+        "tags": ["Analiz"],
+        "summary": "Excel dosyalarını analiz et",
+        "description": "Satış ve/veya alış Excel dosyalarını analiz eder ve sonuçları kaydeder.",
+        "operationId": "analyzeFiles",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "salesFile": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Satış Excel dosyası (.xlsx, .xls)"
+                  },
+                  "purchaseFile": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Alış Excel dosyası (.xlsx, .xls)"
+                  },
+                  "duplicateAction": {
+                    "type": "string",
+                    "enum": ["cancel", "replace", "version"],
+                    "description": "Çakışma durumunda işlem",
+                    "default": "cancel"
+                  },
+                  "salesColumnMap": {
+                    "type": "string",
+                    "description": "Satış sütun eşlemesi (JSON)",
+                    "example": "{\"date\":\"A\",\"counterparty\":\"B\",\"net\":\"C\",\"vat\":\"D\",\"gross\":\"E\"}"
+                  },
+                  "purchaseColumnMap": {
+                    "type": "string",
+                    "description": "Alış sütun eşlemesi (JSON)",
+                    "example": "{\"date\":\"A\",\"counterparty\":\"B\",\"net\":\"C\",\"vat\":\"D\",\"gross\":\"E\"}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analiz başarılı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "sales": {
+                      "type": "object",
+                      "properties": {
+                        "totalAmount": {
+                          "type": "number",
+                          "example": 150000
+                        },
+                        "totalTax": {
+                          "type": "number",
+                          "example": 27000
+                        }
+                      }
+                    },
+                    "purchase": {
+                      "type": "object",
+                      "properties": {
+                        "totalAmount": {
+                          "type": "number",
+                          "example": 100000
+                        },
+                        "totalTax": {
+                          "type": "number",
+                          "example": 18000
+                        }
+                      }
+                    },
+                    "profitLoss": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "number",
+                          "example": 50000
+                        },
+                        "percentage": {
+                          "type": "number",
+                          "example": 33.33
+                        }
+                      }
+                    },
+                    "historyId": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation hatası",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "En az bir Excel dosyası yüklemelisiniz."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Çakışma (duplicate) hatası",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Ocak 2025 için zaten bir satış raporu mevcut."
+                    },
+                    "duplicateType": {
+                      "type": "string",
+                      "example": "sales"
+                    },
+                    "duplicateAction": {
+                      "type": "string",
+                      "example": "required"
+                    },
+                    "duplicateOptions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["cancel", "replace", "version"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/history": {
+      "get": {
+        "tags": ["Geçmiş"],
+        "summary": "Analiz geçmişini listele",
+        "description": "Tüm analiz kayıtlarını sayfalamalı olarak listeler.",
+        "operationId": "getHistory",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtreleme için yıl"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Arama terimi"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["date_asc", "date_desc", "id_asc", "id_desc"]
+            },
+            "description": "Sıralama"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Sayfa başına kayıt sayısı"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            },
+            "description": "Kaydın başlangıç konumu"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Geçmiş listesi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "date": {
+                            "type": "string"
+                          },
+                          "displayDate": {
+                            "type": "string"
+                          },
+                          "salesFileName": {
+                            "type": "string"
+                          },
+                          "purchaseFileName": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Geçmiş"],
+        "summary": "Tüm geçmişi temizle",
+        "description": "Tüm analiz geçmişini siler.",
+        "operationId": "clearHistory",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Geçmiş temizlendi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/history/{id}": {
+      "get": {
+        "tags": ["Geçmiş"],
+        "summary": "Belirli bir geçmiş kaydını getir",
+        "operationId": "getHistoryById",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Geçmiş kaydı ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Geçmiş kaydı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "entry": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kayıt bulunamadı",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Geçmiş"],
+        "summary": "Belirli bir geçmiş kaydını sil",
+        "operationId": "deleteHistoryById",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Geçmiş kaydı ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kayıt silindi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        }
+      }
+    },
+    "/dashboard/latest": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Dashboard özet verilerini getir",
+        "description": "En güncel dashboard verilerini ve aylık trendleri döndürür.",
+        "operationId": "getDashboard",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "İstenen yıl"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard verileri",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "total_sales": {
+                          "type": "number"
+                        },
+                        "total_purchases": {
+                          "type": "number"
+                        },
+                        "total_vat": {
+                          "type": "number"
+                        },
+                        "gross_profit": {
+                          "type": "number"
+                        },
+                        "total_expenses": {
+                          "type": "number"
+                        },
+                        "net_profit": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "monthly": {
+                      "type": "object",
+                      "properties": {
+                        "labels": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "sales": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        },
+                        "purchases": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "deltas": {
+                      "type": "array"
+                    },
+                    "trend": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Oturum gerekli"
+          }
+        }
+      }
+    },
+    "/predictions": {
+      "get": {
+        "tags": ["Tahminler"],
+        "summary": "Tahminleri getir",
+        "description": "Gelecek aylar için satış, alış ve gider tahminlerini döndürür.",
+        "operationId": "getPredictions",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tahmin verileri",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "prediction": {
+                      "type": "object"
+                    },
+                    "monthlyData": {
+                      "type": "array"
+                    },
+                    "monthlyPurchases": {
+                      "type": "array"
+                    },
+                    "avgMonthlyExpense": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/compare": {
+      "get": {
+        "tags": ["Karşılaştırma"],
+        "summary": "İki yılı karşılaştır",
+        "description": "Belirtilen iki yılın satış, alış, gider ve kar/zarar verilerini karşılaştırır.",
+        "operationId": "compareYears",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year1",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "İlk yıl"
+          },
+          {
+            "name": "year2",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "İkinci yıl"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Karşılaştırma sonucu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "year1": {
+                      "type": "object"
+                    },
+                    "year2": {
+                      "type": "object"
+                    },
+                    "growth": {
+                      "type": "object",
+                      "properties": {
+                        "sales": {
+                          "type": "string"
+                        },
+                        "purchase": {
+                          "type": "string"
+                        },
+                        "profit": {
+                          "type": "string"
+                        },
+                        "net_profit": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expenses-local": {
+      "get": {
+        "tags": ["Giderler"],
+        "summary": "Giderleri listele",
+        "description": "Sabit ve değişken giderleri listeler.",
+        "operationId": "getExpenses",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtreleme için yıl"
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "Filtreleme için ay"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gider verileri",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "year": {
+                          "type": "string"
+                        },
+                        "month": {
+                          "type": "string"
+                        },
+                        "fixed": {
+                          "type": "array"
+                        },
+                        "variable": {
+                          "type": "array"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Giderler"],
+        "summary": "Giderleri güncelle",
+        "description": "Sabit ve değişken giderleri kaydeder/günceller.",
+        "operationId": "updateExpenses",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["year"],
+                "properties": {
+                  "year": {
+                    "type": "integer"
+                  },
+                  "month": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12
+                  },
+                  "fixed": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "number"
+                        },
+                        "category": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "variable": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "number"
+                        },
+                        "category": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Giderler kaydedildi"
+          }
+        }
+      }
+    },
+    "/expenses-local/migrate": {
+      "post": {
+        "tags": ["Giderler"],
+        "summary": "Giderleri taşı",
+        "description": "Giderleri farklı bir kaynaktan içe aktarır.",
+        "operationId": "migrateExpenses",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "amount": {
+                          "type": "number"
+                        },
+                        "category": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["fixed", "variable"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Giderler taşındı"
+          }
+        }
+      }
+    },
+    "/expenses-local/years": {
+      "get": {
+        "tags": ["Giderler"],
+        "summary": "Veri olan yılları getir",
+        "operationId": "getExpenseYears",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Yıllar listesi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "years": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Kullanıcı Yönetimi"],
+        "summary": "Tüm kullanıcıları listele",
+        "description": "Admin yetkisi gereklidir.",
+        "operationId": "getAllUsers",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "adminAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kullanıcı listesi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "users": {
+                      "type": "array"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin yetkisi gerekli"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Kullanıcı Yönetimi"],
+        "summary": "Belirli bir kullanıcıyı getir",
+        "operationId": "getUserById",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Kullanıcı ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kullanıcı bilgileri"
+          },
+          "404": {
+            "description": "Kullanıcı bulunamadı"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Kullanıcı Yönetimi"],
+        "summary": "Kullanıcıyı sil",
+        "description": "Admin yetkisi gereklidir. Kendini silemez.",
+        "operationId": "deleteUser",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "adminAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Kullanıcı ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kullanıcı silindi"
+          },
+          "400": {
+            "description": "Kendi hesabınızı silemezsiniz"
+          }
+        }
+      }
+    },
+    "/users/{id}/role": {
+      "put": {
+        "tags": ["Kullanıcı Yönetimi"],
+        "summary": "Kullanıcı rolünü güncelle",
+        "description": "Admin yetkisi gereklidir.",
+        "operationId": "updateUserRole",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "adminAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Kullanıcı ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["role"],
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": ["admin", "user"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rol güncellendi"
+          },
+          "400": {
+            "description": "Geçersiz rol"
+          }
+        }
+      }
+    },
+    "/summaries/{year}": {
+      "get": {
+        "tags": ["Özetler"],
+        "summary": "Yılın özetlerini getir",
+        "description": "Belirli bir yılın önceden hesaplanmış aylık özetlerini döndürür.",
+        "operationId": "getSummariesByYear",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Yıl"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Özetler listesi"
+          }
+        }
+      }
+    },
+    "/summaries/{year}/{month}": {
+      "delete": {
+        "tags": ["Özetler"],
+        "summary": "Aylık özeti sil",
+        "operationId": "deleteSummary",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Yıl"
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "Ay"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Özet silindi"
+          },
+          "404": {
+            "description": "Özet bulunamadı"
+          }
+        }
+      }
+    },
+    "/user/preferences": {
+      "get": {
+        "tags": ["Kullanıcı Tercihleri"],
+        "summary": "Kullanıcı tercihlerini getir",
+        "operationId": "getUserPreferences",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "keys",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "İstenen tercik anahtarları (virgülle ayrılmış)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kullanıcı tercihleri"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Kullanıcı Tercihleri"],
+        "summary": "Kullanıcı tercihlerini güncelle",
+        "operationId": "updateUserPreferences",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "theme": {
+                    "type": "string",
+                    "enum": ["light", "dark", "system"]
+                  },
+                  "predictions_layout_id": {
+                    "type": "string"
+                  },
+                  "predictions_card_order": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tercihler güncellendi"
+          }
+        }
+      }
+    },
+    "/user/preferences/migrate": {
+      "post": {
+        "tags": ["Kullanıcı Tercihleri"],
+        "summary": "Kullanıcı tercihlerini taşı",
+        "operationId": "migrateUserPreferences",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "theme": {
+                    "type": "string"
+                  },
+                  "predictions_layout_id": {
+                    "type": "string"
+                  },
+                  "predictions_card_order": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tercihler taşındı"
+          }
+        }
+      }
+    },
+    "/export/history": {
+      "get": {
+        "tags": ["Dışa Aktarım"],
+        "summary": "Geçmişi Excel olarak dışa aktar",
+        "description": "Analiz geçmişini Excel dosyası olarak indirir.",
+        "operationId": "exportHistory",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel dosyası",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/export/dashboard": {
+      "get": {
+        "tags": ["Dışa Aktarım"],
+        "summary": "Dashboard özetini Excel olarak dışa aktar",
+        "operationId": "exportDashboard",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Yıl"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel dosyası",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid",
+        "description": "Oturum kimlik doğrulaması"
+      },
+      "adminAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "connect.sid",
+        "description": "Admin yetkisi gerektiren işlemler için"
+      }
+    }
+  }
+}
