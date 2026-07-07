@@ -27,7 +27,7 @@
 - **Tek cümlelik hedef:** Küçük işletme/muhasebe kullanıcısının Excel satış-alış verisini
   anlaşılır bir karar destek paneline (dashboard + tahmin + cari analizi) çeviren lokal uygulama.
 - **Hedef kitle:** Küçük işletme sahibi, muhasebe/finans kullanıcısı, admin.
-- **Durum:** 🔨 Geliştirme / bakım (çalışan uygulama; kalite & düzen turu yapılıyor)
+- **Durum:** 🔨 Geliştirme / bakım (çalışan uygulama; güvenlik + finansal + doküman + Tier 3 UI turları tamam, CI yeşil)
 - **Canlı adres:** Yok (lokal çalışır, finansal veri kullanıcının makinesinde kalır)
 - **Sürüm kontrolü:** git (main) + **private GitHub deposu**: https://github.com/ademtfkc/analizcim (`.env`/`data/` git'e girmez)
 - **İlgili dokümanlar:** README.md · docs/api.md · docs/openapi.json · CLAUDE.md
@@ -55,24 +55,24 @@
 | `public/js/` | Küçük ön yüz modülleri (api, history, notifications, vat-ledger) |
 | `public/vendor/` | Dış kütüphane (chart.umd.min.js) |
 | `scripts/` | Migration çalıştırıcı + tek seferlik betikler |
-| `scripts/migrations/` | Sıralı veritabanı şema değişiklikleri (001…009) |
+| `scripts/migrations/` | Sıralı veritabanı şema değişiklikleri (001…010) |
 | `tests/` | `unit/`, `integration/`, `helpers/`, smoke testi |
 | `data/` | Yerel SQLite veritabanı + yedekler (git'e girmez) |
-| `docs/` | api.md, openapi.json, superpowers |
+| `docs/` | api.md, openapi.json, screenshots/, superpowers/ |
 
 ### Önemli dosyalar
 | Dosya | Ne yapar | Satır (kaba) |
 |---|---|---|
-| `src/server.js` | Express sunucusu, oturum, statik servis, upload, ana rotalar | ~2100 |
-| `src/storage.js` | Veri erişim katmanı (SQLite sorguları) | ~2700 |
-| `src/predictor.js` | Tahmin motoru: Linear, Exp. Smoothing, Holt-Winters, native ARIMA | ~1550 |
-| `src/analyzer.js` | Excel ayrıştırma, satış/alış/KDV/kâr hesabı, cari eşleme | ~1230 |
+| `src/server.js` | Express sunucusu, oturum, statik servis, upload, ana rotalar | ~2160 |
+| `src/storage.js` | Veri erişim katmanı (SQLite sorguları) | ~2710 |
+| `src/predictor.js` | Tahmin motoru: Linear, Exp. Smoothing, Holt-Winters, native ARIMA | ~1560 |
+| `src/analyzer.js` | Excel ayrıştırma, satış/alış/KDV/kâr hesabı, cari eşleme | ~1280 |
 | `src/validators.js` | Girdi doğrulama | ~410 |
 | `src/database.js` | DB bağlantısı ve şema | ~310 |
 | `src/backup-manager.js` / `src/archive-manager.js` | Yedekleme / arşiv (soft-delete) | ~290 / ~270 |
-| `public/app.js` | TÜM ön yüz mantığı tek dosyada | ~8360 |
-| `public/styles.css` | TÜM stiller tek dosyada | ~16900 |
-| `public/index.html` | Ana uygulama iskeleti | ~2380 |
+| `public/app.js` | TÜM ön yüz mantığı tek dosyada (`showConfirm` onay modalı dahil) | ~8450 |
+| `public/styles.css` | TÜM stiller tek dosyada (`.business-party-table` mobil kart + `.btn-danger` dahil) | ~17040 |
+| `public/index.html` | Ana uygulama iskeleti (`#confirmModal` iskeleti dahil) | ~2390 |
 
 ## 4. Veri Yapısı Özeti 🗄️
 _(Migration dosyalarından çıkarıldı — kod ile çelişirse koda güvenilir.)_
@@ -112,39 +112,42 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | 2026-07-07 | Çift `005` migration'ı yeniden ADLANDIRILMAZ | Runner dosya adıyla takip ediyor; yeniden ad → gerçek DB'de tekrar çalışma riski |
 | 2026-07-07 | **Cari geçmiş verisi: dokunma (backfill YOK)** | Geçmiş analizlerde ham satır saklanmıyor (yalnız özet+top-5, tarih yok); tam/doğru cari ancak Excel yeniden yüklenerek gelir. Cari kodu/verisi değiştirilmedi |
 | 2026-07-07 | README = tam profesyonel düzen; iç günlükler CHANGELOG.md'ye | "Repoda olması gereken gibi" istendi; doküman işi, kod güvende |
+| 2026-07-08 | **Tier 3:** A) önce #2 (mobil kart), sonra #3 (onay modalı); #1 ATLA | En iyi değer/risk sırası; #1 bug değil, görsel regresyon testi olmadan riskli |
+| 2026-07-08 | Tier 3 = **iki ayrı commit** (#2 `9754b57`, #3 `0b28bea`) | Temiz geçmiş; her iş tek başına geri alınabilir. Toplam orijinalle birebir doğrulandı |
 
 ## 8. Bekleyen Onaylar 🚦
 - **`data/pre_restore_1771112753452.db`** (Şubat'tan kalma eski geri-yükleme yedeği, ~270KB) —
   silinsin mi, kalsın mı? Veri olduğu için onay bekliyor.
-- **`git init` önerisi:** Proje sürüm kontrolü altında değil. "Gerçek app" için önerilir;
-  önce `.gitignore` güçlendirildi (sır/veri sızmaz). CEO onayı ile başlatılabilir.
+- _(Not: `git init` + private GitHub deposu 2026-07-07'de CEO onayıyla TAMAMLANDI; CI kurulu ve yeşil.)_
 
 ## 9. Devam Eden İşler 🔨
 | İş | Kim | Durum |
 |---|---|---|
-| Derin kod denetimi (backend, adversarial güvenlik, frontend, iş mantığı) | 4 uzman ajan | ✅ TAMAM (2026-07-07). Backend+güvenlik: RET · Finansal: RET · Frontend: ONAY |
-| Kritik/yüksek bulguların düzeltilmesi | (CEO onayı bekliyor) | Karar aşamasında |
+| Derin kod denetimi (backend, adversarial güvenlik, frontend, iş mantığı) | 4 uzman ajan | ✅ TAMAM (2026-07-07) |
+| Kritik/yüksek güvenlik+finansal bulguların düzeltilmesi (Grup 1-4) | ana asistan | ✅ TAMAM (2026-07-07) |
+| Tier 3 UI turu (#2 mobil kart, #3 onay modalı) | ana asistan + test-uzmani + kod-inceleyici | ✅ TAMAM (2026-07-08), push + CI yeşil |
+| _Aktif iş yok_ — kalanlar "Sonraki Adımlar" backlog'unda | — | Beklemede |
 
 ## 10. Bilinen Sorunlar 🐞
 | Sorun | Ciddiyet | Durum |
 |---|---|---|
 | **`GET /api/backup` (backups.js:25) `requireAdmin` YOK** → her kullanıcı tüm DB'yi indirebiliyordu | **KRİTİK** | ✅ DÜZELTİLDİ (2026-07-07, `requireAdmin` eklendi) |
 | **IDOR: `storage.js:286` `userId \|\| 1` + 5 uçta `userId` eksik** (907, 950, 1009, 1446, 1582) | **YÜKSEK** | ✅ DÜZELTİLDİ (5 uca `userId` eklendi + `||1` yerine hata fırlatma). Testler geçti |
-| `ui-structure.test.js` "no gradient" testi düşüyor — `styles.css:16821` tek `linear-gradient` (ÖNCEDEN bozuk, benim değişikliğimle ilgisiz) | Düşük | Tasarım kuralı; CEO görüşü bekliyor (kapsam dışı) |
-| `xlsx@0.18.5` bilinen açık (Prototype Pollution + ReDoS), npm'de düzeltme yok | Yüksek | Denetim bulgusu; sürüm yükseltme/izolasyon önerisi |
+| `ui-structure.test.js` "no gradient" testi — tek `linear-gradient` | Düşük | ✅ DÜZELTİLDİ (gradyan kaldırıldı; `grep linear-gradient styles.css` = 0, test geçiyor) |
+| `xlsx@0.18.5` bilinen açık (Prototype Pollution + ReDoS), npm'de düzeltme yok | Yüksek | AÇIK — npm'de yama yok. Risk düşük (lokal, tek kullanıcı, kendi dosyaları) + 10MB upload limiti. Çok kullanıcılı senaryoda ayrı tur |
 | Oturum sertleştirme: `sameSite`, girişte `regenerate()`, login limiti 200→10 | Orta | ✅ DÜZELTİLDİ (Grup 3). auth 7/7, rate-limiter testi güncellendi. (Kalan: MemoryStore teknik borç) |
 | Hata mesajı sızıntısı (merkezi middleware + dashboard-range) | Orta | ✅ DÜZELTİLDİ (detay log'a, kullanıcıya genel mesaj). Kalan ~11 `err.message` noktası düşük öncelik |
-| Excel/CSV dışa aktarımında formül enjeksiyonu (`=`,`+`,`-`,`@` nötrlenmiyor) | Orta→Düşük | AÇIK — IDOR düzeltmesi sonrası risk azaldı (tek kullanıcı kendi verisini export eder); takip maddesi |
-| DEPS: 21 açık (1 kritik/10 yüksek). `xlsx` npm'de fix YOK; gerisi `--force` + kırıcı `sqlite3@6` istiyor | Yüksek | KARAR: canlıyı kırmamak için ŞİMDİLİK bağımlılık değiştirilmedi. Gerçek risk düşük (lokal, tek kullanıcı, kendi dosyaları). Mitigasyon: 10MB upload limiti mevcut. Bkz. Karar/Öneri |
+| Excel/CSV dışa aktarımında formül enjeksiyonu (`=`,`+`,`-`,`@` nötrlenmiyor) | Orta→Düşük | ✅ DÜZELTİLDİ (`validators.neutralizeSpreadsheetCell` + `buildHistoryExcelBuffer`, 3 test) |
+| DEPS: `npm audit` = **20 açık (0 kritik / 10 yüksek / 8 orta / 2 düşük)**. `xlsx` npm'de fix YOK; gerisi `--force` + kırıcı `sqlite3@6` istiyor | Yüksek | KARAR: canlıyı kırmamak için ŞİMDİLİK bağımlılık değiştirilmedi. jsPDF kritik'i kapatıldı (4.2.1). Gerçek risk düşük (lokal, tek kullanıcı). Mitigasyon: 10MB upload limiti |
 | **FİNANSAL: Brüt Kâr KDV DAHİL hesaplanıyordu** → ana kâr KPI'ı KDV kadar şişikti | **KRİTİK** | ✅ DÜZELTİLDİ (2026-07-07). KDV hariç: `calculateSummary`, `getMonthlyProfitLoss` (satır 2555), YoY (`server.js:1486`), `computeAndSaveSummary`. Geçmiş 20 kayıt migration 010 ile yeniden hesaplandı (6.11M→5.11M). Yedek: `data/backups/pre_vat_fix_*.db`. 96/96 test geçti |
 | FİNANSAL: `parseNumber` parantezli negatif `(1.234,56)` → 0, satır sessizce kayboluyordu | Yüksek | ✅ DÜZELTİLDİ (parantez+sondaki eksi negatif olarak parse ediliyor, 9/9 kanıt) |
 | FİNANSAL: `predictor.js` yetersiz-veri dalında korunması gereken alanlar `undefined` | Yüksek | ✅ DÜZELTİLDİ (confidenceBands/purchase/profit/netProfit/businessStats eklendi) |
 | FİNANSAL: son ay 0 ise CEO özetinde "%Infinity" (`predictor.js:880`) | Orta | ✅ DÜZELTİLDİ (sıfıra bölme koruması) |
-| FİNANSAL: çoklu dosya birleştirmede mükerrer kontrolü yok (`analyzer.js`) → aynı dosya 2 kez = toplam 2 katı | Orta-Yüksek | AÇIK — Grup 2 kalan; dosya-hash bazlı güvenli dedup önerilir (satır-bazlı riskli) |
-| FİNANSAL (minör): kâr oranı % paydası `total_purchases` (KDV dahil) — etiket/payda netleştirilmeli | Düşük | AÇIK — denetim önerisi |
-| DEPS: `jsPDF ≤4.2.0` KRİTİK açık (düzeltme yok), sunucu PDF üretiminde aktif | Yüksek | `npm audit`: toplam 18 açık (1 kritik/9 yüksek) |
-| FRONTEND: 3 farklı escape fonksiyonu karışık + `escapeAttribute` yanlış bağlamda (bugün sömürülemez, ID'ler tamsayı) | Düşük-Orta | Frontend ONAY verdi; backlog |
-| FRONTEND: CSP (Content-Security-Policy) başlığı hiç yok | Düşük | Savunma derinliği önerisi |
+| FİNANSAL: çoklu dosya birleştirmede mükerrer kontrolü yok (`analyzer.js`) → aynı dosya 2 kez = toplam 2 katı | Orta-Yüksek | ✅ DÜZELTİLDİ (`analyzer.dedupeBuffersByContent`, dosya-hash bazlı, 3 test) |
+| FİNANSAL (minör): kâr oranı % paydası `total_purchases` (KDV dahil) — etiket/payda netleştirilmeli | Düşük | ✅ DÜZELTİLDİ (payda satış'a çevrildi, kod tabanıyla tutarlı) |
+| DEPS: `jsPDF ≤4.2.0` KRİTİK açık, sunucu PDF üretiminde aktif | Yüksek | ✅ DÜZELTİLDİ (jsPDF `4.2.1`, audit kritik 1→0). Ayrıca kırık PDF export bug'ı da onarıldı (`autoTable.default`) |
+| FRONTEND: 3 farklı escape fonksiyonu karışık + `escapeAttribute` yanlış bağlamda (bugün sömürülemez, ID'ler tamsayı) | Düşük-Orta | Kısmen düzeltildi (`escapeAttr`); tam konsolidasyon backlog |
+| FRONTEND: CSP (Content-Security-Policy) başlığı hiç yok | Düşük | ✅ DÜZELTİLDİ (CSP + güvenlik başlıkları `server.js`; `'unsafe-inline'` inline onclick için, kaldırma backlog) |
 | SQL enjeksiyon: **temiz** — kolon/sıralama beyaz liste, değerler parametreli | ✅ | Doğrulandı (ilk şüphe kapandı) |
 | İstemci kimlik: **güvenli** — httpOnly çerez, localStorage'da token/şifre yok | ✅ | Frontend denetimi doğruladı |
 | Dev dosyalar (`app.js` ~8360, `styles.css` ~16900, `storage.js` ~2700, `server.js` ~2100) bakımı zorlaştırıyor | Orta | Bu tur BÖLÜNMEYECEK; ileride modülerleştirme önerisi |
@@ -223,9 +226,10 @@ tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-07-08 | ana asistan | **Doküman düzeltme turu:** CLAUDE.md/README.md/PROJE_DURUMU.md güncel koda göre uyumlandı. Migration 001→010, `docs/` içeriği (screenshots+superpowers), dosya satır sayıları, npm audit (20 açık/0 kritik), stale "AÇIK" satırlar ✅ olarak düzeltildi (CSP, formül nötrleme, dedup, jsPDF, gradyan, kâr paydası), git init "bekleyen onay"dan çıkarıldı, Tier 3 davranışları/kararları işlendi. Yalnız doküman; kod dosyalarına dokunulmadı | `CLAUDE.md`, `README.md`, `PROJE_DURUMU.md` |
 | 2026-07-08 | ana asistan | **Tier 3 commit + push:** #2 ve #3 iç içe değişiklikleri hunk bazında iki ayrı commit'e ayrıldı (`9754b57` mobil kart, `0b28bea` onay modalı). Toplam orijinalle birebir doğrulandı (268+/29-). GitHub main'e push, CI yeşil (`success`) | `git`, GitHub |
-| 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #3 — confirm() → özel onay modalı:** 17 `confirm()` → `showConfirm()` Promise helper + `#confirmModal` iskeleti + `.btn-danger`. Kod inceleyici RET (Enter odaktan bağımsız siliyordu) → düzeltildi (Enter dalı kaldırıldı). Test-uzmani 3 klavye senaryosu + fare GEÇTİ, 0 err. 136 test + lint temiz. Commit bekliyor | `public/app.js`, `public/index.html`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
-| 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #2 — cari tablosu mobilde kart:** `styles.css`'e `@media(max-width:768px)` kart bloğu + `app.js renderBusinessPartyRows`'a `data-label`/`bp-cell-name`. Masaüstü tablo korundu. Regresyon kilidi testi (135/135). İzole QA 390/768/1440 GEÇTİ (0 err), kod inceleyici ONAY. Commit bekliyor | `public/app.js`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
+| 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #3 — confirm() → özel onay modalı:** 17 `confirm()` → `showConfirm()` Promise helper + `#confirmModal` iskeleti + `.btn-danger`. Kod inceleyici RET (Enter odaktan bağımsız siliyordu) → düzeltildi (Enter dalı kaldırıldı). Test-uzmani 3 klavye senaryosu + fare GEÇTİ, 0 err. 136 test + lint temiz. Commit `0b28bea`, push + CI yeşil | `public/app.js`, `public/index.html`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
+| 2026-07-08 | ana asistan + test-uzmani + kod-inceleyici | **Tier 3 / İş #2 — cari tablosu mobilde kart:** `styles.css`'e `@media(max-width:768px)` kart bloğu + `app.js renderBusinessPartyRows`'a `data-label`/`bp-cell-name`. Masaüstü tablo korundu. Regresyon kilidi testi. İzole QA 390/768/1440 GEÇTİ (0 err), kod inceleyici ONAY. Commit `9754b57`, push + CI yeşil | `public/app.js`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
 | 2026-07-08 | ana asistan | **Kullanıcı testi + hata düzeltme turu:** izole demo DB'de 58 HTTP + 10 yazma testi + 2 UI/UX ajanı. 6 gerçek bug düzeltildi (PDF export 500, showSuccess ×10, dashboard yükleme mesajı, sürükle-bırak sızıntısı, mobil buton 44px, empty-icon). 134 test + lint temiz, PDF canlı doğrulandı | `server.js`, `public/app.js`, `public/index.html`, `public/styles.css` |
 | 2026-07-07 | ana asistan | **Doküman turu:** README profesyonel yeniden düzen (iç günlükler CHANGELOG.md'ye taşındı), CHANGELOG.md + LICENSE (ISC) eklendi, .env.example eksik değişkenler + doğru default'lar, CLAUDE.md durum bölümü güncellendi. Cari geçmiş davranışı belgelendi | `README.md`, `CHANGELOG.md`, `LICENSE`, `.env.example`, `CLAUDE.md`, `PROJE_DURUMU.md` |
 | 2026-07-07 | ana asistan | **Sürüm kontrolü:** git init (main) + ilk commit + private GitHub deposu (github.com/ademtfkc/analizcim) push. Commit öncesi sır/veri sızıntı denetimi yapıldı (temiz) | `.git`, GitHub |

@@ -40,7 +40,8 @@ makinesinde kalır.
 - **Cari yönetimi**: Excel'den otomatik müşteri/tedarikçi çıkarımı + manuel müşteri kartları
 - Gider yönetimi, geçmiş analizler, çöp kutusu ve arşivleme
 - PDF ve Excel dışa aktarma
-- Modern dark/light SaaS arayüz, collapsible sidebar, responsive tasarım
+- Modern dark/light SaaS arayüz, collapsible sidebar, responsive tasarım (mobilde cari listesi kart görünümüne dönüşür)
+- Tema uyumlu onay pencereleri (silme/onay işlemlerinde tarayıcının kutusu yerine)
 - Kullanıcı girişi, admin onay akışı ve rol yönetimi
 
 ## Ekran Görüntüleri
@@ -143,7 +144,7 @@ tarih, tutar, KDV, dosya kaynağı ve fatura yönü saklanır.
 
 `Müşteriler` ve `Tedarikçiler` sekmelerinde arama, tarih/hacim filtresi ve sıralama; detay ekranında
 toplam hacim, net bakiye, son işlem, ortalama tutar, aylık hacim grafiği, 12 ay trendi ve tam hareket
-dökümü bulunur.
+dökümü bulunur. Liste masaüstünde tablo, telefon/tablette (≤768px) yatay kaydırma yerine kart görünümüdür.
 
 > **Not (geçmiş veriler):** Cari listesi yalnızca **yeni yüklenen** Excel dosyalarından otomatik
 > dolar. Bu özellik eklenmeden önce yüklenmiş eski analizler cari listesine **otomatik girmez**.

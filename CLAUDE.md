@@ -321,6 +321,7 @@ Son güvenli QA ve hata düzeltme turunda aşağıdaki davranışlar doğruland�
 - Cari, müşteri ve tedarikçi başlıkları açıklama kolonlarından önce seçilmelidir.
 - Aynı Excel tekrar yüklendiğinde cari hareket satırları artmamalıdır.
 - `Müşteriler` ve `Tedarikçiler` sekmeleri `390px`, `768px`, `1440px` görünümde kullanılabilir kalmalıdır.
+- Cari tablosu (`.business-party-table`) `≤768px`'te kart görünümüne dönüşür (thead gizli, satır=kart, hücre=flex `etiket:değer` via `::before{content:attr(data-label)}`); masaüstünde klasik 5 kolonlu tablo korunur. Yatay kaydırma üretmemelidir.
 - Cari detay ekranında aylık hacim ve trend chart canvas'ları render edilmelidir.
 - Dashboard cari widget'ları ilgili veriyle dolmalı ve sekmelere yönlendirebilmelidir.
 - Dashboard KPI alanı iki satırlı 4 kolon mantığını korumalıdır.
@@ -332,6 +333,7 @@ Son güvenli QA ve hata düzeltme turunda aşağıdaki davranışlar doğruland�
 - Yıl Karşılaştırma sayfasında YoY delta kartları, grouped bar chart ve Toplam satırlı aylık tablo bulunmalıdır.
 - Model karşılaştırma tablosu seçilen modeli vurgulamalıdır.
 - Koyu/açık tema geçişinde tahmin kartları ve finansal pozitif/negatif renk semantiği korunmalıdır.
+- Silme/onay işlemlerinde native `confirm()` KULLANILMAMALIDIR; tema uyumlu `showConfirm()` modalı (`#confirmModal`) devrededir. Silme işlemleri kırmızı (`.btn-danger`), diğerleri normal buton. İptal / ESC / dış tık (overlay) / X (kapat) → işlem YAPILMAZ; yalnızca Onayla → işlem yapılır. Bu gating birebir korunmalıdır.
 
 ## Yeni Session Devam Notu
 
@@ -381,13 +383,30 @@ Son doğrulanan durum:
 - İzole browser QA sırasında Excel yükleme, tekrar yükleme, müşteri detayı, tedarikçi detayı ve dashboard widget akışı doğrulandı.
 - İzole browser QA sırasında Tahminler sayfası `390px`, `768px`, `1440px` viewport'larda kontrol edildi; Dashboard Tahmin Özeti widget'ı ve Tahminler yönlendirmesi doğrulandı.
 
+### 2026-07-08 güncellemesi (Tier 3 UI turu)
+
+Bu turda yürürlüğe giren güncel durum (detaylı geçmiş: `CHANGELOG.md`):
+
+- **Cari tablosu mobilde kart (#2, commit `9754b57`):** `public/styles.css` `@media (max-width:768px)`
+  bloğu + `public/app.js renderBusinessPartyRows`'a `data-label`/`bp-cell-name`. Masaüstü tablo aynen;
+  tema token'lı, yeşil/kırmızı bakiye semantiği korundu.
+- **Native `confirm()` → tema modalı (#3, commit `0b28bea`):** 17 silme/onay çağrısı Promise dönen
+  `showConfirm({message,danger,confirmText})` helper'ına çevrildi (`app.js`, `showError`'dan sonra). Yeni
+  `#confirmModal` iskeleti (`index.html`) mevcut `.modal-*` token'lı stilleri + yeni `.btn-danger` kullanır.
+  Mesajlar `textContent` (XSS güvenli). Enter, odaklı düğmenin native click'ine bırakıldı (İptal odaktayken
+  yanlış onay hatası önlendi). `if (!confirm(` kalmadığını doğrulayan ui-structure regresyon kilidi eklendi.
+- **#1 (responsive breakpoint konsolidasyonu) ATLANDI:** bug değil, teknik borç; görsel regresyon testi olmadan riskli.
+- **Test:** 136 birim testi + smoke + lint temiz; iki commit GitHub main'e push, CI yeşil (`success`).
+- **Bilinen küçük backlog:** onay modalında focus-trap yok (ileri Tab arka plana kaçar; yine de yanlış silme
+  tetiklemez); `setupKeyboardShortcuts` global Escape'i `#confirmModal`'dan habersiz (pratik risk düşük).
+
 Kalan muhtemel sonraki işler:
 
 - Bağımlılık: `xlsx` (npm'de yama yok) ve `sqlite3@6` (kırıcı) geçişini çok kullanıcılı/ağ senaryosunda ayrı, tam test edilen turda ele almak.
 - MemoryStore yerine kalıcı session store (teknik borç).
 - Büyük frontend refactor: inline `onclick` → `addEventListener` (CSP'den `'unsafe-inline'` kaldırılabilsin).
 - Genel integration harness içindeki açık handle / kapanış davranışını temizlemek.
-- Ekran görüntülerini `docs/screenshots/` altına eklemek (README placeholder'ı).
+- Onay modalı focus-trap + Escape çakışması (küçük erişilebilirlik iyileştirmesi).
 - Büyük veri setlerinde cari liste/detay performansını ve ARIMA sonuçlarını gözlemlemek.
 
 ## Ayarlar Sayfası Standartları
