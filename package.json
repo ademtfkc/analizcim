@@ -2,7 +2,14 @@
   "name": "analizcim",
   "version": "1.0.0",
   "description": "Lokal Excel satış/alış analiz uygulaması",
-  "main": "server.js",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ademtfkc/analizcim.git"
+  },
   "scripts": {
     "test": "NODE_ENV=test node --test --test-concurrency=1 \"tests/**/*.test.js\"",
     "test:unit": "NODE_ENV=test node --test \"tests/unit/**/*.test.js\"",
@@ -21,7 +28,7 @@
     "satis",
     "alis"
   ],
-  "author": "",
+  "author": "Adem Gökhan Tüfekci",
   "license": "ISC",
   "dependencies": {
     "arima": "^0.2.8",

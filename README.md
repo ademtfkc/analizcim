@@ -43,19 +43,28 @@ makinesinde kalır.
 ## Ekran Görüntüleri
 
 > ⚠️ Aşağıdaki görsellerdeki tüm rakamlar ve firma isimleri **DEMO / örnek veridir — gerçek değildir.**
-> (Görsellerin üstündeki kırmızı bant bunu belirtir.)
+> (Görsellerin üstündeki kırmızı bant bunu belirtir.) Başlıklara tıklayarak açıp kapatabilirsiniz.
 
-**Dashboard**
+<details>
+<summary><b>📊 Dashboard</b> — görmek için tıklayın</summary>
 
 ![Dashboard (demo veri)](docs/screenshots/01-dashboard.png)
 
-**Tahminler**
+</details>
+
+<details>
+<summary><b>🔮 Tahminler</b> — görmek için tıklayın</summary>
 
 ![Tahminler (demo veri)](docs/screenshots/02-tahminler.png)
 
-**Müşteriler (Cari)**
+</details>
+
+<details>
+<summary><b>👥 Müşteriler (Cari)</b> — görmek için tıklayın</summary>
 
 ![Müşteriler (demo veri)](docs/screenshots/03-musteriler.png)
+
+</details>
 
 ## Teknolojiler
 
