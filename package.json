@@ -13,7 +13,7 @@
   "scripts": {
     "test": "NODE_ENV=test node --test --test-concurrency=1 \"tests/**/*.test.js\"",
     "test:unit": "NODE_ENV=test node --test \"tests/unit/**/*.test.js\"",
-    "test:integration": "NODE_ENV=test node --test \"tests/integration/**/*.test.js\"",
+    "test:integration": "NODE_ENV=test node --test --test-force-exit \"tests/integration/**/*.test.js\"",
     "test:coverage": "c8 node --test \"tests/**/*.test.js\"",
     "test:smoke": "NODE_ENV=test node --test tests/smoke-tabs.test.js",
     "test:ci": "NODE_ENV=test node --test --test-force-exit \"tests/unit/**/*.test.js\"",

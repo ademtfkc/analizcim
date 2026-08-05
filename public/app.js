@@ -52,6 +52,19 @@ let _mergeMode = false;
 let mergeSalesFiles = [];
 let mergePurchaseFiles = [];
 let currentTab = 'dashboard';
+// Panel saf hesap fonksiyonları ayrı modülde (Node altında birim testi yazılabilsin diye).
+// index.html'de app.js'ten ÖNCE yüklenir; yüklenmezse burada anında ve açık şekilde patlar.
+const {
+    MONTHLY_FIELD,
+    computeVatExclusiveGrossProfit,
+    computeYoyDelta,
+    buildSparklinePoints,
+    findMarginExtremes,
+    sumProfitLossTotals,
+    marginBarFill,
+    hasMeaningfulSummary
+} = window.DashboardMetrics;
+
 let _dashboardMonthlyAll = [];
 // Panelde gösterilen dönemin insan okur etiketi (yıl veya "Ocak 2025 – Haziran 2025")
 let _dashboardPeriodLabel = '';
@@ -4201,15 +4214,6 @@ function clearDashboardRange() {
     loadDashboard();
 }
 
-// Brüt kâr KDV HARİÇ hesaplanır (CEO kararı 2026-07-07). Kâr/Zarar tablosu, geçmiş özetleri ve
-// YoY karşılaştırması aynı tabanı kullanır; panel de aynı tabanda kalmalı ki aynı ekranda iki farklı
-// "Net Kâr" görünmesin. KDV kırılımı yoksa tutarlar zaten net kabul edilir, çıkarma yapılmaz.
-function computeVatExclusiveGrossProfit(sales, purchases, salesVat, purchaseVat) {
-    const netSales = (sales || 0) - (Number.isFinite(salesVat) ? salesVat : 0);
-    const netPurchases = (purchases || 0) - (Number.isFinite(purchaseVat) ? purchaseVat : 0);
-    return netSales - netPurchases;
-}
-
 async function loadDashboard() {
     try {
         showLoading(true, 'Panel yükleniyor...');
@@ -4287,6 +4291,7 @@ async function loadDashboard() {
             const vatArr = rawMonthly.vat || rawMonthly.total_vat || [];
             const salesVatArr = rawMonthly.salesVat || rawMonthly.sales_vat || null;
             const purchVatArr = rawMonthly.purchasesVat || rawMonthly.purchases_vat || rawMonthly.purchase_vat || null;
+            const grossProfitArr = rawMonthly.grossProfit || rawMonthly.gross_profit || null;
             const expensesArr = rawMonthly.expenses || [];
 
             // Separate series exist only if array with at least one nonzero value
@@ -4301,12 +4306,15 @@ async function loadDashboard() {
                 total_vat: (Array.isArray(vatArr) ? vatArr[i] : 0) || 0,
                 sales_vat: _hasSeparateVatSeries ? ((Array.isArray(salesVatArr) ? salesVatArr[i] : 0) || 0) : null,
                 purchase_vat: _hasSeparateVatSeries ? ((Array.isArray(purchVatArr) ? purchVatArr[i] : 0) || 0) : null,
-                gross_profit: computeVatExclusiveGrossProfit(
-                    sales[i] || 0,
-                    purchases[i] || 0,
-                    _hasSeparateVatSeries ? ((Array.isArray(salesVatArr) ? salesVatArr[i] : 0) || 0) : null,
-                    _hasSeparateVatSeries ? ((Array.isArray(purchVatArr) ? purchVatArr[i] : 0) || 0) : null
-                ),
+                // Sunucu KDV hariç brüt kâr serisini gönderiyorsa o kullanılır; yoksa aynı formülle türetilir
+                gross_profit: Array.isArray(grossProfitArr) && grossProfitArr[i] !== undefined
+                    ? (grossProfitArr[i] || 0)
+                    : computeVatExclusiveGrossProfit(
+                        sales[i] || 0,
+                        purchases[i] || 0,
+                        _hasSeparateVatSeries ? ((Array.isArray(salesVatArr) ? salesVatArr[i] : 0) || 0) : null,
+                        _hasSeparateVatSeries ? ((Array.isArray(purchVatArr) ? purchVatArr[i] : 0) || 0) : null
+                    ),
                 expenses: (Array.isArray(expensesArr) ? expensesArr[i] : 0) || 0
             }));
         } else {
@@ -4478,20 +4486,6 @@ async function fetchProfitLossYear(year) {
     return data;
 }
 
-// Aylık kâr/zarar toplamları backend ile aynı formüllerle yeniden hesaplanır (aralık süzmesi sonrası)
-function sumProfitLossTotals(months) {
-    const totals = { sales: 0, purchases: 0, grossProfit: 0, expenses: 0, netProfit: 0, avgProfitMargin: 0 };
-    for (const m of months) {
-        totals.sales += m.sales || 0;
-        totals.purchases += m.purchases || 0;
-        totals.grossProfit += m.grossProfit || 0;
-        totals.expenses += m.expenses || 0;
-        totals.netProfit += m.netProfit || 0;
-    }
-    totals.avgProfitMargin = totals.sales > 0 ? Math.round((totals.netProfit / totals.sales) * 1000) / 10 : 0;
-    return totals;
-}
-
 // range: { start: 'YYYY-MM', end: 'YYYY-MM' } | null
 async function loadProfitLoss(year, periodLabel, range) {
     try {
@@ -4602,22 +4596,11 @@ function renderProfitLoss(data, periodLabel) {
 // Marj hücresi: ince oran çubuğu + sayı (çubuk rengi hücrenin pozitif/negatif tonunu izler)
 function renderMarginBar(margin) {
     const value = Number(margin) || 0;
-    // Negatif marjda çubuk boş kalır (dolu kırmızı çubuk "iyi" gibi okunurdu); yüzde yine görünür
-    const fill = Math.max(0, Math.min(100, Math.round((Math.max(0, value) / 50) * 100)));
+    const fill = marginBarFill(value);
     return '<span class="pl-margin">' +
         '<span class="pl-margin-track"><span class="pl-margin-fill" style="width:' + fill + '%"></span></span>' +
         '<span class="pl-margin-value">' + value + '%</span>' +
     '</span>';
-}
-
-const SUMMARY_AMOUNT_FIELDS = [
-    'total_sales', 'totalSales', 'total_purchases', 'totalPurchases', 'total_vat', 'totalVat',
-    'gross_profit', 'grossProfit', 'net_profit', 'netProfit', 'total_expenses', 'totalExpenses'
-];
-
-function hasMeaningfulSummary(summary) {
-    if (!summary || typeof summary !== 'object') return false;
-    return SUMMARY_AMOUNT_FIELDS.some(field => Math.abs(Number(summary[field]) || 0) > 0);
 }
 
 function renderDashboardForYear(yearStr) {
@@ -5036,32 +5019,6 @@ function renderExecutiveSummary(view) {
 
 // ===== Kokpit yüzeyleri (KPI mikro grafikleri, ana sahne özeti, sağ karar paneli) =====
 
-const MONTHLY_FIELD = {
-    sales: (m) => m.total_sales ?? m.totalSales ?? 0,
-    purchase: (m) => m.total_purchases ?? m.totalPurchases ?? 0,
-    gross: (m) => m.gross_profit ?? m.grossProfit ?? 0,
-    net: (m) => (m.gross_profit ?? m.grossProfit ?? 0) - (m.expenses || 0)
-};
-
-function buildSparklinePoints(values, width, height) {
-    if (!Array.isArray(values) || values.length < 2) return '';
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return '';
-    const span = max - min;
-    const pad = 3;
-    const usable = height - pad * 2;
-    const stepX = width / (values.length - 1);
-    return values.map((value, index) => {
-        const x = (index * stepX).toFixed(1);
-        // Tüm aylar eşitse çizgi dibe yapışmasın, ortadan düz geçsin
-        const y = span === 0
-            ? (height / 2).toFixed(1)
-            : (height - pad - ((value - min) / span) * usable).toFixed(1);
-        return x + ',' + y;
-    }).join(' ');
-}
-
 function renderSparkline(elementId, values, tone) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -5074,43 +5031,6 @@ function renderSparkline(elementId, values, tone) {
     el.innerHTML = '<svg viewBox="0 0 300 34" preserveAspectRatio="none" width="100%" height="34" aria-hidden="true" focusable="false">' +
         '<polyline fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke" ' +
         'stroke-linejoin="round" stroke-linecap="round" points="' + points + '"></polyline></svg>';
-}
-
-// Yıllık değişim: yalnızca İKİ yılda da veri bulunan aylar kıyaslanır. Aksi halde 3 aylık bir yıl,
-// 12 aylık önceki yılla kıyaslanıp "-%97" gibi doğru ama anlamsız bir sonuç üretirdi.
-function computeYoyDelta(allMonthly, yearStr, valueFn) {
-    if (!yearStr || !Array.isArray(allMonthly)) return null;
-    const year = parseInt(yearStr, 10);
-    if (!Number.isFinite(year)) return null;
-
-    const totalsByMonth = (target) => {
-        const map = new Map();
-        for (const row of allMonthly) {
-            if (extractYearFromMonth(row.month) !== target) continue;
-            const monthPart = String(row.month || '').slice(5, 7);
-            if (!monthPart) continue;
-            map.set(monthPart, (map.get(monthPart) || 0) + valueFn(row));
-        }
-        return map;
-    };
-
-    const current = totalsByMonth(year);
-    const previous = totalsByMonth(year - 1);
-    if (current.size === 0 || previous.size === 0) return null;
-
-    let currentSum = 0;
-    let previousSum = 0;
-    let sharedMonths = 0;
-    for (const [monthPart, value] of current) {
-        if (!previous.has(monthPart)) continue;
-        currentSum += value;
-        previousSum += previous.get(monthPart);
-        sharedMonths++;
-    }
-
-    if (sharedMonths === 0 || previousSum === 0) return null;
-    const delta = ((currentSum - previousSum) / Math.abs(previousSum)) * 100;
-    return Number.isFinite(delta) ? delta : null;
 }
 
 function formatDeltaText(pct) {
@@ -5129,20 +5049,6 @@ function setTileDelta(elementId, pct, inverse) {
     } else {
         el.removeAttribute('title');
     }
-}
-
-function findMarginExtremes(sorted) {
-    let best = null;
-    let worst = null;
-    for (const m of sorted) {
-        const sales = MONTHLY_FIELD.sales(m);
-        if (sales <= 0) continue;
-        const margin = (MONTHLY_FIELD.gross(m) / sales) * 100;
-        if (!Number.isFinite(margin)) continue;
-        if (!best || margin > best.margin) best = { month: m.month, margin };
-        if (!worst || margin < worst.margin) worst = { month: m.month, margin };
-    }
-    return { best, worst };
 }
 
 function formatMarginPoint(point) {

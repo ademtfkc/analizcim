@@ -1547,6 +1547,15 @@ app.get('/api/compare', async (req, res) => {
 });
 
 // API - Dashboard latest
+// Aylık seride tek bir ayın KDV hariç brüt kârı. KDV kırılımı yoksa tutarlar zaten net kabul edilir.
+function buildVatExclusiveGrossProfit(monthly, index) {
+    const sales = monthly.sales[index] || 0;
+    const purchases = monthly.purchases[index] || 0;
+    const salesVat = (monthly.salesVat && monthly.salesVat[index]) || 0;
+    const purchasesVat = (monthly.purchasesVat && monthly.purchasesVat[index]) || 0;
+    return (sales - salesVat) - (purchases - purchasesVat);
+}
+
 app.get('/api/dashboard/latest', async (req, res) => {
     const emptySummary = { total_sales: 0, total_purchases: 0, total_vat: 0, gross_profit: 0, total_expenses: 0, net_profit: 0 };
     const emptyResponse = { success: true, summary: emptySummary, monthly: { labels: [], sales: [], purchases: [], vat: [], salesVat: [], purchasesVat: [], expenses: [] }, deltas: [], trend: {} };
@@ -1658,7 +1667,11 @@ app.get('/api/dashboard/latest', async (req, res) => {
         const totalSales = monthly.sales.reduce((a, b) => a + (b || 0), 0);
         const totalPurchases = monthly.purchases.reduce((a, b) => a + (b || 0), 0);
         const totalVatFromMonthly = monthly.vat.reduce((a, b) => a + (b || 0), 0);
-        const grossProfit = (totalSales - totalPurchases) || 0;
+
+        // Brüt kâr KDV HARİÇ (CEO kararı 2026-07-07; Kâr/Zarar tablosu ve geçmiş özetleriyle aynı taban).
+        // Seri olarak da döndürülür ki istemciler bunu ham tutarlardan türetmek zorunda kalmasın.
+        monthly.grossProfit = monthly.labels.map((_, i) => buildVatExclusiveGrossProfit(monthly, i));
+        const grossProfit = monthly.grossProfit.reduce((a, b) => a + (b || 0), 0);
 
         // Giderleri expense_items tablosundan al (aktif gider takip sistemi)
         let allExpenseByMonth = {};
@@ -1693,13 +1706,13 @@ app.get('/api/dashboard/latest', async (req, res) => {
                 total_sales: monthly.sales[len - 2] || 0,
                 total_purchases: monthly.purchases[len - 2] || 0,
                 total_vat: monthly.vat[len - 2] || 0,
-                gross_profit: (monthly.sales[len - 2] || 0) - (monthly.purchases[len - 2] || 0)
+                gross_profit: monthly.grossProfit[len - 2] || 0
             };
             const curr = {
                 total_sales: monthly.sales[len - 1] || 0,
                 total_purchases: monthly.purchases[len - 1] || 0,
                 total_vat: monthly.vat[len - 1] || 0,
-                gross_profit: (monthly.sales[len - 1] || 0) - (monthly.purchases[len - 1] || 0)
+                gross_profit: monthly.grossProfit[len - 1] || 0
             };
             const fields = [
                 { key: 'total_sales', label: 'Satış' },
@@ -1869,7 +1882,11 @@ app.get('/api/dashboard/range', async (req, res) => {
         const totalSales = monthly.sales.reduce((a, b) => a + (b || 0), 0);
         const totalPurchases = monthly.purchases.reduce((a, b) => a + (b || 0), 0);
         const totalVatFromMonthly = monthly.vat.reduce((a, b) => a + (b || 0), 0);
-        const grossProfit = (totalSales - totalPurchases) || 0;
+
+        // Brüt kâr KDV HARİÇ (CEO kararı 2026-07-07; Kâr/Zarar tablosu ve geçmiş özetleriyle aynı taban).
+        // Seri olarak da döndürülür ki istemciler bunu ham tutarlardan türetmek zorunda kalmasın.
+        monthly.grossProfit = monthly.labels.map((_, i) => buildVatExclusiveGrossProfit(monthly, i));
+        const grossProfit = monthly.grossProfit.reduce((a, b) => a + (b || 0), 0);
 
         let allExpenseByMonth = {};
         if (userId) {
@@ -1899,13 +1916,13 @@ app.get('/api/dashboard/range', async (req, res) => {
                 total_sales: monthly.sales[len - 2] || 0,
                 total_purchases: monthly.purchases[len - 2] || 0,
                 total_vat: monthly.vat[len - 2] || 0,
-                gross_profit: (monthly.sales[len - 2] || 0) - (monthly.purchases[len - 2] || 0)
+                gross_profit: monthly.grossProfit[len - 2] || 0
             };
             const curr = {
                 total_sales: monthly.sales[len - 1] || 0,
                 total_purchases: monthly.purchases[len - 1] || 0,
                 total_vat: monthly.vat[len - 1] || 0,
-                gross_profit: (monthly.sales[len - 1] || 0) - (monthly.purchases[len - 1] || 0)
+                gross_profit: monthly.grossProfit[len - 1] || 0
             };
             const fields = [
                 { key: 'total_sales', label: 'Satış' },

@@ -383,23 +383,28 @@ describe('UI structure rules', () => {
 
         // Kâr/Zarar tablosu aralığa göre süzülür ve toplamlar yeniden hesaplanır
         assert.match(js, /async function loadProfitLoss\(year, periodLabel, range\)/);
-        assert.match(js, /function sumProfitLossTotals\(months\)/);
         assert.match(js, /if \(y === startYear && m\.month < startMonth\) continue;/);
         assert.match(js, /if \(y === endYear && m\.month > endMonth\) continue;/);
     });
 
     test('dashboard profit uses the VAT-excluded base so the hero number matches the P&L table', () => {
+        const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');
 
+        // Saf hesap fonksiyonları ayrı modülde ve app.js'ten ÖNCE yüklenir (birim testi için)
+        const metricsIndex = html.indexOf('<script src="js/dashboard-metrics.js"></script>');
+        const appIndex = html.indexOf('<script src="app.js"></script>');
+        assert.ok(metricsIndex > -1);
+        assert.ok(appIndex > metricsIndex);
+        assert.match(js, /\} = window\.DashboardMetrics;/);
+
         // Tek kaynak: panel aylık verisi de Kâr/Zarar tablosuyla aynı KDV hariç tabanı kullanır
-        assert.match(js, /function computeVatExclusiveGrossProfit\(/);
-        assert.ok((js.match(/computeVatExclusiveGrossProfit\(/g) || []).length >= 4);
+        assert.ok((js.match(/computeVatExclusiveGrossProfit\(/g) || []).length >= 3);
 
         // Regresyon kilidi: ham (KDV dahil) satış - alış farkı doğrudan gross_profit'e yazılmaz
         assert.doesNotMatch(js, /gross_profit:\s*\(sales\[i\]\s*\|\|\s*0\)\s*-\s*\(purchases\[i\]\s*\|\|\s*0\)/);
 
         // Boş panel gerçekten tetiklenebilmeli (API sıfır dolu summary döndürüyor)
-        assert.match(js, /function hasMeaningfulSummary\(/);
         assert.match(js, /monthly\.length === 0 && !hasMeaningfulSummary\(summary\)/);
     });
 
@@ -415,9 +420,9 @@ describe('UI structure rules', () => {
         // Net kâr mikro grafiği zararda yeşil kalmamalı
         assert.match(js, /renderSparkline\('dashNetProfitSpark',[^\n]*view\.netProfit < 0 \? 'negative' : 'positive'\)/);
 
-        // Yıllık değişim yalnızca iki yılda da bulunan ayları kıyaslar (kısmi yıl yanılgısı)
-        assert.match(js, /sharedMonths/);
-        assert.match(js, /if \(sharedMonths === 0 \|\| previousSum === 0\) return null;/);
+        // Yıllık değişim mantığı ayrı modülde birim testleriyle korunur
+        const metrics = fs.readFileSync(path.join(rootDir, 'public', 'js', 'dashboard-metrics.js'), 'utf8');
+        assert.match(metrics, /if \(sharedMonths === 0 \|\| previousSum === 0\) return null;/);
     });
 
     test('destructive actions use the themed confirm modal instead of native confirm()', () => {
