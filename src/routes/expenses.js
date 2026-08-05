@@ -9,11 +9,17 @@ function registerExpenseRoutes(app, deps) {
         sanitizeString
     } = deps;
 
+    // Ön yüz gider adını `label` alanında gönderir (buildExpensesDataFromDOM); `name` eski/alternatif ad.
+    function expenseItemLabel(item) {
+        const raw = item && (item.label != null ? item.label : item.name);
+        return typeof raw === 'string' ? raw : '';
+    }
+
     function validateExpenseItems(items) {
         if (!Array.isArray(items)) return { valid: false, error: 'Giderler dizi olmalıdır.' };
         for (const item of items) {
-            if (!item.name || typeof item.name !== 'string') {
-                return { valid: false, error: 'Gider adı gereklidir.' };
+            if (typeof expenseItemLabel(item) !== 'string') {
+                return { valid: false, error: 'Gider adı metin olmalıdır.' };
             }
             if (item.amount != null) {
                 const amountValidation = validateAmount(item.amount);
@@ -25,11 +31,14 @@ function registerExpenseRoutes(app, deps) {
         return { valid: true };
     }
 
+    // storage.setExpenseItems `label`, `id` ve `date` alanlarını okur; şekil birebir korunmalı,
+    // aksi halde gider adı ve tarihi sessizce kaybolur.
     function sanitizeExpenseCollection(items) {
         return (items || []).map((item) => ({
-            name: sanitizeString(item.name),
+            id: item.id != null ? sanitizeString(String(item.id)) : null,
+            label: sanitizeString(expenseItemLabel(item)),
             amount: item.amount != null ? parseFloat(item.amount) : 0,
-            category: item.category ? sanitizeString(item.category) : ''
+            date: item.date ? sanitizeString(String(item.date)) : ''
         }));
     }
 

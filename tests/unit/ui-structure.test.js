@@ -457,6 +457,29 @@ describe('UI structure rules', () => {
         assert.match(css, /\.compare-section\.cockpit-page \.compare-delta-grid\s*\{/);
     });
 
+    test('expenses page uses the cockpit layout and saves without losing data', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /class="expenses-section cockpit-page"/);
+        assert.match(html, /id="expensesRail"/);
+        assert.match(html, /id="expensesRailActionList"/);
+        assert.match(html, /id="expensesRailFacts"/);
+        assert.match(html, /id="expensesRailTop"/);
+        assert.match(js, /function renderExpensesRail\(view\)/);
+        assert.match(css, /\.expenses-section\.cockpit-page \.expenses-summary-cards\s*\{/);
+
+        // Kayıt hatası sessizce yutulmamalı (giderler veritabanına gitmiyordu)
+        assert.match(js, /Giderler kaydedilemedi/);
+        assert.doesNotMatch(js, /body: JSON\.stringify\(\{\s*\n\s*year,\s*\n[\s\S]{0,200}?\}\)\s*\n\s*\}\);\s*\n\s*\} catch \(_\) \{ \}/);
+
+        // Her tuş vuruşunda istek atılmamalı; kayıtlar sıraya girmeli
+        assert.match(js, /function scheduleExpensesSave\(section\)/);
+        assert.match(js, /clearTimeout\(_expenseSaveTimer\)/);
+        assert.match(js, /_expenseSaveChain = _expenseSaveChain/);
+    });
+
     test('destructive actions use the themed confirm modal instead of native confirm()', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');

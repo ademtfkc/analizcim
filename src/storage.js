@@ -1263,15 +1263,29 @@ function getExpenseItemsTotalByYear(userId, year) {
                 if (err) return reject(err);
                 let total = 0;
                 const byMonth = {};
+                let yearWideTotal = 0;
+
                 (rows || []).forEach(r => {
                     const amt = _fin(r.total);
                     total += amt;
                     if (r.month && r.month !== 'all') {
                         const key = yearStr + '-' + String(r.month).padStart(2, '0');
                         byMonth[key] = (byMonth[key] || 0) + amt;
+                    } else {
+                        yearWideTotal += amt;
                     }
                 });
-                // 'all' month giderleri → tüm aylara dağıtmak yerine toplama ekle
+
+                // "Tüm yıl" giderleri 12 aya eşit dağıtılır — getMonthlyProfitLoss ile aynı kural.
+                // Aksi halde panel bu giderleri hiç saymaz, Kâr/Zarar tablosu sayardı (iki farklı sonuç).
+                if (yearWideTotal !== 0) {
+                    const perMonth = yearWideTotal / 12;
+                    for (let m = 1; m <= 12; m++) {
+                        const key = yearStr + '-' + String(m).padStart(2, '0');
+                        byMonth[key] = (byMonth[key] || 0) + perMonth;
+                    }
+                }
+
                 resolve({ total, byMonth });
             }
         );

@@ -1210,13 +1210,12 @@
             </section>
 
             <!-- Expenses Section (Gider) -->
-            <section class="expenses-section" id="expensesSection" style="display: none;">
+            <section class="expenses-section cockpit-page" id="expensesSection" style="display: none;">
                 <div class="expenses-header">
                     <div class="expenses-header-left">
                         <span class="section-kicker">Margin Control</span>
                         <h2>Gider Yönetimi</h2>
-                        <p class="section-desc">Sabit ve değişken giderlerinizi dönem bazlı takip edin, net kâr
-                            marjınızı analiz edin.</p>
+                        <span class="cockpit-head-meta" id="expensesHeadMeta">Dönem seçin</span>
                     </div>
                     <div class="expenses-header-right">
                         <div class="expenses-period-selector">
@@ -1258,6 +1257,9 @@
                         <span class="overview-point">Hızlı veri girişi</span>
                     </div>
                 </div>
+
+                <div class="cockpit-body">
+                <div class="cockpit-main">
 
                 <div class="expenses-period-summary" id="expensesPeriodSummary" aria-live="polite">
                     <div>
@@ -1367,6 +1369,26 @@
                         </div>
                     </div>
                 </div>
+
+                </div><!-- /.cockpit-main -->
+
+                <aside class="cockpit-rail" id="expensesRail" aria-label="Gider karar paneli">
+                    <div class="rail-block rail-actions">
+                        <div class="rail-title">Şimdi ne yapmalıyım</div>
+                        <div class="rail-action-list" id="expensesRailActionList"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">Gider yapısı</div>
+                        <div class="rail-facts" id="expensesRailFacts"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">En büyük kalemler</div>
+                        <div class="rail-facts" id="expensesRailTop"></div>
+                    </div>
+                </aside>
+                </div><!-- /.cockpit-body -->
 
                 <div class="topn-analysis-container" id="topnAnalysisContainer" style="display: none;">
                     <!-- Pareto Analysis -->

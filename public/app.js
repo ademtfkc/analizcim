@@ -3146,7 +3146,7 @@ async function getExpensesLocalData(year, month) {
 
 async function setExpensesLocalData(year, month, data) {
     try {
-        await fetch('/api/expenses-local', {
+        const response = await fetch('/api/expenses-local', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -3156,7 +3156,18 @@ async function setExpensesLocalData(year, month, data) {
                 variable: data.variable || []
             })
         });
-    } catch (_) { }
+        // Hata sessizce yutulursa gider veritabanına yazılmadığı halde kullanıcı kaydedildi sanır
+        if (!response.ok) {
+            console.error('Gider kaydı başarısız:', response.status);
+            showError('Giderler kaydedilemedi. Sayfayı yenileyip tekrar deneyin.');
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('Gider kaydı hatası:', error);
+        showError('Giderler kaydedilemedi. Bağlantınızı kontrol edin.');
+        return false;
+    }
 }
 
 function getGrossProfitForPeriod(year, month) {
@@ -3758,6 +3769,89 @@ async function updateExpensesLocalSummary() {
     }
     // Render Pie Chart
     renderExpensesPieChart(fixedTotal, variableTotal);
+
+    renderExpensesRail({ year, month, gross, fixedTotal, variableTotal, net, data });
+}
+
+// Gider sayfasının karar paneli: gider yapısı, en büyük kalemler ve aksiyon önerileri
+function renderExpensesRail(view) {
+    const meta = document.getElementById('expensesHeadMeta');
+    const toplam = view.fixedTotal + view.variableTotal;
+    const kalemSayisi = (view.data.fixed || []).length + (view.data.variable || []).length;
+
+    if (meta) {
+        meta.textContent = `${view.year || '—'} · ${getExpenseMonthLabel(view.month)} · ${kalemSayisi} kalem`;
+    }
+
+    const giderOrani = view.gross > 0 ? (toplam / view.gross) * 100 : 0;
+    const sabitPayi = toplam > 0 ? (view.fixedTotal / toplam) * 100 : 0;
+
+    renderRailFacts('expensesRailFacts', [
+        { label: 'Brüt kâr', value: formatCurrency(view.gross) },
+        { label: 'Toplam gider', value: formatCurrency(toplam) },
+        { label: 'Net sonuç', value: formatCurrency(view.net), tone: view.net >= 0 ? 'positive' : 'negative' },
+        { label: 'Gider / brüt kâr', value: view.gross > 0 ? '%' + giderOrani.toFixed(1).replace('.', ',') : '—',
+          tone: giderOrani > 100 ? 'negative' : '' },
+        { label: 'Sabit gider payı', value: toplam > 0 ? '%' + sabitPayi.toFixed(1).replace('.', ',') : '—' }
+    ]);
+
+    // En büyük 5 gider kalemi (sabit + değişken birlikte)
+    const kalemler = [
+        ...(view.data.fixed || []).map(i => ({ ad: i.name || i.label || 'Adsız', tutar: Number(i.amount) || 0, tip: 'Sabit' })),
+        ...(view.data.variable || []).map(i => ({ ad: i.name || i.label || 'Adsız', tutar: Number(i.amount) || 0, tip: 'Değişken' }))
+    ].filter(i => i.tutar > 0).sort((a, b) => b.tutar - a.tutar).slice(0, 5);
+
+    renderRailFacts('expensesRailTop', kalemler.length
+        ? kalemler.map(k => ({ label: `${k.ad} (${k.tip})`, value: formatCurrency(k.tutar) }))
+        : [{ label: 'Kayıt yok', value: '—' }]);
+
+    const items = [];
+
+    if (view.net < 0) {
+        items.push({
+            tone: 'negative',
+            title: 'Dönem net zararda',
+            body: `Brüt kâr ${formatCurrency(view.gross)}, gider ${formatCurrency(toplam)}. Aradaki fark ${formatCurrency(Math.abs(view.net))} zarar olarak kalıyor.`
+        });
+    } else if (giderOrani > 60) {
+        items.push({
+            tone: 'warning',
+            title: `Giderler brüt kârın %${giderOrani.toFixed(0)}'ı`,
+            body: 'Kâr marjı gider baskısı altında. En büyük kalemlerden başlayarak azaltma imkânı aranmalı.'
+        });
+    } else {
+        items.push({
+            tone: 'positive',
+            title: 'Gider yükü kontrollü',
+            body: `Giderler brüt kârın %${giderOrani.toFixed(0)}'ı; net sonuç ${formatCurrency(view.net)}.`
+        });
+    }
+
+    if (kalemler.length > 0) {
+        const enBuyuk = kalemler[0];
+        const pay = toplam > 0 ? (enBuyuk.tutar / toplam) * 100 : 0;
+        items.push({
+            tone: pay >= 40 ? 'warning' : 'neutral',
+            title: `En büyük kalem: ${enBuyuk.ad}`,
+            body: `${formatCurrency(enBuyuk.tutar)} ile toplam giderin %${pay.toFixed(0)}'ını oluşturuyor.`
+        });
+    }
+
+    if (sabitPayi >= 70 && toplam > 0) {
+        items.push({
+            tone: 'warning',
+            title: 'Giderler ağırlıkla sabit',
+            body: `Toplamın %${sabitPayi.toFixed(0)}'ı sabit gider. Satış düştüğünde bu kalemler azalmaz; nakit planında dikkat gerektirir.`
+        });
+    } else if (kalemSayisi === 0) {
+        items.push({
+            tone: 'neutral',
+            title: 'Bu döneme gider girilmemiş',
+            body: 'Sabit ve değişken gider kalemlerini girdiğinizde net kâr ve marj hesabı gerçek sonucu gösterir.'
+        });
+    }
+
+    renderRailActionItems('expensesRailActionList', items);
 }
 
 function renderExpensesPieChart(fixedTotal, variableTotal) {
@@ -3885,6 +3979,30 @@ async function removeExpensesLocalRow(sectionType, rowId) {
     bindExpensesLocalEvents();
 }
 
+// Gider kaydı: her tuş vuruşunda istek atılıyordu ve kayıt DELETE+INSERT olduğu için eşzamanlı
+// istekler satırları çoğaltabiliyordu. Artık yazım durunca tek istek gider ve istekler sıraya girer.
+let _expenseSaveTimer = null;
+let _expenseSaveChain = Promise.resolve();
+
+function scheduleExpensesSave(section) {
+    clearTimeout(_expenseSaveTimer);
+    _expenseSaveTimer = setTimeout(() => {
+        const { year, month, data } = buildExpensesDataFromDOM();
+        _expenseSaveChain = _expenseSaveChain
+            .then(() => setExpensesLocalData(year, month, data))
+            .then(() => {
+                updateExpensesLocalSummary();
+                const fixedTotal = (data.fixed || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                const variableTotal = (data.variable || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                const subtotal = section === 'fixed' ? fixedTotal : variableTotal;
+                const subtotalId = section === 'fixed' ? 'expenseFixedSubtotal' : 'expenseVariableSubtotal';
+                const subtotalEl = document.getElementById(subtotalId);
+                if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+            })
+            .catch(error => console.error('Gider kaydı sırası hatası:', error));
+    }, 450);
+}
+
 function bindExpensesLocalEvents() {
     const yearSel = document.getElementById('expenseLocalYear');
     const monthSel = document.getElementById('expenseLocalMonth');
@@ -3905,18 +4023,7 @@ function bindExpensesLocalEvents() {
         const amountInp = row.querySelector('.expense-local-amount');
         const dateInp = row.querySelector('.expense-local-date');
         const delBtn = row.querySelector('.expense-local-delete');
-        const debounceSave = () => {
-            const { year, month, data } = buildExpensesDataFromDOM();
-            setExpensesLocalData(year, month, data).then(() => {
-                updateExpensesLocalSummary();
-                const fixedTotal = (data.fixed || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
-                const variableTotal = (data.variable || []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
-                const subtotal = section === 'fixed' ? fixedTotal : variableTotal;
-                const subtotalId = section === 'fixed' ? 'expenseFixedSubtotal' : 'expenseVariableSubtotal';
-                const subtotalEl = document.getElementById(subtotalId);
-                if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
-            });
-        };
+        const debounceSave = () => scheduleExpensesSave(section);
         if (labelInp) labelInp.addEventListener('input', debounceSave);
         if (dateInp) dateInp.addEventListener('change', debounceSave);
         // Tutar: focus'ta saf sayı göster, blur'da formatla
