@@ -5487,7 +5487,7 @@ function renderAnomalySection(monthly) {
             insertAfter.parentNode.insertBefore(container, insertAfter.nextElementSibling);
         } else {
             // Kokpit düzeninde widget'lar ana şeridin içinde yaşar; şerit dışına düşmesin
-            const lane = document.querySelector('.dashboard-cockpit-main') || document.getElementById('dashboardSection');
+            const lane = document.querySelector('.cockpit-main') || document.getElementById('dashboardSection');
             lane.appendChild(container);
         }
     }
@@ -5680,7 +5680,7 @@ function renderDeltaSection(monthly) {
             chartSection.parentNode.insertBefore(container, chartSection.nextElementSibling);
         } else {
             // Kokpit düzeninde widget'lar ana şeridin içinde yaşar; şerit dışına düşmesin
-            const lane = document.querySelector('.dashboard-cockpit-main') || document.getElementById('dashboardSection');
+            const lane = document.querySelector('.cockpit-main') || document.getElementById('dashboardSection');
             lane.appendChild(container);
         }
     }
@@ -7575,27 +7575,156 @@ async function initCompareYears() {
 let compareMonthlyChartInstance = null;
 
 function setComparePanelVisibility(show) {
+    const cockpitBody = document.getElementById('compareCockpitBody');
     const deltaCards = document.getElementById('compareDeltaCards');
     const chartSection = document.getElementById('compareChartSection');
     const monthlySection = document.getElementById('compareMonthlySection');
     const emptyState = document.getElementById('compareEmpty');
+    if (cockpitBody) cockpitBody.style.display = show ? 'grid' : 'none';
     if (deltaCards) deltaCards.style.display = show ? 'grid' : 'none';
     if (chartSection) chartSection.style.display = show ? 'block' : 'none';
     if (monthlySection) monthlySection.style.display = show ? 'block' : 'none';
     if (emptyState) emptyState.style.display = show ? 'none' : 'flex';
 }
 
-function updateCompareDeltaCard(cardId, valueId, metaId, label, percent, diff) {
+// Sağ karar paneli: basit "etiket / değer" satırları
+function renderRailFacts(containerId, facts) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = facts.map(fact => (
+        '<div class="rail-fact">' +
+            '<span class="rail-fact-label">' + escapeHtml(fact.label) + '</span>' +
+            '<span class="rail-fact-value ' + (fact.tone || '') + '">' + escapeHtml(fact.value) + '</span>' +
+        '</div>'
+    )).join('');
+}
+
+// Karar maddeleri: dot + başlık + açıklama (satır içi onclick yok)
+function renderRailActionItems(containerId, items) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = items.map(item => (
+        '<div class="rail-action ' + (item.tone || 'neutral') + '">' +
+            '<span class="rail-action-dot" aria-hidden="true"></span>' +
+            '<div class="rail-action-body">' +
+                '<div class="rail-action-title">' + escapeHtml(item.title) + '</div>' +
+                '<p class="rail-action-text">' + escapeHtml(item.body) + '</p>' +
+            '</div>' +
+        '</div>'
+    )).join('');
+}
+
+function pctText(value) {
+    if (value == null || !Number.isFinite(Number(value))) return '—';
+    const n = Number(value);
+    // Yuvarlamadan sonra sıfıra düşen değerler "-0,0%" gibi görünmesin
+    const rounded = Math.abs(n) < 0.05 ? 0 : n;
+    return (rounded > 0 ? '+' : (rounded < 0 ? '' : '')) + rounded.toFixed(1).replace('.', ',') + '%';
+}
+
+// Marj farkı yüzde değil YÜZDE PUAN'dır; birim ayrı yazılır
+function pointText(value) {
+    if (value == null || !Number.isFinite(Number(value))) return '—';
+    const n = Number(value);
+    const rounded = Math.abs(n) < 0.05 ? 0 : n;
+    return (rounded > 0 ? '+' : '') + rounded.toFixed(1).replace('.', ',') + ' puan';
+}
+
+// Yıl karşılaştırmasının karar paneli: veriden üretilir, dekoratif değil
+function renderCompareRail(a, b, growth) {
+    const meta = document.getElementById('compareHeadMeta');
+    if (meta) meta.textContent = `${a.year} → ${b.year} · ${(a.monthly || []).length} ay`;
+
+    const netA = a.net_profit ?? a.profit ?? 0;
+    const netB = b.net_profit ?? b.profit ?? 0;
+    const marginA = a.sales > 0 ? (netA / a.sales) * 100 : 0;
+    const marginB = b.sales > 0 ? (netB / b.sales) * 100 : 0;
+    const marginDiff = marginB - marginA;
+    // Yuvarlamadan sonra sıfıra düşen fark nötrdür; "0,0 puan" kırmızı görünmesin
+    const marginTone = Math.abs(marginDiff) < 0.05 ? '' : (marginDiff > 0 ? 'positive' : 'negative');
+
+    renderRailFacts('compareRailFacts', [
+        { label: `${a.year} net kâr`, value: formatCurrency(netA) },
+        { label: `${b.year} net kâr`, value: formatCurrency(netB), tone: netB >= netA ? 'positive' : 'negative' },
+        { label: `${a.year} net marj`, value: '%' + marginA.toFixed(1).replace('.', ',') },
+        { label: `${b.year} net marj`, value: '%' + marginB.toFixed(1).replace('.', ','), tone: marginTone },
+        { label: 'Marj değişimi', value: pointText(marginDiff), tone: marginTone }
+    ]);
+
+    // Aylık en büyük artış/azalış
+    const rows = (a.monthly || []).map((m1, i) => {
+        const m2 = (b.monthly || [])[i] || {};
+        return { ay: m1.monthName || '', fark: (m2.sales || 0) - (m1.sales || 0) };
+    }).filter(r => r.ay);
+    const sorted = rows.slice().sort((x, y) => y.fark - x.fark);
+    const enIyi = sorted[0];
+    const enKotu = sorted[sorted.length - 1];
+
+    const farkMetni = (r) => `${r.ay} · ${(r.fark >= 0 ? '+' : '') + formatCurrency(r.fark)}`;
+    renderRailFacts('compareRailMonths', [
+        { label: 'En çok artan ay', value: enIyi ? farkMetni(enIyi) : '—', tone: enIyi && enIyi.fark >= 0 ? 'positive' : 'negative' },
+        // Tüm aylar artmışsa "gerileyen ay" yoktur; etiket veriye göre değişir
+        {
+            label: enKotu && enKotu.fark >= 0 ? 'En az artan ay' : 'En çok gerileyen ay',
+            value: enKotu ? farkMetni(enKotu) : '—',
+            tone: enKotu && enKotu.fark >= 0 ? 'positive' : 'negative'
+        },
+        { label: 'Artan ay sayısı', value: `${rows.filter(r => r.fark > 0).length} / ${rows.length}` }
+    ]);
+
+    const items = [];
+    const salesGrowth = Number(growth.sales);
+    const purchaseGrowth = Number(growth.purchase);
+
+    if (Number.isFinite(salesGrowth) && Number.isFinite(purchaseGrowth) && purchaseGrowth > salesGrowth + 1) {
+        items.push({
+            tone: 'negative',
+            title: 'Maliyet satıştan hızlı artıyor',
+            body: `Satış ${pctText(salesGrowth)} artarken alış ${pctText(purchaseGrowth)} arttı; net marj ${pctText(marginDiff)} puan değişti.`
+        });
+    } else if (Number.isFinite(salesGrowth)) {
+        items.push({
+            tone: salesGrowth >= 0 ? 'positive' : 'negative',
+            title: salesGrowth >= 0 ? 'Satış büyümesi maliyeti aşıyor' : 'Satış geriliyor',
+            body: `Satış ${pctText(salesGrowth)}, alış ${pctText(purchaseGrowth)}. Net marj ${pctText(marginDiff)} puan değişti.`
+        });
+    }
+
+    items.push({
+        tone: netB >= netA ? 'positive' : 'negative',
+        title: netB >= netA ? `${b.year} net kârla önde` : `${b.year} net kârda geride`,
+        body: `Fark ${(netB - netA >= 0 ? '+' : '') + formatCurrency(netB - netA)} (${pctText(growth.net_profit)}).`
+    });
+
+    if (enKotu && enKotu.fark < 0) {
+        items.push({
+            tone: 'warning',
+            title: `${enKotu.ay} ayı dikkat istiyor`,
+            body: `${b.year} ${enKotu.ay} ayında satış ${formatCurrency(Math.abs(enKotu.fark))} daha düşük. Bu ayın nedenini incelemek gerekir.`
+        });
+    }
+
+    renderRailActionItems('compareRailActionList', items);
+}
+
+// inverse=true: artışın KÖTÜ olduğu kalemler (maliyet). Yeşil/kırmızı yön bilgisi taşımalı.
+function updateCompareDeltaCard(cardId, valueId, metaId, label, percent, diff, inverse) {
     const card = document.getElementById(cardId);
     const valueEl = document.getElementById(valueId);
     const metaEl = document.getElementById(metaId);
     if (!card || !valueEl || !metaEl) return;
+
     const numericPercent = percent == null ? null : Number(percent);
     const numericDiff = Number(diff || 0);
-    const tone = numericPercent == null || numericPercent === 0 ? 'neutral' : (numericPercent > 0 ? 'positive' : 'negative');
-    const arrow = numericPercent == null || numericPercent === 0 ? '→' : (numericPercent > 0 ? '↗' : '↘');
+    const isFlat = numericPercent == null || Math.abs(numericPercent) < 0.05;
+    const isUp = !isFlat && numericPercent > 0;
+    const isGood = inverse ? !isUp : isUp;
+
+    const tone = isFlat ? 'neutral' : (isGood ? 'positive' : 'negative');
+    const arrow = isFlat ? '→' : (isUp ? '↗' : '↘');
+
     card.className = 'compare-delta-card ' + tone;
-    valueEl.textContent = numericPercent == null ? '-' : arrow + ' ' + (numericPercent >= 0 ? '+' : '') + numericPercent.toFixed(1) + '%';
+    valueEl.textContent = numericPercent == null ? '-' : arrow + ' ' + pctText(numericPercent);
     metaEl.textContent = label + ': ' + (numericDiff >= 0 ? '+' : '') + formatCurrency(numericDiff);
 }
 
@@ -7693,12 +7822,14 @@ window.loadCompare = async function () {
         const growth = data.growth || {};
 
         updateCompareDeltaCard('compareSalesDeltaCard', 'compareSalesDeltaValue', 'compareSalesDeltaMeta', 'Satış farkı', growth.sales, b.sales - a.sales);
-        updateCompareDeltaCard('compareCostDeltaCard', 'compareCostDeltaValue', 'compareCostDeltaMeta', 'Alış farkı', growth.purchase, b.purchase - a.purchase);
+        // Maliyet artışı iyi haber değildir: renk tersine çevrilir
+        updateCompareDeltaCard('compareCostDeltaCard', 'compareCostDeltaValue', 'compareCostDeltaMeta', 'Alış farkı', growth.purchase, b.purchase - a.purchase, true);
         updateCompareDeltaCard('compareNetDeltaCard', 'compareNetDeltaValue', 'compareNetDeltaMeta', 'Net kâr farkı', growth.net_profit, (b.net_profit ?? b.profit) - (a.net_profit ?? a.profit));
 
         const chartMeta = document.getElementById('compareChartMeta');
         if (chartMeta) chartMeta.textContent = a.year + ' - ' + b.year;
         renderCompareMonthlyChart(a, b);
+        renderCompareRail(a, b, growth);
 
         const monthY1 = document.getElementById('compareMonthY1Label');
         const monthY2 = document.getElementById('compareMonthY2Label');

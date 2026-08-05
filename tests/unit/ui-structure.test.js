@@ -317,8 +317,8 @@ describe('UI structure rules', () => {
         const css = readPublicFile('styles.css');
 
         // İki şeritli iskelet: ana kolon + sağ karar paneli
-        assert.match(html, /class="dashboard-section dashboard-cockpit"/);
-        assert.match(html, /class="dashboard-cockpit-main"/);
+        assert.match(html, /class="dashboard-section dashboard-cockpit cockpit-page"/);
+        assert.match(html, /class="cockpit-main"/);
         assert.match(html, /id="dashboardRail"/);
 
         // 4 ana KPI kutusu mikro grafik + yıllık değişim rozeti taşır
@@ -350,10 +350,10 @@ describe('UI structure rules', () => {
         assert.match(js, /\[data-widget-anchor\]/);
 
         // Tema token'ları: kokpit bloğunda sabit renk yok
-        const cockpitBlock = css.slice(css.indexOf('.dashboard-cockpit {'));
+        const cockpitBlock = css.slice(css.indexOf('.cockpit-page {'));
         assert.ok(cockpitBlock.length > 0);
         assert.doesNotMatch(cockpitBlock, /#[0-9a-fA-F]{3,8}\b/);
-        assert.match(cockpitBlock, /\.dashboard-cockpit \.dashboard-cockpit-body\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) var\(--cockpit-rail-width\)/);
+        assert.match(cockpitBlock, /\.cockpit-page \.cockpit-body\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) var\(--cockpit-rail-width\)/);
     });
 
     test('confirm modal traps focus and keeps Escape from reaching global shortcuts', () => {
@@ -423,6 +423,38 @@ describe('UI structure rules', () => {
         // Yıllık değişim mantığı ayrı modülde birim testleriyle korunur
         const metrics = fs.readFileSync(path.join(rootDir, 'public', 'js', 'dashboard-metrics.js'), 'utf8');
         assert.match(metrics, /if \(sharedMonths === 0 \|\| previousSum === 0\) return null;/);
+    });
+
+    test('year comparison page uses the cockpit two-lane layout with a data-driven rail', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        // İki şerit + karar paneli
+        assert.match(html, /class="compare-section cockpit-page"/);
+        assert.match(html, /id="compareCockpitBody"/);
+        assert.match(html, /id="compareRail"/);
+        assert.match(html, /id="compareRailActionList"/);
+        assert.match(html, /id="compareRailFacts"/);
+        assert.match(html, /id="compareRailMonths"/);
+        assert.match(html, /id="compareHeadMeta"/);
+
+        // Panel veriden üretilir, satır içi onclick yok
+        assert.match(js, /function renderCompareRail\(a, b, growth\)/);
+        assert.match(js, /renderCompareRail\(a, b, growth\);/);
+        assert.doesNotMatch(js, /rail-action-title"[^\n]*onclick/);
+
+        // Maliyet artışı kırmızı olmalı (ters yön bayrağı)
+        assert.match(js, /const isGood = inverse \? !isUp : isUp;/);
+        assert.match(js, /growth\.purchase, b\.purchase - a\.purchase, true\);/);
+
+        // Yüzde puan ayrı birim, yuvarlanan sıfır "-0,0" görünmez
+        assert.match(js, /function pointText\(/);
+        assert.match(js, /Math\.abs\(n\) < 0\.05 \? 0 : n/);
+
+        // Ortak kokpit stilleri sayfa bağımsız
+        assert.match(css, /\.cockpit-page \.rail-fact\s*\{/);
+        assert.match(css, /\.compare-section\.cockpit-page \.compare-delta-grid\s*\{/);
     });
 
     test('destructive actions use the themed confirm modal instead of native confirm()', () => {

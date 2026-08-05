@@ -653,7 +653,7 @@
             </section>
 
             <!-- Dashboard Section -->
-            <section class="dashboard-section dashboard-cockpit" id="dashboardSection" style="display: block;">
+            <section class="dashboard-section dashboard-cockpit cockpit-page" id="dashboardSection" style="display: block;">
                 <div class="dashboard-header-row">
                     <div class="section-title-block">
                         <span class="section-kicker">Finans Paneli</span>
@@ -694,8 +694,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="dashboard-cockpit-body">
-                <div class="dashboard-cockpit-main">
+                <div class="cockpit-body">
+                <div class="cockpit-main">
 
                 <!-- Widget Config Panel -->
                 <div class="dashboard-widget-config" id="dashboardWidgetConfig" style="display:none;">
@@ -960,9 +960,9 @@
                         <span>İlk Analizimi Yap</span>
                     </button>
                 </div>
-                </div><!-- /.dashboard-cockpit-main -->
+                </div><!-- /.cockpit-main -->
 
-                <aside class="dashboard-cockpit-rail" id="dashboardRail" aria-label="Karar paneli">
+                <aside class="cockpit-rail" id="dashboardRail" aria-label="Karar paneli">
                     <!-- Şimdi ne yapmalıyım -->
                     <div class="rail-block rail-actions" id="dashboardRailActions" data-widget-anchor>
                         <div class="rail-title">Şimdi ne yapmalıyım</div>
@@ -1039,7 +1039,7 @@
                         </div>
                     </div>
                 </aside>
-                </div><!-- /.dashboard-cockpit-body -->
+                </div><!-- /.cockpit-body -->
             </section>
 
             <section class="customers-section" id="customersSection" style="display: none;">
@@ -1392,14 +1392,14 @@
             </section>
 
             <!-- Comparison Section (New Standalone Page) -->
-            <section class="compare-section" id="compareSection" style="display: none;">
+            <section class="compare-section cockpit-page" id="compareSection" style="display: none;">
                 <div class="section-header">
                     <div class="section-title-block">
                         <span class="section-kicker">Year-over-Year Intelligence</span>
                         <h2>Yıl Karşılaştırma</h2>
+                        <span class="cockpit-head-meta" id="compareHeadMeta">Karşılaştırma için iki yıl seçin</span>
                     </div>
                 </div>
-                <p class="section-desc">İki yılın satış, maliyet ve net kâr değişimini aylık görünümle karşılaştırın.</p>
 
                 <!-- Year Selection Controls -->
                 <div class="compare-controls-main">
@@ -1422,6 +1422,9 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="cockpit-body" id="compareCockpitBody" style="display: none;">
+                <div class="cockpit-main">
 
                 <!-- YoY Delta Cards -->
                 <div class="compare-delta-grid" id="compareDeltaCards" style="display: none;">
@@ -1479,6 +1482,26 @@
                         </table>
                     </div>
                 </div>
+
+                </div><!-- /.cockpit-main -->
+
+                <aside class="cockpit-rail" id="compareRail" aria-label="Karşılaştırma karar paneli">
+                    <div class="rail-block rail-actions">
+                        <div class="rail-title">Şimdi ne yapmalıyım</div>
+                        <div class="rail-action-list" id="compareRailActionList"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">Yıl özeti</div>
+                        <div class="rail-facts" id="compareRailFacts"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">Öne çıkan aylar</div>
+                        <div class="rail-facts" id="compareRailMonths"></div>
+                    </div>
+                </aside>
+                </div><!-- /.cockpit-body -->
 
                 <!-- Empty State -->
                 <div class="compare-empty" id="compareEmpty">
