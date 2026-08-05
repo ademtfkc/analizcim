@@ -17544,6 +17544,20 @@ body:not(.admin-user) .nav-tab#tabAdmin {
         flex: 1 1 100%;
     }
 
+    /* Dar ekranda rapor butonları sıkışıp yazıları birbirine değiyordu */
+    .dashboard-cockpit .dashboard-report-actions {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 0.45rem;
+    }
+
+    .dashboard-cockpit .dashboard-report-actions .dashboard-action-btn {
+        flex: 1 1 140px;
+        min-height: 44px;
+        white-space: nowrap;
+    }
+
     /* Dar ekranda marj çubuğu yerine sadece yüzde kalır; kolon şişmesin */
     .dashboard-cockpit .pl-margin-track { display: none; }
 

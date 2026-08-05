@@ -356,6 +356,38 @@ describe('UI structure rules', () => {
         assert.match(cockpitBlock, /\.dashboard-cockpit \.dashboard-cockpit-body\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) var\(--cockpit-rail-width\)/);
     });
 
+    test('confirm modal traps focus and keeps Escape from reaching global shortcuts', () => {
+        const js = readPublicFile('app.js');
+
+        // Odak tuzağı: Tab modal içinde döner
+        assert.match(js, /CONFIRM_FOCUSABLE_SELECTOR/);
+        assert.match(js, /if \(event\.key !== 'Tab'\) return;/);
+        assert.match(js, /event\.preventDefault\(\);\s*\n\s*last\.focus\(\);/);
+        assert.match(js, /event\.preventDefault\(\);\s*\n\s*first\.focus\(\);/);
+
+        // Escape yalnızca bu modalı kapatır (capture aşaması + stopPropagation)
+        assert.match(js, /document\.addEventListener\('keydown', onKey, true\)/);
+        assert.match(js, /document\.removeEventListener\('keydown', onKey, true\)/);
+        assert.match(js, /event\.stopPropagation\(\);\s*\n\s*cleanup\(false\);/);
+    });
+
+    test('custom range drives both the profit/loss rows and every period heading', () => {
+        const js = readPublicFile('app.js');
+
+        // Başlıklar tek bir dönem etiketinden beslenir
+        assert.match(js, /let _dashboardPeriodLabel = '';/);
+        assert.match(js, /_dashboardPeriodLabel = isRangeMode/);
+        assert.match(js, /const yearDisplay = _dashboardPeriodLabel \|\| yearStr \|\| 'Tüm Yıllar';/);
+        assert.match(js, /function renderProfitLoss\(data, periodLabel\)/);
+        assert.match(js, /yearDisplay\.textContent = periodLabel \|\|/);
+
+        // Kâr/Zarar tablosu aralığa göre süzülür ve toplamlar yeniden hesaplanır
+        assert.match(js, /async function loadProfitLoss\(year, periodLabel, range\)/);
+        assert.match(js, /function sumProfitLossTotals\(months\)/);
+        assert.match(js, /if \(y === startYear && m\.month < startMonth\) continue;/);
+        assert.match(js, /if \(y === endYear && m\.month > endMonth\) continue;/);
+    });
+
     test('dashboard profit uses the VAT-excluded base so the hero number matches the P&L table', () => {
         const js = readPublicFile('app.js');
 

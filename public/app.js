@@ -53,6 +53,8 @@ let mergeSalesFiles = [];
 let mergePurchaseFiles = [];
 let currentTab = 'dashboard';
 let _dashboardMonthlyAll = [];
+// Panelde gösterilen dönemin insan okur etiketi (yıl veya "Ocak 2025 – Haziran 2025")
+let _dashboardPeriodLabel = '';
 let _dashboardSummaryAll = null;
 let _dashboardHasSeparateVat = false;
 /** Son eklenen analizler listesindeki satır verileri (tıklanınca detay modalında kullanılır) */
@@ -1423,6 +1425,9 @@ function showError(message) {
 // Tema uyumlu onay modalı (native confirm yerine)
 // Promise<boolean> döner: onay=true, iptal/ESC/dış tık/kapat=false
 // ========================================
+// Onay modalı içinde odak tuzağı için taranan elemanlar
+const CONFIRM_FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 function showConfirm(options = {}) {
     const opts = typeof options === 'string' ? { message: options } : (options || {});
     const message = opts.message || 'Bu işlemi onaylıyor musunuz?';
@@ -1463,7 +1468,7 @@ function showConfirm(options = {}) {
             cancelBtn.removeEventListener('click', onCancel);
             if (closeBtn) closeBtn.removeEventListener('click', onCancel);
             overlay.removeEventListener('click', onOverlay);
-            document.removeEventListener('keydown', onKey);
+            document.removeEventListener('keydown', onKey, true);
             if (previousActive && typeof previousActive.focus === 'function') {
                 previousActive.focus();
             }
@@ -1472,12 +1477,42 @@ function showConfirm(options = {}) {
         function onConfirm() { cleanup(true); }
         function onCancel() { cleanup(false); }
         function onOverlay(event) { if (event.target === overlay) cleanup(false); }
+
+        function focusableItems() {
+            return Array.from(overlay.querySelectorAll(CONFIRM_FOCUSABLE_SELECTOR))
+                .filter(el => !el.disabled && el.getClientRects().length > 0);
+        }
+
         function onKey(event) {
             // Enter özel olarak ele alınmaz: odaklı düğmenin native click'ine bırakılır.
             // Açılışta odak Onayla'da (aşağıda confirmBtn.focus()); kullanıcı Tab ile İptal'e
             // geçerse Enter doğru düğmeyi tetikler. Böylece "İptal odaktayken Enter = sil" hatası olmaz.
             if (event.key === 'Escape') {
+                // Yalnızca bu modal kapanır; altta açık başka bir modal varsa global Escape'e ulaşmasın
+                event.preventDefault();
+                event.stopPropagation();
                 cleanup(false);
+                return;
+            }
+
+            if (event.key !== 'Tab') return;
+
+            // Odak tuzağı: Tab ile arka plandaki düğmelere kaçılamasın
+            const items = focusableItems();
+            if (items.length === 0) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            const active = document.activeElement;
+            const inside = overlay.contains(active);
+
+            if (event.shiftKey) {
+                if (!inside || active === first) {
+                    event.preventDefault();
+                    last.focus();
+                }
+            } else if (!inside || active === last) {
+                event.preventDefault();
+                first.focus();
             }
         }
 
@@ -1485,7 +1520,8 @@ function showConfirm(options = {}) {
         cancelBtn.addEventListener('click', onCancel);
         if (closeBtn) closeBtn.addEventListener('click', onCancel);
         overlay.addEventListener('click', onOverlay);
-        document.addEventListener('keydown', onKey);
+        // Yakalama (capture) aşaması: global kısayollardan ÖNCE çalışır, stopPropagation etkili olur
+        document.addEventListener('keydown', onKey, true);
 
         overlay.style.display = 'flex';
         confirmBtn.focus();
@@ -4361,17 +4397,19 @@ async function loadDashboard() {
         // Render for selected year
         const selectedYear = isRangeMode ? '' : (yearSelect ? yearSelect.value : '');
 
-        console.log('years:', years, 'selectedYear:', selectedYear);
-        console.log('monthly sample:', rawMonthly?.labels?.slice?.(0, 3), rawMonthly);
+        // Tüm başlıklar gerçekte gösterilen dönemi yazsın (özel aralıkta yıl seçici bayat kalıyordu)
+        _dashboardPeriodLabel = isRangeMode
+            ? `${formatMonthLabel(rangeStart)} – ${formatMonthLabel(rangeEnd)}`
+            : (selectedYear || 'Tüm Yıllar');
 
         renderDashboardForYear(selectedYear);
         loadCustomerDashboardSummary();
         loadBusinessPartyDashboardSummary();
         loadDashboardForecastSummary();
-        
+
         // Load profit/loss data
         const plYear = isRangeMode ? `${rangeStart.substring(0,4)}-${rangeEnd.substring(0,4)}` : (selectedYear || new Date().getFullYear());
-        loadProfitLoss(plYear);
+        loadProfitLoss(plYear, _dashboardPeriodLabel, isRangeMode ? { start: rangeStart, end: rangeEnd } : null);
 
         if (!window._dashboardRangeEventsWired) {
             document.getElementById('rangeToggleBtn')?.addEventListener('click', toggleDashboardRange);
@@ -4432,46 +4470,74 @@ async function loadDashboardForecastSummary() {
 // ========================================
 // Kar/Zarar Analizi (Aylık Bazlı)
 // ========================================
-async function loadProfitLoss(year) {
+async function fetchProfitLossYear(year) {
+    const response = await fetch('/api/analysis/profit-loss?year=' + encodeURIComponent(year));
+    if (!response.ok) throw new Error('Profit/Loss HTTP ' + response.status);
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Profit/Loss verisi alınamadı');
+    return data;
+}
+
+// Aylık kâr/zarar toplamları backend ile aynı formüllerle yeniden hesaplanır (aralık süzmesi sonrası)
+function sumProfitLossTotals(months) {
+    const totals = { sales: 0, purchases: 0, grossProfit: 0, expenses: 0, netProfit: 0, avgProfitMargin: 0 };
+    for (const m of months) {
+        totals.sales += m.sales || 0;
+        totals.purchases += m.purchases || 0;
+        totals.grossProfit += m.grossProfit || 0;
+        totals.expenses += m.expenses || 0;
+        totals.netProfit += m.netProfit || 0;
+    }
+    totals.avgProfitMargin = totals.sales > 0 ? Math.round((totals.netProfit / totals.sales) * 1000) / 10 : 0;
+    return totals;
+}
+
+// range: { start: 'YYYY-MM', end: 'YYYY-MM' } | null
+async function loadProfitLoss(year, periodLabel, range) {
     try {
-        const response = await fetch('/api/analysis/profit-loss?year=' + encodeURIComponent(year));
-        
-        if (!response.ok) {
-            console.error('Profit/Loss response error:', response.status);
-            _dashboardProfitLossData = null;
-            renderProfitLoss(null);
+        if (range && range.start && range.end) {
+            const startYear = parseInt(range.start.slice(0, 4), 10);
+            const endYear = parseInt(range.end.slice(0, 4), 10);
+            const startMonth = parseInt(range.start.slice(5, 7), 10);
+            const endMonth = parseInt(range.end.slice(5, 7), 10);
+            const multiYear = endYear > startYear;
+
+            const months = [];
+            for (let y = startYear; y <= endYear; y++) {
+                const yearData = await fetchProfitLossYear(y);
+                for (const m of (yearData.months || [])) {
+                    if (y === startYear && m.month < startMonth) continue;
+                    if (y === endYear && m.month > endMonth) continue;
+                    months.push(multiYear ? { ...m, monthName: `${m.monthName} ${y}` } : m);
+                }
+            }
+
+            const merged = { success: true, year, months, totals: sumProfitLossTotals(months) };
+            _dashboardProfitLossData = merged;
+            renderProfitLoss(merged, periodLabel);
             return;
         }
 
-        const data = await response.json();
-        
-        if (!data.success) {
-            console.error('Profit/Loss data error:', data.error || data);
-            _dashboardProfitLossData = null;
-            renderProfitLoss(null);
-            return;
-        }
-
+        const data = await fetchProfitLossYear(year);
         _dashboardProfitLossData = data;
-        renderProfitLoss(data);
+        renderProfitLoss(data, periodLabel);
     } catch (error) {
         console.error('Profit/Loss load error:', error);
         _dashboardProfitLossData = null;
-        renderProfitLoss(null);
+        renderProfitLoss(null, periodLabel);
     }
 }
 
-function renderProfitLoss(data) {
+function renderProfitLoss(data, periodLabel) {
     const plSection = document.getElementById('dashboardProfitLossSection');
     const yearSelect = document.getElementById('yearSelect');
-    const year = yearSelect ? yearSelect.value : new Date().getFullYear();
 
     if (!plSection) return;
 
-    // Update year display
+    // Başlık, gerçekte gösterilen dönemi yazar; özel aralıkta yıl seçicisine düşülmez
     const yearDisplay = document.getElementById('dashYearDisplayPL');
     if (yearDisplay) {
-        yearDisplay.textContent = year || 'Tüm Yıllar';
+        yearDisplay.textContent = periodLabel || (yearSelect && yearSelect.value) || 'Tüm Yıllar';
     }
 
     // Hiç hareketi olmayan (tamamı sıfır) dönemde tabloyu gösterme; boş panelde sıfır tablosu kalmasın
@@ -4804,8 +4870,8 @@ function renderDashboardForYear(yearStr) {
         document.getElementById('dashSubtotalDiff').textContent = formatCurrency(Math.abs(netSales - netPurchase));
     }
 
-    // Year display labels
-    const yearDisplay = yearStr || 'Tüm Yıllar';
+    // Year display labels — özel aralıkta gerçek dönem yazılır
+    const yearDisplay = _dashboardPeriodLabel || yearStr || 'Tüm Yıllar';
     const dashYearDisplayKdv = document.getElementById('dashYearDisplayKdv');
     const dashYearDisplayNet = document.getElementById('dashYearDisplayNet');
     if (dashYearDisplayKdv) dashYearDisplayKdv.textContent = yearDisplay;
