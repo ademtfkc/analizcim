@@ -18,7 +18,8 @@ function getRuleBody(css, selector) {
 describe('UI structure rules', () => {
     test('account actions and theme controls live in settings instead of the top header', () => {
         const html = readPublicFile('index.html');
-        const admin = html.slice(html.indexOf('<section class="admin-section"'), html.indexOf('</section>', html.indexOf('<section class="admin-section"')));
+        const adminStart = html.indexOf('<section class="admin-section');
+        const admin = html.slice(adminStart, html.indexOf('</section>', adminStart));
 
         assert.doesNotMatch(html, /<header class="header">/);
         assert.match(admin, /id="adminAccountTab"/);
@@ -82,12 +83,28 @@ describe('UI structure rules', () => {
         assert.match(js, /En Çok Satış Yapılan Müşteri/);
     });
 
-    test('prediction layout uses consistent full-card grid spacing', () => {
+    test('prediction cards use one fixed grid, no drag-and-drop leftovers', () => {
         const css = readPublicFile('styles.css');
+        const js = readPublicFile('app.js');
+        const html = readPublicFile('index.html');
 
-        assert.match(css, /\.predictions-layout\s+\.pred-card-resize-wrapper\s*\{[\s\S]*?display:\s*flex/);
-        assert.match(css, /\.predictions-layout\s+\.pred-card-resize-wrapper\s+\.pred-card\s*\{[\s\S]*?flex:\s*1\s+1\s+auto/);
-        assert.match(css, /\.predictions-layout\s+\.pred-card\s*\{[\s\S]*?min-height:\s*100%/);
+        // Sürükleme tamamen kaldırıldı (CEO kararı 2026-08-06)
+        assert.doesNotMatch(html, /draggable="true"/);
+        assert.doesNotMatch(js, /pred-card-resize-wrapper/);
+        assert.doesNotMatch(css, /pred-card-resize-wrapper/);
+        ['initPredictionsDragDrop', 'savePredictionOrder', 'restorePredictionOrder',
+         'wrapPredictionCardsForResize', 'initPredictionsLayout'].forEach(fn => {
+            assert.doesNotMatch(js, new RegExp(fn));
+        });
+
+        // Sabit düzen: 2 kolon, grafik/tablo/CFO tam genişlik
+        assert.match(css, /\.prediction-section\.cockpit-page \.predictions-layout\s*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+        assert.match(css, /data-card-id="chart"\],[\s\S]*?data-card-id="table"\],[\s\S]*?data-card-id="cfo-missing"\]\s*\{[\s\S]*?grid-column: span 2 !important/);
+
+        // Kart sırası HTML'de sabit: önce grafik, sonra tablo
+        const chartIndex = html.indexOf('data-card-id="chart"');
+        const tableIndex = html.indexOf('data-card-id="table"');
+        assert.ok(chartIndex > -1 && tableIndex > chartIndex, 'grafik tablodan önce gelmeli');
     });
 
     test('prediction page has a metric guide and no marketing overview bubbles', () => {
@@ -303,7 +320,7 @@ describe('UI structure rules', () => {
 
         // Render adds per-cell labels so mobile cards can show "etiket: değer"
         assert.match(js, /data-label="İşlem Hacmi"/);
-        assert.match(js, /data-label="Bakiye"/);
+        assert.match(js, /data-label="Fatura Toplamı"/);
         assert.match(js, /class="bp-cell-name"/);
 
         // Mobile media query turns rows into cards and drops the min-width scroll
@@ -503,7 +520,7 @@ describe('UI structure rules', () => {
         assert.match(css, /\.customers-section\.cockpit-page \.business-party-table td\.bp-cell-name\s*\{[\s\S]*?font-family: inherit/);
     });
 
-    test('predictions page keeps the draggable card grid inside the cockpit shell', () => {
+    test('predictions page keeps its decision cards inside the cockpit shell', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');
         const css = readPublicFile('styles.css');
@@ -520,13 +537,68 @@ describe('UI structure rules', () => {
             assert.match(html, new RegExp('id="' + id + '"'));
         });
 
-        // Sürükle-bırak kart ızgarası korunur (9 kart hâlâ draggable)
-        assert.ok((html.match(/class="[^"]*pred-card[^"]*"[^>]*draggable="true"/g) || []).length >= 8);
+        // 9 karar kartı korunur (sıra artık sabit, sürükleme yok)
+        assert.ok((html.match(/data-card-id="/g) || []).length >= 9);
         assert.match(js, /function renderPredictionsRail\(view\)/);
+        assert.match(css, /\.prediction-section\.cockpit-page \.predictions-layout\s*\{/);
+    });
 
-        // Dar şeritte 12 kolonluk ızgara 2 kolona iner, grafik tam genişlik kalır
-        assert.match(css, /\.prediction-section\.cockpit-page \.predictions-layout\s*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
-        assert.match(css, /data-card-id="chart"\],[\s\S]*?grid-column: span 2 !important/);
+    test('every cockpit page shares one control size system', () => {
+        const css = readPublicFile('styles.css');
+        const html = readPublicFile('index.html');
+
+        // Tek ölçü kaynağı
+        assert.match(css, /\.cockpit-page\s*\{[\s\S]*?--control-height: 38px/);
+        assert.match(css, /\.cockpit-page \.dashboard-action-btn,[\s\S]*?height: var\(--control-height\)/);
+
+        // Ayarlar ve En Çok da aynı sisteme dahil
+        assert.match(html, /class="admin-section cockpit-page"/);
+        assert.match(html, /class="topn-section cockpit-page"/);
+
+        // KPI hairline'ı eski `gap: 1rem !important` kuralına yenilmemeli
+        assert.match(css, /\.dashboard-cockpit \.dashboard-stats\s*\{[\s\S]*?gap: 1px !important/);
+
+        // Kenar çubuğunda bulanıklık yok (CEO kararı 2026-08-06)
+        assert.match(css, /\.sidebar-overlay,\s*\n\.sidebar-overlay\.visible\s*\{[\s\S]*?backdrop-filter: none !important/);
+
+        // Dokunmatik cihazda 44px hedef korunmalı: kokpit ölçüsü (38px) bunu ezmemeli
+        assert.match(css, /@media \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.cockpit-page \.dashboard-action-btn,[\s\S]*?min-height: 44px/);
+    });
+
+    test('top-N page is named "En Çok" and filters by year and month', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const storage = fs.readFileSync(path.join(rootDir, 'src', 'storage.js'), 'utf8');
+        const server = fs.readFileSync(path.join(rootDir, 'src', 'server.js'), 'utf8');
+
+        assert.match(html, /<h2>En Çok<\/h2>/);
+        assert.doesNotMatch(html, /En Çok Satılan Firmalar ve Ürünler/);
+        assert.match(html, /id="topnMonth"/);
+        assert.match(js, /if \(month && month !== 'all'\) customersQs\.append\('month', month\)/);
+        assert.match(js, /if \(month && month !== 'all'\) productsQs\.append\('month', month\)/);
+
+        // Backend: ay parametresi hem ana döngüde hem yıl bazlı döngüde uygulanır
+        assert.match(server, /storage\.getTopCustomers\(userId, year, type, limit, month\)/);
+        assert.match(server, /storage\.getTopProducts\(userId, year, type, limit, month\)/);
+        assert.ok((storage.match(/Number\(rowMonth\) !== Number\(month\)/g) || []).length >= 2);
+        assert.ok((storage.match(/Number\(rowMonthInYear\) !== Number\(month\)/g) || []).length >= 2);
+    });
+
+    test('cari screens label invoice totals honestly (no fake balance)', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+
+        // "Bakiye" yanıltıcıydı: sistemde tahsilat/ödeme kaydı yok, rakam fatura toplamı
+        assert.match(html, /<th>Fatura Toplamı<\/th>/);
+        assert.match(html, /Net Fatura Tutarı/);
+        assert.match(js, /data-label="Fatura Toplamı"/);
+        assert.doesNotMatch(js, /caride açık bakiye var/);
+        assert.doesNotMatch(js, /Tahsilat takibi gereken kayıtlar olabilir/);
+        assert.match(js, /kesilen faturaların toplamıdır/);
+
+        // Renk sinyali kaldırıldı: bu tutar müşteride hep artı, tedarikçide hep eksi
+        // çıkıyor; sabit yeşil/kırmızı veriye göre değişmeyen yanlış bir sinyaldi.
+        assert.doesNotMatch(js, /data-label="Fatura Toplamı"><strong class="\$\{customerBalanceClass/);
     });
 
     test('destructive actions use the themed confirm modal instead of native confirm()', () => {

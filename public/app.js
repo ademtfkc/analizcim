@@ -236,13 +236,7 @@ function setupKeyboardShortcuts() {
         // Ctrl/Cmd tuşu ile birlikte basılan tuşlar
         if (e.ctrlKey || e.metaKey) {
             switch (e.key.toLowerCase()) {
-                case 's':
-                    e.preventDefault();
-                    // Tahmin sıralamasını kaydet
-                    if (document.getElementById('predictionsGrid')) {
-                        savePredictionOrder();
-                    }
-                    break;
+
                 case 'n':
                     e.preventDefault();
                     // Yeni analiz - dosyaları temizle ve analiz sekmesine git
@@ -2121,7 +2115,7 @@ function renderBusinessPartyRows(type, parties) {
             <td data-label="İşlem Hacmi">${escapeHtml(formatCurrency(party.totalVolume || 0))}</td>
             <td data-label="İşlem">${escapeHtml(String(party.transactionCount || 0))}</td>
             <td data-label="Son İşlem">${escapeHtml(formatDisplayDate(party.lastTransactionDate))}</td>
-            <td data-label="Bakiye"><strong class="${customerBalanceClass(party.balance || 0)}">${escapeHtml(formatCurrency(party.balance || 0))}</strong></td>
+            <td data-label="Fatura Toplamı"><strong>${escapeHtml(formatCurrency(Math.abs(party.balance || 0)))}</strong></td>
         </tr>`).join('');
 }
 
@@ -2152,7 +2146,10 @@ function renderBusinessPartyRail(type, parties) {
         { label: 'Toplam hacim', value: formatCurrency(toplamHacim) },
         { label: 'İşlem sayısı', value: String(toplamIslem) },
         { label: 'Ortalama işlem', value: toplamIslem > 0 ? formatCurrency(toplamHacim / toplamIslem) : '—' },
-        { label: 'Net bakiye', value: formatCurrency(acikBakiye), tone: acikBakiye > 0 ? 'positive' : (acikBakiye < 0 ? 'negative' : '') },
+        // Renk yok: bu tutar müşteride her zaman artı, tedarikçide her zaman eksi çıkıyor
+        // (bir cari kaydı ya tamamen satış ya tamamen alış hareketinden oluşur), yani renk
+        // veriye göre değişmiyor — sabit kırmızı/yeşil yanlış sinyal verirdi.
+        { label: 'Net fatura tutarı', value: formatCurrency(Math.abs(acikBakiye)) },
         { label: 'İlk 3 cari payı', value: toplamHacim > 0 ? '%' + ilkUcPay.toFixed(1).replace('.', ',') : '—',
           tone: ilkUcPay >= 60 ? 'negative' : '' }
     ]);
@@ -2195,13 +2192,15 @@ function renderBusinessPartyRail(type, parties) {
             });
         }
 
-        const bakiyeliler = parties.filter(p => Math.abs(p.balance || 0) > 0);
-        if (bakiyeliler.length > 0) {
+        // ÖNEMLİ: Bu rakam ödenmemiş bakiye DEĞİL, kesilen faturaların toplamıdır.
+        // Uygulamada tahsilat/ödeme kaydı kavramı yok; "borç/alacak" demek yanıltıcı olur.
+        const hareketliler = parties.filter(p => Math.abs(p.balance || 0) > 0);
+        if (hareketliler.length > 0) {
             items.push({
-                tone: acikBakiye < 0 ? 'negative' : 'warning',
-                title: `${bakiyeliler.length} caride açık bakiye var`,
-                body: `Net bakiye ${formatCurrency(acikBakiye)}. ` +
-                    (musteriMi ? 'Tahsilat takibi gereken kayıtlar olabilir.' : 'Ödeme planında dikkate alınmalı.')
+                tone: 'neutral',
+                title: `${hareketliler.length} caride fatura hareketi var`,
+                body: `Toplam fatura tutarı ${formatCurrency(Math.abs(acikBakiye))}. ` +
+                    'Bu rakam kesilen faturaların toplamıdır; yapılan ödeme veya tahsilatlar düşülmemiştir.'
             });
         }
     }
@@ -3308,13 +3307,24 @@ async function loadTopNYears() {
 }
 
 // Sadece verileri yükle (yıl değiştiğinde çağrılır)
+function getTopNMonthLabel(month) {
+    if (!month || month === 'all') return 'Tüm yıl';
+    return ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'][Number(month)] || 'Tüm yıl';
+}
+
 async function loadTopNData() {
     const yearSelect = document.getElementById('topnYear');
+    const monthSelect = document.getElementById('topnMonth');
     const customersList = document.getElementById('topnCustomersList');
     const productsList = document.getElementById('topnProductsList');
     
     const limit = 100;
     const year = yearSelect?.value || '';
+    const month = monthSelect?.value || 'all';
+
+    const metaEl = document.getElementById('topnHeadMeta');
+    if (metaEl) metaEl.textContent = `${year || 'Tüm yıllar'} · ${getTopNMonthLabel(month)}`;
 
     // Show loading state
     if (customersList) customersList.innerHTML = '<div class="loading-skeleton"><div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div></div>';
@@ -3324,6 +3334,7 @@ async function loadTopNData() {
         // Load top customers (SATIŞ - firmalar için)
         const customersQs = new URLSearchParams({ type: 'sales', limit });
         if (year) customersQs.append('year', year);
+        if (month && month !== 'all') customersQs.append('month', month);
         const customersRes = await fetch(`/api/analysis/top-customers?${customersQs}`);
         const customersData = await customersRes.json();
 
@@ -3366,6 +3377,7 @@ async function loadTopNData() {
         // Load top products as SUPPLIERS (ALIŞ - tedarikçiler için)
         const productsQs = new URLSearchParams({ type: 'purchase', limit });
         if (year) productsQs.append('year', year);
+        if (month && month !== 'all') productsQs.append('month', month);
         const productsRes = await fetch(`/api/analysis/top-products?${productsQs}`);
         const productsData = await productsRes.json();
 
@@ -6471,9 +6483,7 @@ async function loadPredictions() {
 
             if (loadingEl) loadingEl.style.display = 'none';
             if (contentEl) contentEl.style.display = 'flex';
-            wrapPredictionCardsForResize();
-            initPredictionsLayout();
-            initPredictionsDragDrop();
+            syncPredictionCardVisibility();
             observePredictionChartResize();
             loadBreakEven();
         } else {
@@ -6925,7 +6935,7 @@ function renderPredictionDecisionContext({ predData, monthlyData, growthPct, con
     renderDecisionImpactCard(predData, growthPct);
     renderPredictionChartInsights(monthlyData, predData);
     updatePredictionModelDetailsVisibility();
-    syncPredictionWrapperVisibility();
+    syncPredictionCardVisibility();
 }
 
 function updatePredictionModelDetailsVisibility() {
@@ -8143,276 +8153,39 @@ window.loadCompare = async function () {
 };
 
 // ========================================
-// Predictions: Resize wrappers, Layout, Drag & Drop
+// Predictions: sabit kart düzeni
 // ========================================
-const PRED_ORDER_KEY = 'predictions_card_order_v4';
-const PRED_LAYOUT_KEY = 'predictions_layout_id';
-let _draggedCard = null;
+// Sürükle-bırak ve kullanıcıya özel sıralama 2026-08-06'da CEO kararıyla kaldırıldı:
+// sıra kullanıcıya bırakıldığı için hiçbir düzen tam oturmuyordu. Artık tek, sabit düzen var.
+// Kart sırası HTML'deki sıradır; genişlikler CSS'te data-card-id ile verilir.
 
-/** Kartları kesikli çerçeve ve resize için saran wrapper ekler (bir kez). */
-function wrapPredictionCardsForResize() {
-    const grid = document.getElementById('predictionsGrid');
-    if (!grid) return;
+// Grafik kartı yeniden boyutlandığında Chart.js'i haberdar et (kart artık doğrudan ızgara hücresi).
+let _predictionChartResizeObserver = null;
 
-    const cards = grid.querySelectorAll('.pred-card[draggable="true"]');
-    cards.forEach(card => {
-        if (card.closest('.pred-card-resize-wrapper')) return;
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'pred-card-resize-wrapper';
-        wrapper.dataset.cardId = card.dataset.cardId || '';
-        card.setAttribute('draggable', 'false');
-        card.parentNode.insertBefore(wrapper, card);
-        wrapper.appendChild(card);
-    });
-
-    syncPredictionWrapperVisibility();
-}
-
-function syncPredictionWrapperVisibility() {
-    const grid = document.getElementById('predictionsGrid');
-    if (!grid) return;
-
-    grid.querySelectorAll('.pred-card-resize-wrapper').forEach(wrapper => {
-        const card = wrapper.querySelector('.pred-card');
-        if (!card) return;
-        const hidden = card.style.display === 'none' || card.hidden || getComputedStyle(card).display === 'none';
-        wrapper.style.display = hidden ? 'none' : '';
-    });
-}
-
-/** Layout seçicisini bağlar ve kayıtlı layout'u uygular (sadece stil; sıra restorePredictionOrder ile). */
-async function initPredictionsLayout() {
-    const grid = document.getElementById('predictionsGrid');
-    const select = document.getElementById('predictionLayoutSelect');
-    if (!grid || !select) return;
-
-    let savedLayout = null;
-    try {
-        const response = await fetch('/api/user/preferences?keys=predictions_layout_id');
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.preferences && data.preferences.predictions_layout_id) {
-                savedLayout = data.preferences.predictions_layout_id;
-            }
-        }
-    } catch (_) { }
-    if (!savedLayout) {
-        try { savedLayout = localStorage.getItem(PRED_LAYOUT_KEY); } catch (_) { }
-        if (savedLayout) {
-            try {
-                await fetch('/api/user/preferences/migrate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ predictions_layout_id: savedLayout })
-                });
-            } catch (_) { }
-        }
-    }
-    if (savedLayout) select.value = savedLayout;
-    setPredictionLayoutStyle(select.value);
-
-    select.addEventListener('change', async function () {
-        const val = this.value;
-        setPredictionLayoutStyle(val);
-        applyPredictionLayoutOrder(val);
-        try { localStorage.setItem(PRED_LAYOUT_KEY, val); } catch (_) { }
-        try {
-            await fetch('/api/user/preferences', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ predictions_layout_id: val })
-            });
-        } catch (_) { }
-    });
-}
-
-/** Sadece grid data-layout (stil) ayarlar; sıra değişmez. */
-function setPredictionLayoutStyle(layoutId) {
-    const grid = document.getElementById('predictionsGrid');
-    if (!grid) return;
-    grid.dataset.layout = layoutId || 'default';
-}
-
-/** Taslak layout'a göre kart sırasını uygular (kullanıcı dropdown'dan seçtiğinde). */
-function applyPredictionLayoutOrder(layoutId) {
-    const grid = document.getElementById('predictionsGrid');
-    if (!grid) return;
-    syncPredictionWrapperVisibility();
-
-    const orderByLayout = {
-        default: ['table', 'chart', 'risk-factors', 'scenarios', 'financial-health', 'growth-metrics', 'decision-impact', 'actions', 'cfo-missing'],
-        'chart-first': ['chart', 'table', 'risk-factors', 'scenarios', 'financial-health', 'growth-metrics', 'decision-impact', 'actions', 'cfo-missing'],
-        'tables-top': ['table', 'scenarios', 'chart', 'risk-factors', 'financial-health', 'growth-metrics', 'decision-impact', 'actions', 'cfo-missing'],
-        compact: ['table', 'chart', 'risk-factors', 'scenarios', 'decision-impact', 'financial-health', 'growth-metrics', 'actions', 'cfo-missing'],
-        'summary-focus': ['risk-factors', 'table', 'chart', 'scenarios', 'decision-impact', 'financial-health', 'growth-metrics', 'actions', 'cfo-missing']
-    };
-
-    const order = orderByLayout[layoutId] || orderByLayout.default;
-    const wrappers = [...grid.querySelectorAll('.pred-card-resize-wrapper')];
-    const byId = {};
-    wrappers.forEach(w => { byId[w.dataset.cardId] = w; });
-
-    order.forEach(id => {
-        const w = byId[id];
-        if (w) grid.appendChild(w);
-    });
-
-    savePredictionOrder();
-
-    if (typeof predictionChartInstance !== 'undefined' && predictionChartInstance) {
-        setTimeout(() => predictionChartInstance.resize(), 50);
-    }
-}
-
-/** Grafik kartı resize edildiğinde Chart'ı yeniden boyutlandırır. */
 function observePredictionChartResize() {
     const grid = document.getElementById('predictionsGrid');
     if (!grid) return;
 
-    const chartWrapper = grid.querySelector('.pred-card-resize-wrapper[data-card-id="chart"]');
-    if (!chartWrapper || typeof predictionChartInstance === 'undefined' || !predictionChartInstance) return;
+    const chartCard = grid.querySelector('.pred-card[data-card-id="chart"]');
+    if (!chartCard || typeof predictionChartInstance === 'undefined' || !predictionChartInstance) return;
 
-    const ro = new ResizeObserver(() => {
+    // Tek gözlemci: sekme/filtre değişiminde tekrar çağrıldığında birikmesin
+    if (_predictionChartResizeObserver) _predictionChartResizeObserver.disconnect();
+    _predictionChartResizeObserver = new ResizeObserver(() => {
         if (predictionChartInstance) predictionChartInstance.resize();
     });
-    ro.observe(chartWrapper);
+    _predictionChartResizeObserver.observe(chartCard);
 }
 
-function initPredictionsDragDrop() {
+/** Görünmeyen kartlar ızgarada boşluk bırakmasın diye durum senkronu. */
+function syncPredictionCardVisibility() {
     const grid = document.getElementById('predictionsGrid');
     if (!grid) return;
 
-    const wrappers = grid.querySelectorAll('.pred-card-resize-wrapper');
-    wrappers.forEach(wrapper => {
-        wrapper.setAttribute('draggable', 'true');
-        // Idempotent bağlama: filtre/sekme değişince initPredictionsDragDrop tekrar çağrılıyor;
-        // önce kaldır sonra ekle ki aynı elemana dinleyiciler birikmesin (sürükle-bırak bozulmasın).
-        wrapper.removeEventListener('dragstart', onPredDragStart);
-        wrapper.addEventListener('dragstart', onPredDragStart);
-        wrapper.removeEventListener('dragend', onPredDragEnd);
-        wrapper.addEventListener('dragend', onPredDragEnd);
-        wrapper.removeEventListener('dragover', onPredDragOver);
-        wrapper.addEventListener('dragover', onPredDragOver);
-        wrapper.removeEventListener('dragenter', onPredDragEnter);
-        wrapper.addEventListener('dragenter', onPredDragEnter);
-        wrapper.removeEventListener('dragleave', onPredDragLeave);
-        wrapper.addEventListener('dragleave', onPredDragLeave);
-        wrapper.removeEventListener('drop', onPredDrop);
-        wrapper.addEventListener('drop', onPredDrop);
+    grid.querySelectorAll('.pred-card').forEach(card => {
+        const hidden = card.style.display === 'none' || card.hidden;
+        card.classList.toggle('pred-card-hidden', hidden);
     });
-
-    restorePredictionOrder();
-}
-
-function onPredDragStart(e) {
-    _draggedCard = this;
-    this.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', this.dataset.cardId);
-}
-
-function onPredDragEnd() {
-    this.classList.remove('dragging');
-    _draggedCard = null;
-    document.querySelectorAll('.pred-card-resize-wrapper.drag-over').forEach(el => el.classList.remove('drag-over'));
-}
-
-function onPredDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-}
-
-function onPredDragEnter(e) {
-    e.preventDefault();
-    if (this !== _draggedCard) {
-        this.classList.add('drag-over');
-    }
-}
-
-function onPredDragLeave() {
-    this.classList.remove('drag-over');
-}
-
-function onPredDrop(e) {
-    e.preventDefault();
-    this.classList.remove('drag-over');
-
-    if (!_draggedCard || _draggedCard === this) return;
-
-    const grid = document.getElementById('predictionsGrid');
-    const wrappers = [...grid.querySelectorAll('.pred-card-resize-wrapper')];
-    const fromIdx = wrappers.indexOf(_draggedCard);
-    const toIdx = wrappers.indexOf(this);
-
-    if (fromIdx < toIdx) {
-        grid.insertBefore(_draggedCard, this.nextSibling);
-    } else {
-        grid.insertBefore(_draggedCard, this);
-    }
-
-    savePredictionOrder();
-
-    if (typeof predictionChartInstance !== 'undefined' && predictionChartInstance) {
-        setTimeout(() => predictionChartInstance.resize(), 50);
-    }
-}
-
-async function savePredictionOrder() {
-    const grid = document.getElementById('predictionsGrid');
-    if (!grid) return;
-    const order = [...grid.querySelectorAll('.pred-card-resize-wrapper')].map(w => w.dataset.cardId);
-    try { localStorage.setItem(PRED_ORDER_KEY, JSON.stringify(order)); } catch (_) { }
-    try {
-        await fetch('/api/user/preferences', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [PRED_ORDER_KEY]: order })
-        });
-    } catch (_) { }
-}
-
-async function restorePredictionOrder() {
-    const grid = document.getElementById('predictionsGrid');
-    if (!grid) return;
-
-    const wrappers = [...grid.querySelectorAll('.pred-card-resize-wrapper')];
-    if (wrappers.length === 0) return;
-
-    let order = null;
-    try {
-        const response = await fetch('/api/user/preferences?keys=' + encodeURIComponent(PRED_ORDER_KEY));
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.preferences && data.preferences[PRED_ORDER_KEY] != null) {
-                const raw = data.preferences[PRED_ORDER_KEY];
-                order = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            }
-        }
-    } catch (_) { }
-    if (!order || !Array.isArray(order) || order.length === 0) {
-        try { order = JSON.parse(localStorage.getItem(PRED_ORDER_KEY)); } catch (_) { return; }
-        if (!order || !Array.isArray(order) || order.length === 0) return;
-        try {
-            await fetch('/api/user/preferences/migrate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ [PRED_ORDER_KEY]: order })
-            });
-        } catch (_) { }
-    }
-
-    const byId = {};
-    wrappers.forEach(w => { byId[w.dataset.cardId] = w; });
-
-    order.forEach(id => {
-        const w = byId[id];
-        if (w) grid.appendChild(w);
-    });
-
-    if (typeof predictionChartInstance !== 'undefined' && predictionChartInstance) {
-        setTimeout(() => predictionChartInstance.resize(), 50);
-    }
 }
 
 // ========================================

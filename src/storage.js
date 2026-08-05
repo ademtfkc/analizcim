@@ -1882,6 +1882,13 @@ async function getBusinessParties(userId, options = {}) {
             SUM(CASE WHEN invoice_type = 'purchase' THEN amount ELSE 0 END) as purchaseVolume,
             COUNT(*) as transactionCount,
             MAX(transaction_date) as lastTransactionDate,
+            -- Son işlemin TUTARI: en yeni tarihli satırın amount değeri. Bu sütun hiç seçilmiyordu,
+            -- mapBusinessPartyAggregate okuduğu için API her zaman 0 döndürüyordu.
+            (SELECT pt2.amount FROM party_transactions pt2
+              WHERE pt2.party_id = party_transactions.party_id
+                AND pt2.party_type = party_transactions.party_type
+                AND pt2.user_id = party_transactions.user_id
+              ORDER BY pt2.transaction_date DESC, pt2.id DESC LIMIT 1) as lastTransactionAmount,
             AVG(amount) as averageAmount,
             MAX(created_at) as createdAt
         FROM party_transactions
@@ -2114,7 +2121,8 @@ function updateUserRole(id, role) {
  * @param {number} limit - Number of results to return
  * @returns {Promise<Array>} - Array of top customers with totals and percentages
  */
-function getTopCustomers(userId, year, type = 'sales', _limit = 100) {
+// month: 1-12 veya null/'all'. Dönem bilgisi dosya adından okunur (geçmiş sayfasıyla aynı kural).
+function getTopCustomers(userId, year, type = 'sales', _limit = 100, month = null) {
     return new Promise((resolve, reject) => {
         const sql = `SELECT
             sales_json, purchase_json, sales_filename, purchase_filename,
@@ -2136,6 +2144,10 @@ function getTopCustomers(userId, year, type = 'sales', _limit = 100) {
                 
                 // Eğer year parametresi varsa (ve "all" değilse), o yılı filtrele
                 if (year && year !== 'all' && rowYear !== String(year)) continue;
+
+                // Ay filtresi (yalnızca belirli bir ay seçildiyse)
+                const rowMonth = dateInfo ? dateInfo.month : null;
+                if (month && month !== 'all' && Number(rowMonth) !== Number(month)) continue;
                 
                 // Get the appropriate JSON
                 const jsonStr = type === 'sales' ? row.sales_json : row.purchase_json;
@@ -2194,6 +2206,11 @@ function getTopCustomers(userId, year, type = 'sales', _limit = 100) {
                     const rowYear = dateInfo ? String(dateInfo.year) : null;
                     
                     if (rowYear !== String(year)) continue;
+
+                    // Ay filtresi bu ikinci (yıl bazlı) döngüde de uygulanmalı;
+                    // yoksa yıl seçiliyken ay seçimi hiç etkisiz kalır.
+                    const rowMonthInYear = dateInfo ? dateInfo.month : null;
+                    if (month && month !== 'all' && Number(rowMonthInYear) !== Number(month)) continue;
                     
                     const jsonStr = type === 'sales' ? row.sales_json : row.purchase_json;
                     if (!jsonStr) continue;
@@ -2264,7 +2281,8 @@ function getTopCustomers(userId, year, type = 'sales', _limit = 100) {
  * @param {number} limit - Number of results to return
  * @returns {Promise<Array>} - Array of top products with totals and percentages
  */
-function getTopProducts(userId, year, type = 'sales', _limit = 100) {
+// month: 1-12 veya null/'all'. Dönem bilgisi dosya adından okunur.
+function getTopProducts(userId, year, type = 'sales', _limit = 100, month = null) {
     return new Promise((resolve, reject) => {
         const sql = `SELECT sales_json, purchase_json, sales_filename, purchase_filename, date
                      FROM analyses WHERE user_id = ? AND deleted_at IS NULL`;
@@ -2284,6 +2302,10 @@ function getTopProducts(userId, year, type = 'sales', _limit = 100) {
                 
                 // Eğer year parametresi varsa (ve "all" değilse), o yılı filtrele
                 if (year && year !== 'all' && rowYear !== String(year)) continue;
+
+                // Ay filtresi (yalnızca belirli bir ay seçildiyse)
+                const rowMonth = dateInfo ? dateInfo.month : null;
+                if (month && month !== 'all' && Number(rowMonth) !== Number(month)) continue;
                 
                 // Get the appropriate JSON
                 const jsonStr = type === 'sales' ? row.sales_json : row.purchase_json;
@@ -2343,6 +2365,11 @@ function getTopProducts(userId, year, type = 'sales', _limit = 100) {
                     const rowYear = dateInfo ? String(dateInfo.year) : null;
                     
                     if (rowYear !== String(year)) continue;
+
+                    // Ay filtresi bu ikinci (yıl bazlı) döngüde de uygulanmalı;
+                    // yoksa yıl seçiliyken ay seçimi hiç etkisiz kalır.
+                    const rowMonthInYear = dateInfo ? dateInfo.month : null;
+                    if (month && month !== 'all' && Number(rowMonthInYear) !== Number(month)) continue;
                     
                     const jsonStr = type === 'sales' ? row.sales_json : row.purchase_json;
                     if (!jsonStr) continue;

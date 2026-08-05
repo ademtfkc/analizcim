@@ -1110,7 +1110,7 @@
                                     <th>İşlem Hacmi</th>
                                     <th>İşlem</th>
                                     <th>Son İşlem</th>
-                                    <th>Bakiye</th>
+                                    <th>Fatura Toplamı</th>
                                 </tr>
                             </thead>
                             <tbody id="customerPartyTableBody"></tbody>
@@ -1177,7 +1177,7 @@
                                     <th>İşlem Hacmi</th>
                                     <th>İşlem</th>
                                     <th>Son İşlem</th>
-                                    <th>Bakiye</th>
+                                    <th>Fatura Toplamı</th>
                                 </tr>
                             </thead>
                             <tbody id="supplierPartyTableBody"></tbody>
@@ -1220,7 +1220,7 @@
                 </div>
                 <div class="party-metrics-grid">
                     <div class="party-metric-card"><span>Toplam Hacim</span><strong id="partyTotalVolume">₺0</strong></div>
-                    <div class="party-metric-card"><span>Net Bakiye</span><strong id="partyBalance">₺0</strong></div>
+                    <div class="party-metric-card"><span>Net Fatura Tutarı</span><strong id="partyBalance">₺0</strong></div>
                     <div class="party-metric-card"><span>Son İşlem</span><strong id="partyLastTransaction">-</strong></div>
                     <div class="party-metric-card"><span>Ortalama Tutar</span><strong id="partyAverageAmount">₺0</strong></div>
                 </div>
@@ -1743,7 +1743,23 @@
 
                         <div class="predictions-canvas" id="predictionsCanvas">
                             <div class="predictions-layout" id="predictionsGrid">
-                                <div class="prediction-table-container pred-card pred-table" draggable="true"
+
+                                <div class="prediction-chart-container pred-card pred-chart"
+                                    data-card-id="chart">
+                                    <span class="prediction-section-label">B) Trend</span>
+                                    <h3>Satış ve Kâr Eğilimi</h3>
+                                    <div class="pred-chart-canvas-wrap">
+                                        <canvas id="predictionChart"></canvas>
+                                    </div>
+                                    <div class="prediction-chart-empty" id="predictionChartEmpty" style="display:none;">
+                                        Bu grafik için yeterli geçmiş veri bulunamadı. Daha güvenilir görünüm için en az 6–12 aylık düzenli satış verisi önerilir.
+                                    </div>
+                                    <div class="prediction-chart-insights" id="predictionChartInsights">
+                                        <strong>Grafikten çıkan ana sinyal</strong>
+                                        <ul id="predictionChartInsightList"></ul>
+                                    </div>
+                                </div>
+                                <div class="prediction-table-container pred-card pred-table"
                                     data-card-id="table">
                                     <span class="prediction-section-label">A) Tahmin</span>
                                     <h3>3 Aylık Satış Tahmini</h3>
@@ -1761,23 +1777,7 @@
                                     </table>
                                 </div>
 
-                                <div class="prediction-chart-container pred-card pred-chart" draggable="true"
-                                    data-card-id="chart">
-                                    <span class="prediction-section-label">B) Trend</span>
-                                    <h3>Satış ve Kâr Eğilimi</h3>
-                                    <div class="pred-chart-canvas-wrap">
-                                        <canvas id="predictionChart"></canvas>
-                                    </div>
-                                    <div class="prediction-chart-empty" id="predictionChartEmpty" style="display:none;">
-                                        Bu grafik için yeterli geçmiş veri bulunamadı. Daha güvenilir görünüm için en az 6–12 aylık düzenli satış verisi önerilir.
-                                    </div>
-                                    <div class="prediction-chart-insights" id="predictionChartInsights">
-                                        <strong>Grafikten çıkan ana sinyal</strong>
-                                        <ul id="predictionChartInsightList"></ul>
-                                    </div>
-                                </div>
-
-                                <div class="risk-factors-card pred-card" id="riskFactorsCard" draggable="true"
+                                <div class="risk-factors-card pred-card" id="riskFactorsCard"
                                     data-card-id="risk-factors" style="display: none;">
                                     <span class="prediction-section-label">C) Risk</span>
                                     <h3>Risk Öncelikleri</h3>
@@ -1785,7 +1785,7 @@
                                     <div class="risk-factors-list" id="riskFactorsList"></div>
                                 </div>
 
-                                <div class="scenarios-card pred-card" id="scenariosCard" draggable="true"
+                                <div class="scenarios-card pred-card" id="scenariosCard"
                                     data-card-id="scenarios" style="display: none;">
                                     <span class="prediction-section-label">D) Senaryo</span>
                                     <h3>Senaryo Analizi</h3>
@@ -1793,35 +1793,35 @@
                                     <div class="scenario-cards" id="scenarioCards"></div>
                                 </div>
 
-                                <div class="financial-health-card pred-card" id="financialHealthCard" draggable="true"
+                                <div class="financial-health-card pred-card" id="financialHealthCard"
                                     data-card-id="financial-health" style="display: none;">
                                     <span class="prediction-section-label">E) Finansal Göstergeler</span>
                                     <h3>Finansal Sağlık Göstergeleri</h3>
                                     <div class="fhealth-grid" id="financialHealthGrid"></div>
                                 </div>
 
-                                <div class="growth-metrics-card pred-card" id="growthMetricsCard" draggable="true"
+                                <div class="growth-metrics-card pred-card" id="growthMetricsCard"
                                     data-card-id="growth-metrics" style="display: none;">
                                     <span class="prediction-section-label">E) Finansal Göstergeler</span>
                                     <h3>Büyüme & Momentum</h3>
                                     <div class="growth-grid" id="growthMetricsGrid"></div>
                                 </div>
 
-                                <div class="decision-impact-card pred-card" id="decisionImpactCard" draggable="true"
+                                <div class="decision-impact-card pred-card" id="decisionImpactCard"
                                     data-card-id="decision-impact" style="display: none;">
                                     <span class="prediction-section-label">F) Karar Etkisi</span>
                                     <h3>Karar Etkisi</h3>
                                     <div class="decision-impact-grid" id="decisionImpactGrid"></div>
                                 </div>
 
-                                <div class="ceo-actions pred-card" id="ceoActions" draggable="true"
+                                <div class="ceo-actions pred-card" id="ceoActions"
                                     data-card-id="actions">
                                     <span class="prediction-section-label">G) Aksiyon</span>
                                     <h3>Aksiyon Planı</h3>
                                     <div class="action-items prediction-grid" id="actionItemsList"></div>
                                 </div>
 
-                                <div class="cfo-missing-areas pred-card" id="cfoMissingAreas" draggable="true"
+                                <div class="cfo-missing-areas pred-card" id="cfoMissingAreas"
                                     data-card-id="cfo-missing" style="display: none;">
                                     <span class="prediction-section-label">G) Aksiyon</span>
                                     <h3>CFO Analizi - İyileştirme Alanları</h3>
@@ -1949,11 +1949,12 @@
             </section>
 
             <!-- Top N Section -->
-            <section class="topn-section" id="topnSection" style="display: none;">
+            <section class="topn-section cockpit-page" id="topnSection" style="display: none;">
                 <div class="section-header">
                     <div class="section-title-block">
                         <span class="section-kicker">Performance Rankings</span>
-                        <h2>En Çok Satılan Firmalar ve Ürünler</h2>
+                        <h2>En Çok</h2>
+                        <span class="cockpit-head-meta" id="topnHeadMeta">Dönem seçin</span>
                     </div>
                 </div>
                 <div class="topn-overview-banner">
@@ -1970,8 +1971,26 @@
 
                 <div class="topn-filters">
                     <div class="filter-group">
-                        <label for="topnYear">Yıl:</label>
-                        <select id="topnYear" onchange="loadTopNData()">
+                        <label for="topnYear">Yıl</label>
+                        <select id="topnYear" class="form-input" onchange="loadTopNData()">
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="topnMonth">Ay</label>
+                        <select id="topnMonth" class="form-input" onchange="loadTopNData()">
+                            <option value="all">Tüm yıl</option>
+                            <option value="1">Ocak</option>
+                            <option value="2">Şubat</option>
+                            <option value="3">Mart</option>
+                            <option value="4">Nisan</option>
+                            <option value="5">Mayıs</option>
+                            <option value="6">Haziran</option>
+                            <option value="7">Temmuz</option>
+                            <option value="8">Ağustos</option>
+                            <option value="9">Eylül</option>
+                            <option value="10">Ekim</option>
+                            <option value="11">Kasım</option>
+                            <option value="12">Aralık</option>
                         </select>
                     </div>
                     <div class="topn-stats" id="topnStats" style="display: none;">
@@ -2011,13 +2030,13 @@
             </section>
 
             <!-- Admin Section -->
-            <section class="admin-section" id="adminSection" style="display: none;">
-                <div class="admin-header">
+            <section class="admin-section cockpit-page" id="adminSection" style="display: none;">
+                <div class="admin-header section-header">
                     <div class="section-title-block">
                         <span class="section-kicker">Preferences & Workspace</span>
                         <h2>Ayarlar</h2>
+                        <span class="cockpit-head-meta">Uygulama görünümü, hesap ve veri tercihleri</span>
                     </div>
-                    <p class="section-desc">Uygulama görünümü, hesap ve veri tercihlerini yönetin.</p>
                 </div>
 
                 <div class="admin-workspace">

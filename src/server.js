@@ -2024,13 +2024,24 @@ app.get('/api/analysis/top-customers', async (req, res) => {
             limit = limitNum;
         }
 
+        // Ay filtresi (opsiyonel): 1-12 veya 'all'
+        let month = null;
+        if (req.query.month != null && req.query.month !== '' && req.query.month !== 'all') {
+            const monthValidation = validateMonth(req.query.month);
+            if (!monthValidation.valid) {
+                return res.status(400).json({ error: monthValidation.error });
+            }
+            month = monthValidation.value;
+        }
+
         const userId = req.session.userId;
-        const topCustomers = await storage.getTopCustomers(userId, year, type, limit);
+        const topCustomers = await storage.getTopCustomers(userId, year, type, limit, month);
 
         res.json({
             success: true,
             type,
             year: year || 'all',
+            month: month || 'all',
             limit,
             total: topCustomers.length,
             data: topCustomers
@@ -2076,12 +2087,23 @@ app.get('/api/analysis/top-products', async (req, res) => {
         }
 
         const userId = req.session.userId;
-        const topProducts = await storage.getTopProducts(userId, year, type, limit);
+        // Ay filtresi (opsiyonel)
+        let month = null;
+        if (req.query.month != null && req.query.month !== '' && req.query.month !== 'all') {
+            const monthValidation = validateMonth(req.query.month);
+            if (!monthValidation.valid) {
+                return res.status(400).json({ error: monthValidation.error });
+            }
+            month = monthValidation.value;
+        }
+
+        const topProducts = await storage.getTopProducts(userId, year, type, limit, month);
 
         res.json({
             success: true,
             type,
             year: year || 'all',
+            month: month || 'all',
             limit,
             total: topProducts.length,
             data: topProducts

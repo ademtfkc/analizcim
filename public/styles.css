@@ -6416,6 +6416,23 @@ body {
     .form-input {
         min-height: 44px;
     }
+
+    /* Kokpit ölçü sistemi (.cockpit-page ... { min-height: 38px }) daha yüksek
+       özgüllükte olduğu için dokunma hedefini eziyordu; aynı önekle geri kazandırılır. */
+    .cockpit-page .dashboard-action-btn,
+    .cockpit-page .compare-btn,
+    .cockpit-page .year-select,
+    .cockpit-page .month-select,
+    .cockpit-page .form-input,
+    .cockpit-page .admin-tab,
+    .cockpit-page .admin-action-btn,
+    .cockpit-page .topn-filters select,
+    .cockpit-page .expenses-period-selector select,
+    .cockpit-page .prediction-filter-field select,
+    .cockpit-page .dashboard-control-group {
+        min-height: 44px;
+        height: auto;
+    }
 }
 
 /* =====================================================
@@ -6500,27 +6517,6 @@ body {
     box-sizing: border-box !important;
 }
 
-/* --- Resize wrapper (JS tarafından eklenir — kilitli) --- */
-.pred-card-resize-wrapper {
-    min-width: 0;
-    max-width: 100%;
-    min-height: auto;
-    height: 100%;
-    border: none;
-    border-radius: 12px;
-    overflow: hidden;
-    resize: none !important;
-    box-sizing: border-box;
-    background: transparent;
-    position: relative;
-    cursor: default !important;
-    -webkit-user-drag: none !important;
-}
-
-.pred-card-resize-wrapper::after {
-    display: none !important;
-}
-
 /* =============================================
    KARTLAR — standart
    ============================================= */
@@ -6543,18 +6539,8 @@ body {
     transition: box-shadow 0.2s, opacity 0.2s;
 }
 
-/* Wrapper içi kart: wrapper şeffaf olduğu için kart kendi border'ını gösterir */
-.pred-card-resize-wrapper .pred-card {
-    width: 100% !important;
-    height: 100% !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    cursor: default !important;
-}
-
 /* Kart içi her öğe */
-.predictions-layout .pred-card *,
-.pred-card-resize-wrapper .pred-card * {
+.predictions-layout .pred-card * {
     min-width: 0 !important;
 }
 
@@ -6577,23 +6563,6 @@ body {
     line-height: 1.3 !important;
 }
 
-/* --- Drag & Drop devre dışı (kilitli düzen) --- */
-.pred-card-resize-wrapper,
-.pred-card-resize-wrapper:active,
-.pred-card-resize-wrapper.dragging,
-.pred-card-resize-wrapper.drag-over {
-    cursor: default !important;
-    opacity: 1 !important;
-    border: none !important;
-    box-shadow: none !important;
-    -webkit-user-drag: none !important;
-}
-
-/* Hide drag grip icon if any */
-.pred-card-resize-wrapper::before {
-    display: none !important;
-}
-
 .predictions-layout .pred-card,
 .predictions-layout .pred-card:active,
 .predictions-layout .pred-card.dragging,
@@ -6605,7 +6574,6 @@ body {
 }
 
 /* Draggable attribute'u CSS ile etkisiz kıl */
-.pred-card-resize-wrapper[draggable="true"],
 .predictions-layout .pred-card[draggable="true"] {
     -webkit-user-drag: none !important;
     pointer-events: auto;
@@ -6761,30 +6729,11 @@ body {
 }
 
 /* =============================================
-   LAYOUT ŞABLONLARI (tümü 2-kolon)
-   ============================================= */
-.predictions-layout[data-layout="default"],
-.predictions-layout[data-layout="chart-first"],
-.predictions-layout[data-layout="tables-top"],
-.predictions-layout[data-layout="compact"],
-.predictions-layout[data-layout="summary-focus"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
-.predictions-layout[data-layout="compact"] {
-    gap: 6px !important;
-}
-
-/* =============================================
    RESPONSIVE
    ============================================= */
 @media (max-width: 720px) {
 
     .predictions-layout,
-    .predictions-layout[data-layout="default"],
-    .predictions-layout[data-layout="chart-first"],
-    .predictions-layout[data-layout="tables-top"],
-    .predictions-layout[data-layout="compact"],
     .predictions-layout[data-layout="summary-focus"] {
         grid-template-columns: 1fr !important;
     }
@@ -7925,7 +7874,6 @@ body,
 .login-container,
 .prediction-main-card,
 .predictions-layout .pred-card,
-.pred-card-resize-wrapper .pred-card,
 .prediction-stats-grid .pred-stat-card,
 .dashboard-card,
 .expenses-summary-card,
@@ -7945,31 +7893,6 @@ body,
     grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
     gap: 12px !important;
     align-items: start !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper {
-    grid-column: span 4 !important;
-    display: flex !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 8 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 12 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper .pred-card {
-    height: auto !important;
-    min-height: 0 !important;
 }
 
 .predictions-layout .pred-chart {
@@ -8001,13 +7924,6 @@ body,
 @media (max-width: 1100px) {
     .predictions-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 1 !important;
     }
 }
 
@@ -8109,28 +8025,6 @@ body,
     align-items: stretch !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper {
-    display: block;
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 6 !important;
-}
-
 .predictions-layout .pred-card {
     height: 100% !important;
     padding: 0.75rem !important;
@@ -8191,18 +8085,6 @@ body,
 
     .prediction-stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 12 !important;
     }
 }
 
@@ -8298,28 +8180,6 @@ body,
     align-items: stretch !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper {
-    display: block;
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 6 !important;
-}
-
 .predictions-layout .pred-card {
     height: 100% !important;
     padding: 0.75rem !important;
@@ -8380,18 +8240,6 @@ body,
 
     .prediction-stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 12 !important;
     }
 }
 
@@ -8487,28 +8335,6 @@ body,
     align-items: stretch !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper {
-    display: block;
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 6 !important;
-}
-
 .predictions-layout .pred-card {
     height: 100% !important;
     padding: 0.75rem !important;
@@ -8564,18 +8390,6 @@ body,
     .prediction-stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 12 !important;
-    }
 }
 
 /* ========================================
@@ -8614,33 +8428,6 @@ body,
 
 .predictions-layout {
     grid-auto-flow: dense !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper:has(> .pred-card[style*="display: none"]) {
-    display: none !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="ceo-summary"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="recommendations"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 4 !important;
 }
 
 .predictions-layout .pred-card {
@@ -8751,23 +8538,6 @@ textarea,
     }
 }
 
-@media (max-width: 1100px) {
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="ceo-summary"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="recommendations"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="actions"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 1 !important;
-    }
-}
 
 @media (max-width: 720px) {
     .prediction-stats-grid {
@@ -10313,10 +10083,6 @@ body,
 }
 
 .predictions-layout,
-.predictions-layout[data-layout="default"],
-.predictions-layout[data-layout="chart-first"],
-.predictions-layout[data-layout="tables-top"],
-.predictions-layout[data-layout="compact"],
 .predictions-layout[data-layout="summary-focus"] {
     display: grid !important;
     grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
@@ -10352,30 +10118,6 @@ body,
 .predictions-layout .pred-card {
     padding: 1rem !important;
     border-radius: 12px !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper {
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper .pred-card {
-    height: auto !important;
-    min-height: 0 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 8 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 12 !important;
 }
 
 .predictions-layout .pred-card h3,
@@ -10475,17 +10217,12 @@ body,
     }
 
     .predictions-layout,
-    .predictions-layout[data-layout="default"],
-    .predictions-layout[data-layout="chart-first"],
-    .predictions-layout[data-layout="tables-top"],
-    .predictions-layout[data-layout="compact"],
     .predictions-layout[data-layout="summary-focus"] {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
     .predictions-layout .pred-chart,
     .predictions-layout .pred-table,
-    .predictions-layout .pred-card-resize-wrapper,
     .predictions-layout .ceo-summary-card,
     .predictions-layout .ceo-recommendations,
     .predictions-layout .ceo-actions,
@@ -10495,10 +10232,7 @@ body,
     .predictions-layout .growth-metrics-card,
     .predictions-layout .regression-quality-card,
     .predictions-layout .risk-factors-card,
-    .predictions-layout .scenarios-card,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
+    .predictions-layout .scenarios-card {
         grid-column: span 1 !important;
     }
 
@@ -10514,11 +10248,6 @@ body,
 
     .prediction-stats-grid,
     .predictions-layout,
-    .predictions-layout[data-layout="default"],
-    .predictions-layout[data-layout="chart-first"],
-    .predictions-layout[data-layout="tables-top"],
-    .predictions-layout[data-layout="compact"],
-    .predictions-layout[data-layout="summary-focus"],
     .column-map-fields.horizontal {
         grid-template-columns: 1fr !important;
     }
@@ -11354,7 +11083,6 @@ body,
 .login-container,
 .prediction-main-card,
 .predictions-layout .pred-card,
-.pred-card-resize-wrapper .pred-card,
 .prediction-stats-grid .pred-stat-card,
 .dashboard-card,
 .expenses-summary-card,
@@ -11388,42 +11116,8 @@ body,
     align-items: stretch !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper {
-    grid-column: span 4 !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 12 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper .pred-card {
-    flex: 1 1 auto !important;
-    height: 100% !important;
-    min-height: 100% !important;
-}
-
 .predictions-layout .pred-card {
     min-height: 100% !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 6 !important;
 }
 
 .fhealth-grid,
@@ -11468,13 +11162,6 @@ body,
 @media (max-width: 1100px) {
     .predictions-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 1 !important;
     }
 }
 
@@ -11613,14 +11300,6 @@ body,
     font-size: 0.82rem;
     line-height: 1.45;
     color: var(--text-muted);
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
 }
 
 .predictions-layout .pred-card {
@@ -11802,16 +11481,6 @@ body,
     .predictions-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
-
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 2 !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper {
-        grid-column: span 1 !important;
-    }
 }
 
 @media (max-width: 900px) {
@@ -11843,13 +11512,6 @@ body,
 
     .predictions-layout {
         grid-template-columns: 1fr !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 1 !important;
     }
 
     .prediction-chart-container .pred-chart-canvas-wrap {
@@ -11974,39 +11636,6 @@ body,
 
 .predictions-layout .pred-card h3 {
     font-size: 1rem !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"] {
-    grid-column: span 6 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 12 !important;
 }
 
 .prediction-table th,
@@ -12252,22 +11881,6 @@ body,
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-        grid-column: span 1 !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 2 !important;
-    }
-
     .prediction-details-grid .pred-card,
     .prediction-details-grid #businessStatsCard,
     .prediction-details-grid #regressionQualityCard {
@@ -12304,11 +11917,6 @@ body,
     .data-quality-grid,
     .prediction-metrics-guide .metrics-guide-grid {
         grid-template-columns: 1fr !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 1 !important;
     }
 
     .prediction-executive-side .dashboard-action-btn {
@@ -12363,39 +11971,6 @@ body,
 
 .pred-stat-hint {
     align-self: end;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="recommendations"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="data-quality"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="model-explain"] {
-    grid-column: span 6 !important;
 }
 
 .prediction-chart-container .pred-chart-canvas-wrap {
@@ -12626,12 +12201,6 @@ body,
         grid-template-columns: 1fr !important;
     }
 
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="data-quality"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="model-explain"] {
-        grid-column: span 1 !important;
-    }
-
     .scenario-cards,
     .decision-impact-grid,
     .data-quality-grid,
@@ -12755,49 +12324,6 @@ body:not(.admin-user) .nav-tab#tabAdmin {
 .predictions-layout {
     gap: 0.95rem !important;
     grid-auto-flow: row dense !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 8 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="ceo-summary"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="recommendations"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"] {
-    grid-column: span 6 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 12 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="ceo-summary"] .pred-card,
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] .pred-card {
-    min-height: 320px !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="recommendations"] .pred-card,
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] .pred-card {
-    min-height: 330px !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"] .pred-card,
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"] .pred-card {
-    min-height: 360px !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] .pred-card {
-    min-height: 280px !important;
 }
 
 .prediction-chart-container .pred-chart-canvas-wrap {
@@ -12951,17 +12477,6 @@ body:not(.admin-user) .nav-tab#tabAdmin {
 @media (max-width: 1280px) {
     .predictions-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 2 !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper {
-        grid-column: span 1 !important;
     }
 
     .bstat-grid,
@@ -14388,15 +13903,6 @@ textarea.form-input { font-family: inherit; }
     align-items: stretch !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper {
-    display: flex !important;
-    min-width: 0 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper .pred-card {
-    width: 100% !important;
-}
-
 .predictions-layout .pred-card {
     gap: 0.8rem !important;
     padding: 1rem !important;
@@ -14414,50 +13920,6 @@ textarea.form-input { font-family: inherit; }
     color: var(--text-primary) !important;
     font-size: 1.02rem !important;
     line-height: 1.25 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 8 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="recommendations"] {
-    grid-column: span 4 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-    grid-column: span 8 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 12 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"] {
-    grid-column: span 5 !important;
 }
 
 .prediction-table-container {
@@ -14706,24 +14168,6 @@ textarea.form-input { font-family: inherit; }
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="recommendations"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="actions"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="business-stats"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="regression-quality"] {
-        grid-column: span 1 !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 2 !important;
-    }
-
     .prediction-executive-hero {
         grid-template-columns: 1fr;
     }
@@ -14765,11 +14209,6 @@ textarea.form-input { font-family: inherit; }
     .action-items,
     .missing-areas-list {
         grid-template-columns: 1fr !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 1 !important;
     }
 
     .prediction-chart-container .pred-chart-canvas-wrap {
@@ -14824,55 +14263,11 @@ textarea.form-input { font-family: inherit; }
     align-items: stretch !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper {
-    display: flex !important;
-    min-width: 0 !important;
-    min-height: 100% !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper .pred-card {
-    width: 100% !important;
-    height: 100% !important;
-}
-
 .predictions-layout .pred-card {
     display: flex !important;
     flex-direction: column !important;
     gap: 0.68rem !important;
     padding: 0.92rem !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"] {
-    grid-column: span 6 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 12 !important;
 }
 
 .prediction-chart-container .pred-chart-canvas-wrap {
@@ -15019,22 +14414,6 @@ textarea.form-input { font-family: inherit; }
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-        grid-column: span 1 !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 2 !important;
-    }
-
     .scenario-card {
         grid-template-columns: minmax(90px, 0.7fr) minmax(120px, 0.85fr) minmax(0, 1fr) !important;
     }
@@ -15092,11 +14471,6 @@ textarea.form-input { font-family: inherit; }
         grid-template-columns: 1fr !important;
     }
 
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 1 !important;
-    }
-
     .prediction-chart-container .pred-chart-canvas-wrap {
         height: 285px !important;
         min-height: 285px !important;
@@ -15105,27 +14479,6 @@ textarea.form-input { font-family: inherit; }
     .action-item {
         min-height: auto !important;
     }
-}
-
-/* ========================================
-   Prediction Risk Scenario Final Fix
-======================================== */
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] {
-    grid-column: span 5 !important;
-    align-self: start !important;
-    min-height: auto !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 7 !important;
-    align-self: start !important;
-    min-height: auto !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] .pred-card,
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] .pred-card {
-    height: auto !important;
-    min-height: 0 !important;
 }
 
 .risk-score-block {
@@ -15236,10 +14589,6 @@ textarea.form-input { font-family: inherit; }
 }
 
 @media (max-width: 1280px) {
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 1 !important;
-    }
 
     .scenario-cards {
         grid-template-columns: 1fr !important;
@@ -15440,17 +14789,6 @@ textarea.form-input { font-family: inherit; }
     white-space: normal !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 6 !important;
-    align-self: stretch !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"] .pred-card,
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] .pred-card {
-    height: 100% !important;
-}
-
 .nav-icon {
     width: 1.25rem !important;
     height: 1.25rem !important;
@@ -15473,11 +14811,6 @@ textarea.form-input { font-family: inherit; }
 
     .compare-action-column .compare-control-spacer {
         display: none;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 1 !important;
     }
 }
 
@@ -16760,12 +16093,6 @@ body:not(.admin-user) .nav-tab#tabAdmin {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-    grid-column: span 6 !important;
-    align-self: stretch !important;
-}
-
 .prediction-table-container {
     overflow-x: visible !important;
 }
@@ -16779,11 +16106,6 @@ body:not(.admin-user) .nav-tab#tabAdmin {
     .dashboard-stats,
     .compare-delta-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"] {
-        grid-column: span 1 !important;
     }
 }
 
@@ -16957,30 +16279,6 @@ body:not(.admin-user) .nav-tab#tabAdmin {
     grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
 }
 
-.predictions-layout .pred-card-resize-wrapper[data-card-id="chart"] {
-    grid-column: span 7 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="table"] {
-    grid-column: span 5 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="actions"] {
-    grid-column: span 6 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-.predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"] {
-    grid-column: span 6 !important;
-}
-
-.predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-    grid-column: span 12 !important;
-}
-
 .prediction-table-container .prediction-table,
 .model-comparison-table {
     font-variant-numeric: tabular-nums !important;
@@ -17001,19 +16299,6 @@ body:not(.admin-user) .nav-tab#tabAdmin {
     .prediction-stats-grid,
     .predictions-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .predictions-layout .pred-card-resize-wrapper,
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="table"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="risk-factors"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="actions"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="scenarios"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="financial-health"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="growth-metrics"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="decision-impact"],
-    .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
-        grid-column: span 1 !important;
     }
 }
 
@@ -17971,19 +17256,33 @@ body:not(.admin-user) .nav-tab#tabAdmin {
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
 }
 
-/* Ana şerit daraldığı için kart ızgarası 12 yerine 2 kolon; sürükle-bırak sırası korunur.
-   Grafik ve CFO kartı tam genişlik, diğerleri yarım. */
+/* SABİT KART DÜZENİ (2026-08-06, CEO kararı — sürükleme kaldırıldı).
+   Karar akışı: önce resim (grafik), sonra rakam (tablo), sonra üç dengeli çift,
+   en sonda tam genişlik kapanış. Çiftler aynı satırda olduğu için yükseklikleri eşitlenir. */
 .prediction-section.cockpit-page .predictions-layout {
+    display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+    align-items: stretch !important;
 }
 
-.prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper {
+.prediction-section.cockpit-page .predictions-layout > .pred-card {
     grid-column: span 1 !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
 }
 
-.prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-.prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
+/* Tam genişlik kalanlar: grafik (üstte), tablo (hemen altında) ve CFO kapanışı */
+.prediction-section.cockpit-page .predictions-layout > .pred-card[data-card-id="chart"],
+.prediction-section.cockpit-page .predictions-layout > .pred-card[data-card-id="table"],
+.prediction-section.cockpit-page .predictions-layout > .pred-card[data-card-id="cfo-missing"] {
     grid-column: span 2 !important;
+}
+
+/* Gizlenen kart ızgarada boşluk bırakmaz */
+.prediction-section.cockpit-page .predictions-layout > .pred-card.pred-card-hidden {
+    display: none !important;
 }
 
 @media (max-width: 960px) {
@@ -17991,9 +17290,350 @@ body:not(.admin-user) .nav-tab#tabAdmin {
         grid-template-columns: minmax(0, 1fr) !important;
     }
 
-    .prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper,
-    .prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
-    .prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
+    .prediction-section.cockpit-page .predictions-layout > .pred-card,
+    .prediction-section.cockpit-page .predictions-layout > .pred-card[data-card-id="chart"],
+    .prediction-section.cockpit-page .predictions-layout > .pred-card[data-card-id="table"],
+    .prediction-section.cockpit-page .predictions-layout > .pred-card[data-card-id="cfo-missing"] {
         grid-column: span 1 !important;
     }
+}
+
+/* ========================================
+   Düzen turu (2026-08-06) — CEO geri bildirimleri
+======================================== */
+
+/* 1) KPI ızgarasındaki gri bant: eski bir kural `gap: 1rem !important` ile
+   hairline aralığı eziyordu; 1px çizgi yerine kalın gri şerit çıkıyordu. */
+.dashboard-cockpit .dashboard-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1px !important;
+}
+
+.dashboard-cockpit .dashboard-stats-secondary {
+    gap: 1px !important;
+}
+
+.compare-section.cockpit-page .compare-delta-grid,
+.expenses-section.cockpit-page .expenses-summary-cards,
+.expenses-section.cockpit-page .expenses-period-summary,
+.party-detail-section.cockpit-page .party-metrics-grid {
+    gap: 1px !important;
+}
+
+.compare-section.cockpit-page .compare-delta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 960px) {
+    .dashboard-cockpit .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .compare-section.cockpit-page .compare-delta-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-cockpit .dashboard-stats {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+/* 2) Kenar çubuğu: bulanıklık kaldırıldı (CEO kararı). Panel opak, arkasında
+   yalnızca yumuşak gölge var; ekranı bölen keskin dikey şerit yok.
+   Overlay artık görünmez bir tıklama yakalayıcı — tüm ekranı kaplar ki
+   panel dışına tıklayınca kapansın. */
+.sidebar-overlay,
+.sidebar-overlay.visible {
+    width: 100%;
+    right: 0;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+}
+
+.sidebar {
+    background: var(--sidebar-bg);
+}
+
+.sidebar.open {
+    background: var(--sidebar-surface);
+    /* Parlak halka yerine yalnızca yumuşak gölge; kenar zaten border-right ile çizili */
+    box-shadow: 24px 0 60px -22px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .sidebar.open {
+    box-shadow: 24px 0 60px -22px rgba(0, 0, 0, 0.16);
+}
+
+/* ========================================
+   Tek ölçü sistemi — başlık satırı ve kontroller (2026-08-06)
+   Sorun: her sayfada farklı yükseklik/boşluk, başlık satırı dağınık.
+   Çözüm: tüm sayfa başlıkları ve kontrolleri aynı ızgaraya oturur.
+======================================== */
+.cockpit-page {
+    --control-height: 38px;
+    --control-radius: 9px;
+    --control-gap: 0.5rem;
+    --section-gap: 1.25rem;
+}
+
+/* Başlık satırı: sol blok esner, kontroller sağda tek hizada sarmalanır */
+.cockpit-page .dashboard-header-row,
+.cockpit-page .section-header,
+.cockpit-page .customers-header,
+.cockpit-page .expenses-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: var(--section-gap);
+}
+
+.cockpit-page .section-title-block,
+.cockpit-page .expenses-header-left,
+.cockpit-page .customers-header > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+/* 280px taban yalnızca kontrollerin başlıkla AYNI SATIRDA durduğu genişliklerde
+   uygulanır. Dar ekranda konteyner sütuna döndüğü için flex-basis yükseklik
+   olarak okunuyordu ve başlık bloğu 280px yüksekliğe şişiyordu. */
+@media (min-width: 721px) {
+    .cockpit-page .section-title-block,
+    .cockpit-page .expenses-header-left,
+    .cockpit-page .customers-header > div:first-child {
+        flex: 1 1 280px;
+    }
+}
+
+.cockpit-page .dashboard-header-actions,
+.cockpit-page .expenses-header-right,
+.cockpit-page .prediction-command-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--control-gap);
+    flex-wrap: wrap;
+    margin: 0;
+}
+
+/* Tüm kontroller aynı yükseklikte: buton, seçici, alan grubu */
+.cockpit-page .dashboard-action-btn,
+.cockpit-page .compare-btn,
+.cockpit-page .year-select,
+.cockpit-page .month-select,
+.cockpit-page .dashboard-control-group,
+.cockpit-page .expenses-period-selector select,
+.cockpit-page .topn-filters select,
+.cockpit-page .prediction-filter-field select {
+    height: var(--control-height);
+    min-height: var(--control-height);
+    border-radius: var(--control-radius);
+    font-size: 0.86rem;
+    line-height: 1;
+}
+
+/* Native select'te line-height:1 metni kırpıyor; seçicilerde normal bırakılır */
+.cockpit-page select {
+    line-height: normal;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.cockpit-page .dashboard-action-btn,
+.cockpit-page .compare-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.95rem;
+    white-space: nowrap;
+}
+
+/* Dönem kontrolleri tek bir kutu gibi okunur: etiket içeride, seçici bitişik */
+.cockpit-page .dashboard-control-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+}
+
+.cockpit-page .dashboard-control-group > * {
+    border: none !important;
+    border-radius: 0 !important;
+    height: 100%;
+    background: transparent;
+}
+
+.cockpit-page .dashboard-control-group .dashboard-action-btn {
+    border-left: 1px solid var(--border-color) !important;
+}
+
+.cockpit-page .dashboard-year-label,
+.cockpit-page .dashboard-range-selector label {
+    padding: 0 0.6rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.cockpit-page .dashboard-year-selector {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+}
+
+/* Filtre satırları (En Çok, Cari, Gider) aynı hizaya oturur */
+.cockpit-page .topn-filters,
+.cockpit-page .customers-toolbar,
+.cockpit-page .business-party-filters,
+.cockpit-page .expenses-period-selector {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.cockpit-page .topn-filters .filter-group,
+.cockpit-page .expenses-period-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.cockpit-page .topn-filters label,
+.cockpit-page .expenses-period-group label {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.cockpit-page .customers-toolbar .form-input,
+.cockpit-page .business-party-filters .form-input,
+.cockpit-page .topn-filters select {
+    height: var(--control-height);
+    border-radius: var(--control-radius);
+    font-size: 0.86rem;
+}
+
+/* Bölümler arası dikey ritim tek değere bağlandı */
+.cockpit-page .cockpit-main > * + * {
+    margin-top: var(--section-gap);
+}
+
+.cockpit-page .cockpit-main > *:first-child {
+    margin-top: 0;
+}
+
+/* Başlık ölçeği tüm sayfalarda aynı */
+.cockpit-page .section-header h2,
+.cockpit-page .dashboard-header-row h2,
+.cockpit-page .customers-header h2,
+.cockpit-page .expenses-header h2 {
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.cockpit-page .cockpit-head-meta {
+    margin-top: 0.3rem;
+}
+
+@media (max-width: 720px) {
+    /* Eski kurallar bu genişlikte konteyneri sütuna çeviriyordu; flex-basis'in
+       genişlik anlamına gelmesi için satır düzeni açıkça geri getirilir. */
+    .cockpit-page .dashboard-header-actions,
+    .cockpit-page .expenses-header-right,
+    .cockpit-page .prediction-command-bar {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .cockpit-page .dashboard-header-actions > .dashboard-action-btn {
+        flex: 1 1 140px;
+        max-width: 100%;
+    }
+
+    /* Dönem kutusu (YIL + Özel Aralık) dar ekranda tek satıra sığmıyordu ve
+       içindeki buton komşu butonun üstüne biniyordu; tam genişliğe alınır. */
+    .cockpit-page .dashboard-control-group {
+        flex: 1 1 100%;
+        max-width: 100%;
+        height: auto;
+        min-height: var(--control-height);
+        flex-wrap: wrap;
+    }
+
+    .cockpit-page .dashboard-control-group > * {
+        height: var(--control-height);
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .cockpit-page .dashboard-control-group .dashboard-year-selector {
+        flex: 1 1 60%;
+    }
+
+    .cockpit-page .dashboard-control-group .dashboard-action-btn {
+        flex: 0 1 auto;
+    }
+}
+
+/* --- Ayarlar sayfası (kokpit ölçüsü) --- */
+.admin-section.cockpit-page .admin-workspace {
+    gap: var(--section-gap);
+}
+
+.admin-section.cockpit-page .admin-sidebar,
+.admin-section.cockpit-page .admin-main,
+.admin-section.cockpit-page .admin-card,
+.admin-section.cockpit-page .admin-tab-content {
+    border-radius: var(--radius-md);
+}
+
+.admin-section.cockpit-page .admin-tab,
+.admin-section.cockpit-page .admin-action-btn {
+    height: var(--control-height);
+    min-height: var(--control-height);
+    border-radius: var(--control-radius);
+    font-size: 0.86rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+.admin-section.cockpit-page .admin-tab {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0 0.75rem;
+}
+
+.admin-section.cockpit-page .admin-actions-row {
+    display: flex;
+    gap: var(--control-gap);
+    flex-wrap: wrap;
+}
+
+.admin-section.cockpit-page .admin-actions-row .admin-action-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+}
+
+.admin-section.cockpit-page .admin-stat-value,
+.admin-section.cockpit-page .admin-data-count {
+    font-family: var(--cockpit-mono);
+    font-variant-numeric: tabular-nums;
 }

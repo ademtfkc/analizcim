@@ -64,6 +64,10 @@ describe('Integration Tests - Business Parties From Excel', () => {
         assert.equal(customers.body.parties[0].name, 'Acme Musteri');
         assert.equal(customers.body.parties[0].transactionCount, 2);
         assert.equal(customers.body.parties[0].totalVolume, 3600);
+        // Son işlem TUTARI: 20.01 tarihli satırın tutarı (2400). Bu alan SQL'de hiç
+        // seçilmediği için API uzun süre 0 döndürdü; regresyonu burada kilitliyoruz.
+        assert.equal(customers.body.parties[0].lastTransactionDate.slice(0, 10), '2024-01-20');
+        assert.equal(customers.body.parties[0].lastTransactionAmount, 2400);
 
         const customerDetail = await client.request(`/api/business-parties/customer/${customers.body.parties[0].id}`);
         assert.equal(customerDetail.status, 200);
@@ -79,6 +83,7 @@ describe('Integration Tests - Business Parties From Excel', () => {
         assert.equal(suppliers.body.total, 1);
         assert.equal(suppliers.body.parties[0].name, 'Delta Tedarik');
         assert.equal(suppliers.body.parties[0].totalVolume, 1200);
+        assert.equal(suppliers.body.parties[0].lastTransactionAmount, 360);
 
         const supplierDetail = await client.request(`/api/business-parties/supplier/${suppliers.body.parties[0].id}`);
         assert.equal(supplierDetail.status, 200);
@@ -92,6 +97,62 @@ describe('Integration Tests - Business Parties From Excel', () => {
         assert.equal(dashboard.body.summary.topCustomers[0].name, 'Acme Musteri');
         assert.equal(dashboard.body.summary.topSuppliers[0].name, 'Delta Tedarik');
         assert.ok(dashboard.body.summary.recentParties.length >= 2);
+    });
+
+    test('top-N endpoints filter by month, not just year', async (t) => {
+        const client = await createTestClient(t);
+        if (!client) return;
+
+        const user = await seedUser({ username: uniqueUsername('topn_month'), password: 'Test1234!' });
+        await client.login(user.username, user.password);
+
+        const ocakSales = createWorkbook(
+            [['15.01.2024', 'Ocak Musteri', 1000, 200, 1200]],
+            ['Tarih', 'Müşteri Adı', 'Net', 'KDV', 'Genel Toplam']
+        );
+        const martSales = createWorkbook(
+            [['15.03.2024', 'Mart Musteri', 5000, 1000, 6000]],
+            ['Tarih', 'Müşteri Adı', 'Net', 'KDV', 'Genel Toplam']
+        );
+
+        // Dönem dosya adından okunur; iki farklı ay yüklenir
+        const ocakForm = new FormData();
+        ocakForm.append('salesFile', new Blob([ocakSales]), '2024_01_sales.xlsx');
+        ocakForm.append('duplicateAction', 'version');
+        assert.equal((await client.request('/api/analyze', { method: 'POST', body: ocakForm })).status, 200);
+
+        const martForm = new FormData();
+        martForm.append('salesFile', new Blob([martSales]), '2024_03_sales.xlsx');
+        martForm.append('duplicateAction', 'version');
+        assert.equal((await client.request('/api/analyze', { method: 'POST', body: martForm })).status, 200);
+
+        // Yılın tamamı: iki ay birden
+        const yil = await client.request('/api/analysis/top-customers?type=sales&year=2024&limit=100');
+        assert.equal(yil.status, 200);
+        assert.equal(yil.body.month, 'all');
+        assert.equal(yil.body.data.reduce((acc, item) => acc + item.total, 0), 7200);
+
+        // Yalnızca Ocak
+        const ocak = await client.request('/api/analysis/top-customers?type=sales&year=2024&month=1&limit=100');
+        assert.equal(ocak.status, 200);
+        assert.equal(ocak.body.month, 1);
+        assert.equal(ocak.body.data.length, 1);
+        assert.equal(ocak.body.data[0].name, 'Ocak Musteri');
+        assert.equal(ocak.body.data[0].total, 1200);
+
+        // Yalnızca Mart
+        const mart = await client.request('/api/analysis/top-customers?type=sales&year=2024&month=3&limit=100');
+        assert.equal(mart.body.data.length, 1);
+        assert.equal(mart.body.data[0].total, 6000);
+
+        // Veri olmayan ay boş döner, hata vermez
+        const temmuz = await client.request('/api/analysis/top-customers?type=sales&year=2024&month=7&limit=100');
+        assert.equal(temmuz.status, 200);
+        assert.equal(temmuz.body.data.length, 0);
+
+        // Geçersiz ay reddedilir
+        assert.equal((await client.request('/api/analysis/top-customers?type=sales&year=2024&month=13')).status, 400);
+        assert.equal((await client.request('/api/analysis/top-products?type=sales&year=2024&month=0')).status, 400);
     });
 
     test('business party list filters by search, date range and minimum volume', async (t) => {
