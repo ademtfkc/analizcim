@@ -6622,6 +6622,78 @@ function updatePredictionExecutiveSummary({ predData, ceoAnalysis, risk, forecas
     const insight = getPrimaryPredictionInsight(predData, ceoAnalysis, risk, growthPct, confidenceScore);
     setText('execPrimaryInsight', insight);
     setText('execWhyLine', buildExecutiveWhyLine(predData, monthlyData, risk, confidenceScore));
+
+    renderPredictionsRail({ predData, risk, forecastTotal, growthPct, confidenceScore, monthlyData });
+}
+
+// Tahminler sayfasının karar paneli: model/veri künyesi ve veriden üretilen aksiyon maddeleri
+function renderPredictionsRail(view) {
+    const predData = view.predData || {};
+    const secim = predData.modelSelection || {};
+    const mevsim = predData.seasonality || {};
+    const aySayisi = Array.isArray(view.monthlyData) ? view.monthlyData.length : 0;
+
+    const modelAdi = secim.selectedLabel || secim.selectedModel || '—';
+
+    const meta = document.getElementById('predictionsHeadMeta');
+    if (meta) {
+        meta.textContent = `${aySayisi} aylık veri · ${modelAdi} · güven ${getConfidenceLabel(view.confidenceScore)}`;
+    }
+
+    // %80 aralık: ilk 3 ayın alt/üst sınırlarının toplamı (karar özetiyle aynı ufuk)
+    const bantlar = (predData.confidenceBands || []).slice(0, 3);
+    const bantMetni = bantlar.length
+        ? `${formatCompactCurrency(bantlar.reduce((a, b) => a + (b.lower || 0), 0))} – ${formatCompactCurrency(bantlar.reduce((a, b) => a + (b.upper || 0), 0))}`
+        : '—';
+
+    renderRailFacts('predictionsRailFacts', [
+        { label: 'Seçilen model', value: modelAdi },
+        { label: 'Veri uzunluğu', value: aySayisi ? `${aySayisi} ay` : '—' },
+        { label: '%80 aralık', value: bantMetni },
+        { label: 'Mevsimsellik', value: mevsim.detected ? `Var · yoğun ${mevsim.peakPeriod || '—'}` : 'Belirgin değil' },
+        { label: 'Risk seviyesi', value: getRiskLevelLabel(view.risk?.level),
+          tone: view.risk?.level === 'high' ? 'negative' : (view.risk?.level === 'low' ? 'positive' : '') }
+    ]);
+
+    const items = [];
+    const buyume = Number(view.growthPct);
+
+    if (Number.isFinite(buyume)) {
+        items.push({
+            tone: buyume >= 0 ? 'positive' : 'negative',
+            title: buyume >= 0 ? 'Önümüzdeki 3 ay yukarı yönlü' : 'Önümüzdeki 3 ay aşağı yönlü',
+            body: `Beklenen satış ${formatCurrency(view.forecastTotal)}, değişim ${pctText(buyume)}.` +
+                (bantlar.length ? ` %80 olasılıkla ${bantMetni} aralığında.` : '')
+        });
+    }
+
+    if (view.confidenceScore < 50) {
+        items.push({
+            tone: 'warning',
+            title: 'Model güveni düşük',
+            body: aySayisi < 12
+                ? `Elde ${aySayisi} aylık veri var. Daha fazla ay yüklendikçe tahmin isabeti artar; şimdilik senaryolarla birlikte okuyun.`
+                : 'Satış verisi dalgalı olduğu için model güveni düşük. Tek bir rakama değil, aralığa bakın.'
+        });
+    }
+
+    if (view.risk?.level === 'high') {
+        items.push({
+            tone: 'negative',
+            title: 'Risk seviyesi yüksek',
+            body: 'Risk öncelikleri bölümündeki maddeleri gözden geçirin; nakit planını kötü senaryoya göre kurun.'
+        });
+    }
+
+    if (mevsim.detected) {
+        items.push({
+            tone: 'neutral',
+            title: 'Mevsimsel etki var',
+            body: `Aylık dalgalanma tesadüfi değil; yoğun dönem ${mevsim.peakPeriod || '—'}, zayıf dönem ${mevsim.lowPeriod || '—'}. Stok ve nakit planını buna göre ayarlayın.`
+        });
+    }
+
+    renderRailActionItems('predictionsRailActionList', items);
 }
 
 function setText(id, value) {

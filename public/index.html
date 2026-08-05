@@ -1579,12 +1579,13 @@
             </section>
 
             <!-- Predictions Section -->
-            <section class="prediction-section" id="predictionsSection" style="display: none;">
+            <section class="prediction-section cockpit-page" id="predictionsSection" style="display: none;">
                 <div class="section-header">
                     <div class="section-title-block">
                         <span class="section-kicker">Karar Masası</span>
                         <h2>Tahminler</h2>
                         <span class="beta-badge">BETA</span>
+                        <span class="cockpit-head-meta" id="predictionsHeadMeta">Tahmin hesaplanıyor</span>
                     </div>
                     <div class="prediction-filter-bar prediction-command-bar" aria-label="Tahmin filtreleri">
                         <label class="prediction-filter-field" for="predictionPeriodSelect">
@@ -1618,6 +1619,8 @@
 
                     <!-- Content (hidden by default) -->
                     <div class="prediction-content" style="display: none;">
+                        <div class="cockpit-body">
+                        <div class="cockpit-main">
 
                         <div class="prediction-feedback-card" id="predictionFeedbackCard">
                             <div class="prediction-feedback-main">
@@ -1662,38 +1665,6 @@
                                 <p class="prediction-why-line" id="execWhyLine">
                                     Model çıktısı, yakın dönem satış ritmi, risk skoru ve veri kalitesi birlikte değerlendirilerek oluşturulur.
                                 </p>
-                            </div>
-                            <div class="prediction-executive-side">
-                                <div class="prediction-exec-metric">
-                                    <span class="prediction-exec-label">3 Aylık Satış Beklentisi</span>
-                                    <strong id="execTotalExpectation">-</strong>
-                                </div>
-                                <div class="prediction-exec-mini-grid">
-                                    <div class="prediction-exec-mini">
-                                        <span>Beklenen Değişim</span>
-                                        <strong id="execGrowth">-</strong>
-                                    </div>
-                                    <div class="prediction-exec-mini">
-                                        <span>Risk Seviyesi</span>
-                                        <strong id="execRisk">-</strong>
-                                    </div>
-                                    <div class="prediction-exec-mini">
-                                        <span>Model Güveni</span>
-                                        <strong id="execConfidence">-</strong>
-                                    </div>
-                                    <div class="prediction-exec-mini">
-                                        <span>Veri Kalitesi</span>
-                                        <strong id="execDataQuality">-</strong>
-                                    </div>
-                                </div>
-                                <div class="ceo-outlook" id="ceoOutlook">
-                                    <span class="outlook-label">Piyasa Görünümü:</span>
-                                    <span class="outlook-value" id="outlookValue"></span>
-                                </div>
-                                <button type="button" class="dashboard-action-btn primary" id="refreshPredictionsBtn"
-                                    title="Tahminleri güncel verilerle yeniden hesapla">
-                                    <span>Tahminleri Güncelle</span>
-                                </button>
                             </div>
                         </div>
 
@@ -1919,6 +1890,54 @@
                                 </div>
                             </details>
                         </div>
+                        </div><!-- /.cockpit-main -->
+
+                        <aside class="cockpit-rail" id="predictionsRail" aria-label="Tahmin karar paneli">
+                            <div class="rail-block rail-actions">
+                                <div class="rail-title">Şimdi ne yapmalıyım</div>
+                                <div class="rail-action-list" id="predictionsRailActionList"></div>
+                            </div>
+
+                            <div class="rail-block prediction-executive-side">
+                                <div class="rail-title">3 aylık beklenti</div>
+                                <div class="prediction-exec-metric">
+                                    <span class="prediction-exec-label">3 Aylık Satış Beklentisi</span>
+                                    <strong id="execTotalExpectation">-</strong>
+                                </div>
+                                <div class="prediction-exec-mini-grid">
+                                    <div class="prediction-exec-mini">
+                                        <span>Beklenen Değişim</span>
+                                        <strong id="execGrowth">-</strong>
+                                    </div>
+                                    <div class="prediction-exec-mini">
+                                        <span>Risk Seviyesi</span>
+                                        <strong id="execRisk">-</strong>
+                                    </div>
+                                    <div class="prediction-exec-mini">
+                                        <span>Model Güveni</span>
+                                        <strong id="execConfidence">-</strong>
+                                    </div>
+                                    <div class="prediction-exec-mini">
+                                        <span>Veri Kalitesi</span>
+                                        <strong id="execDataQuality">-</strong>
+                                    </div>
+                                </div>
+                                <div class="ceo-outlook" id="ceoOutlook">
+                                    <span class="outlook-label">Piyasa Görünümü:</span>
+                                    <span class="outlook-value" id="outlookValue"></span>
+                                </div>
+                                <button type="button" class="dashboard-action-btn primary" id="refreshPredictionsBtn"
+                                    title="Tahminleri güncel verilerle yeniden hesapla">
+                                    <span>Tahminleri Güncelle</span>
+                                </button>
+                            </div>
+
+                            <div class="rail-block">
+                                <div class="rail-title">Model ve veri</div>
+                                <div class="rail-facts" id="predictionsRailFacts"></div>
+                            </div>
+                        </aside>
+                        </div><!-- /.cockpit-body -->
                     </div>
                 </div>
 

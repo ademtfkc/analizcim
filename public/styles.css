@@ -17892,3 +17892,108 @@ body:not(.admin-user) .nav-tab#tabAdmin {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* --- Tahminler sayfası (kokpit) --- */
+.prediction-section.cockpit-page .prediction-executive-hero {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.prediction-section.cockpit-page .cockpit-rail .prediction-exec-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.prediction-section.cockpit-page .cockpit-rail .prediction-exec-label {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
+.prediction-section.cockpit-page .cockpit-rail .prediction-exec-metric strong {
+    font-family: var(--cockpit-mono);
+    font-size: 1.35rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.prediction-section.cockpit-page .cockpit-rail .prediction-exec-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 0.75rem;
+    margin: 0.6rem 0;
+}
+
+.prediction-section.cockpit-page .cockpit-rail .prediction-exec-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.prediction-section.cockpit-page .cockpit-rail .prediction-exec-mini > span {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.prediction-section.cockpit-page .cockpit-rail .prediction-exec-mini > strong {
+    font-family: var(--cockpit-mono);
+    font-size: 0.86rem;
+    font-weight: 500;
+}
+
+.prediction-section.cockpit-page .cockpit-rail .ceo-outlook {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.78rem;
+}
+
+.prediction-section.cockpit-page .cockpit-rail .outlook-label {
+    color: var(--text-muted);
+}
+
+.prediction-section.cockpit-page .cockpit-rail .dashboard-action-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+}
+
+/* İstatistik ızgarası sabit 150px kolonlarla şeritten taşıyordu; şeride sığacak şekilde sarmalanır */
+.prediction-section.cockpit-page .prediction-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+}
+
+.prediction-section.cockpit-page .forecast-horizon-grid {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+}
+
+/* Ana şerit daraldığı için kart ızgarası 12 yerine 2 kolon; sürükle-bırak sırası korunur.
+   Grafik ve CFO kartı tam genişlik, diğerleri yarım. */
+.prediction-section.cockpit-page .predictions-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper {
+    grid-column: span 1 !important;
+}
+
+.prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
+.prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
+    grid-column: span 2 !important;
+}
+
+@media (max-width: 960px) {
+    .prediction-section.cockpit-page .predictions-layout {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper,
+    .prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="chart"],
+    .prediction-section.cockpit-page .predictions-layout .pred-card-resize-wrapper[data-card-id="cfo-missing"] {
+        grid-column: span 1 !important;
+    }
+}

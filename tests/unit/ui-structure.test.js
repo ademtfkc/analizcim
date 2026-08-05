@@ -503,6 +503,32 @@ describe('UI structure rules', () => {
         assert.match(css, /\.customers-section\.cockpit-page \.business-party-table td\.bp-cell-name\s*\{[\s\S]*?font-family: inherit/);
     });
 
+    test('predictions page keeps the draggable card grid inside the cockpit shell', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /class="prediction-section cockpit-page"/);
+        assert.match(html, /id="predictionsRail"/);
+        assert.match(html, /id="predictionsRailActionList"/);
+        assert.match(html, /id="predictionsRailFacts"/);
+        assert.match(html, /id="predictionsHeadMeta"/);
+
+        // Yönetici özetinin sayısal yanı panele taşındı; ID'ler korunmalı
+        ['execTotalExpectation', 'execGrowth', 'execRisk', 'execConfidence', 'execDataQuality',
+         'ceoOutlook', 'refreshPredictionsBtn'].forEach(id => {
+            assert.match(html, new RegExp('id="' + id + '"'));
+        });
+
+        // Sürükle-bırak kart ızgarası korunur (9 kart hâlâ draggable)
+        assert.ok((html.match(/class="[^"]*pred-card[^"]*"[^>]*draggable="true"/g) || []).length >= 8);
+        assert.match(js, /function renderPredictionsRail\(view\)/);
+
+        // Dar şeritte 12 kolonluk ızgara 2 kolona iner, grafik tam genişlik kalır
+        assert.match(css, /\.prediction-section\.cockpit-page \.predictions-layout\s*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+        assert.match(css, /data-card-id="chart"\],[\s\S]*?grid-column: span 2 !important/);
+    });
+
     test('destructive actions use the themed confirm modal instead of native confirm()', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');
