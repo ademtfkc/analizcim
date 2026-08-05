@@ -4165,6 +4165,15 @@ function clearDashboardRange() {
     loadDashboard();
 }
 
+// Brüt kâr KDV HARİÇ hesaplanır (CEO kararı 2026-07-07). Kâr/Zarar tablosu, geçmiş özetleri ve
+// YoY karşılaştırması aynı tabanı kullanır; panel de aynı tabanda kalmalı ki aynı ekranda iki farklı
+// "Net Kâr" görünmesin. KDV kırılımı yoksa tutarlar zaten net kabul edilir, çıkarma yapılmaz.
+function computeVatExclusiveGrossProfit(sales, purchases, salesVat, purchaseVat) {
+    const netSales = (sales || 0) - (Number.isFinite(salesVat) ? salesVat : 0);
+    const netPurchases = (purchases || 0) - (Number.isFinite(purchaseVat) ? purchaseVat : 0);
+    return netSales - netPurchases;
+}
+
 async function loadDashboard() {
     try {
         showLoading(true, 'Panel yükleniyor...');
@@ -4227,7 +4236,12 @@ async function loadDashboard() {
                 total_vat: item.total_vat ?? item.totalVat ?? item.vat ?? item['Toplam KDV'] ?? item.vat_amount ?? item.kdv ?? 0,
                 sales_vat: _anySep ? (item.sales_vat ?? item.salesVat ?? item.sales_tax ?? 0) : null,
                 purchase_vat: _anySep ? (item.purchase_vat ?? item.purchaseVat ?? item.purchase_tax ?? 0) : null,
-                gross_profit: item.gross_profit ?? item.grossProfit ?? ((item.total_sales ?? item.totalSales ?? 0) - (item.total_purchases ?? item.totalPurchases ?? 0)),
+                gross_profit: item.gross_profit ?? item.grossProfit ?? computeVatExclusiveGrossProfit(
+                    item.total_sales ?? item.totalSales ?? 0,
+                    item.total_purchases ?? item.totalPurchases ?? 0,
+                    _anySep ? (item.sales_vat ?? item.salesVat ?? item.sales_tax ?? 0) : null,
+                    _anySep ? (item.purchase_vat ?? item.purchaseVat ?? item.purchase_tax ?? 0) : null
+                ),
                 expenses: item.expenses ?? 0
             }));
         } else if (rawMonthly && typeof rawMonthly === 'object' && Array.isArray(rawMonthly.labels)) {
@@ -4251,7 +4265,12 @@ async function loadDashboard() {
                 total_vat: (Array.isArray(vatArr) ? vatArr[i] : 0) || 0,
                 sales_vat: _hasSeparateVatSeries ? ((Array.isArray(salesVatArr) ? salesVatArr[i] : 0) || 0) : null,
                 purchase_vat: _hasSeparateVatSeries ? ((Array.isArray(purchVatArr) ? purchVatArr[i] : 0) || 0) : null,
-                gross_profit: (sales[i] || 0) - (purchases[i] || 0),
+                gross_profit: computeVatExclusiveGrossProfit(
+                    sales[i] || 0,
+                    purchases[i] || 0,
+                    _hasSeparateVatSeries ? ((Array.isArray(salesVatArr) ? salesVatArr[i] : 0) || 0) : null,
+                    _hasSeparateVatSeries ? ((Array.isArray(purchVatArr) ? purchVatArr[i] : 0) || 0) : null
+                ),
                 expenses: (Array.isArray(expensesArr) ? expensesArr[i] : 0) || 0
             }));
         } else {
@@ -4284,6 +4303,10 @@ async function loadDashboard() {
                             for (const m of monthly) {
                                 m.sales_vat = svByMonth[m.month] ?? 0;
                                 m.purchase_vat = pvByMonth[m.month] ?? 0;
+                                // KDV kırılımı sonradan geldi; brüt kâr KDV hariç tabana çekilir
+                                m.gross_profit = computeVatExclusiveGrossProfit(
+                                    m.total_sales, m.total_purchases, m.sales_vat, m.purchase_vat
+                                );
                             }
                         }
                     }
@@ -4451,7 +4474,8 @@ function renderProfitLoss(data) {
         yearDisplay.textContent = year || 'Tüm Yıllar';
     }
 
-    if (!data || !data.months || data.months.length === 0) {
+    // Hiç hareketi olmayan (tamamı sıfır) dönemde tabloyu gösterme; boş panelde sıfır tablosu kalmasın
+    if (!data || !data.months || data.months.length === 0 || !data.months.some(hasProfitLossActivity)) {
         plSection.style.display = 'none';
         return;
     }
@@ -4504,9 +4528,30 @@ function renderProfitLoss(data) {
             '<td class="' + numericToneClass(m.grossProfit) + '">' + (hasActivity ? formatCurrency(m.grossProfit || 0) : '-') + '</td>' +
             '<td class="expense">' + (hasActivity ? formatCurrency(m.expenses || 0) : '-') + '</td>' +
             '<td class="' + numericToneClass(m.netProfit) + '">' + (hasActivity ? formatCurrency(m.netProfit || 0) : '-') + '</td>' +
-            '<td class="' + numericToneClass(m.profitMargin) + '">' + (hasActivity ? (m.profitMargin || 0) + '%' : '-') + '</td>' +
+            '<td class="pl-margin-cell ' + numericToneClass(m.profitMargin) + '">' + (hasActivity ? renderMarginBar(m.profitMargin) : '-') + '</td>' +
         '</tr>';
     }).join('');
+}
+
+// Marj hücresi: ince oran çubuğu + sayı (çubuk rengi hücrenin pozitif/negatif tonunu izler)
+function renderMarginBar(margin) {
+    const value = Number(margin) || 0;
+    // Negatif marjda çubuk boş kalır (dolu kırmızı çubuk "iyi" gibi okunurdu); yüzde yine görünür
+    const fill = Math.max(0, Math.min(100, Math.round((Math.max(0, value) / 50) * 100)));
+    return '<span class="pl-margin">' +
+        '<span class="pl-margin-track"><span class="pl-margin-fill" style="width:' + fill + '%"></span></span>' +
+        '<span class="pl-margin-value">' + value + '%</span>' +
+    '</span>';
+}
+
+const SUMMARY_AMOUNT_FIELDS = [
+    'total_sales', 'totalSales', 'total_purchases', 'totalPurchases', 'total_vat', 'totalVat',
+    'gross_profit', 'grossProfit', 'net_profit', 'netProfit', 'total_expenses', 'totalExpenses'
+];
+
+function hasMeaningfulSummary(summary) {
+    if (!summary || typeof summary !== 'object') return false;
+    return SUMMARY_AMOUNT_FIELDS.some(field => Math.abs(Number(summary[field]) || 0) > 0);
 }
 
 function renderDashboardForYear(yearStr) {
@@ -4531,20 +4576,30 @@ function renderDashboardForYear(yearStr) {
     const recentSection = document.getElementById('dashboardRecentSection');
     const dashboardPLSection = document.querySelector('.dashboard-profit-loss-section');
     const dashboardRatiosSection = document.getElementById('dashboardRatiosSection');
+    const dashboardRail = document.getElementById('dashboardRail');
+    const dashboardSectionEl = document.getElementById('dashboardSection');
 
-    if (!summary && monthly.length === 0) {
+    // API veri yokken de sıfır dolu bir summary nesnesi döndürüyor; bu yüzden "summary var mı"
+    // yerine "içinde anlamlı bir tutar var mı" diye bakılır, aksi halde boş ekran hiç görünmezdi.
+    if (monthly.length === 0 && !hasMeaningfulSummary(summary)) {
+        // `.dashboard-stats` üzerinde `display: grid !important` kuralı var; satır içi stil onu ezemiyor,
+        // bu yüzden boş durum bir bölüm sınıfıyla işaretlenir.
+        dashboardSectionEl.classList.add('has-no-data');
         dashboardStats.style.display = 'none';
         dashboardKdv.style.display = 'none';
         dashboardChart.style.display = 'none';
         if (dashboardSubtotal) dashboardSubtotal.style.display = 'none';
         if (dashboardPLSection) dashboardPLSection.style.display = 'none';
         if (dashboardRatiosSection) dashboardRatiosSection.style.display = 'none';
+        if (dashboardRail) dashboardRail.style.display = 'none';
         dashboardActions.style.display = 'none';
         if (recentSection) recentSection.style.display = 'none';
         dashboardEmpty.style.display = 'block';
         return;
     }
 
+    if (dashboardSectionEl) dashboardSectionEl.classList.remove('has-no-data');
+    if (dashboardRail) dashboardRail.style.display = '';
     dashboardStats.style.display = 'grid';
     dashboardKdv.style.display = 'block';
     dashboardChart.style.display = 'block';
@@ -4606,7 +4661,6 @@ function renderDashboardForYear(yearStr) {
     }
 
     const profitCard = document.getElementById('dashProfitCard');
-    const profitIcon = document.getElementById('dashProfitIcon');
     const profitLabel = document.getElementById('dashProfitLabel');
 
     if (isProfit) {
@@ -4673,8 +4727,6 @@ function renderDashboardForYear(yearStr) {
     let kdvTone = 'neutral';
     let kdvAction = 'KDV durumunu aylık akışta kontrol et';
     let kdvDecisionAmount = 0;
-
-    console.log("[KDV] salesVat.len", hasSalesVatData ? monthly.length : 0, "purchasesVat.len", hasPurchasesVatData ? monthly.length : 0, "vat.len", monthly.length, "totalSalesVat", totalSalesVat, "totalPurchasesVat", totalPurchasesVat, "combinedVat", combinedVat);
 
     if (hasAnyVat) {
         kdvSalesTaxEl.textContent = hasSalesVatData ? formatCurrency(totalSalesVat) : '—';
@@ -4840,6 +4892,26 @@ function renderDashboardForYear(yearStr) {
         kdvDecisionAmount
     });
 
+    renderCockpitSurfaces({
+        yearStr,
+        yearDisplay,
+        sorted,
+        allMonthly,
+        salesSeries,
+        purchaseSeries,
+        totalSales,
+        netProfit,
+        grossMargin: grossMarginNum,
+        salesTrend,
+        purchaseTrend,
+        kdvStatusLabel,
+        kdvTone,
+        kdvDecisionAmount,
+        kdvLabel: kdvNetLabel ? kdvNetLabel.textContent : 'Net KDV',
+        hasVatBreakdown: hasSalesVatData && hasPurchasesVatData,
+        hasAnyVat
+    });
+
     // Apply user widget config after rendering
     applyDashboardWidgetConfig();
 }
@@ -4896,20 +4968,326 @@ function renderExecutiveSummary(view) {
     actionEl.className = 'dashboard-next-action ' + (view.netProfit < 0 ? 'negative' : view.kdvTone);
 }
 
+// ===== Kokpit yüzeyleri (KPI mikro grafikleri, ana sahne özeti, sağ karar paneli) =====
+
+const MONTHLY_FIELD = {
+    sales: (m) => m.total_sales ?? m.totalSales ?? 0,
+    purchase: (m) => m.total_purchases ?? m.totalPurchases ?? 0,
+    gross: (m) => m.gross_profit ?? m.grossProfit ?? 0,
+    net: (m) => (m.gross_profit ?? m.grossProfit ?? 0) - (m.expenses || 0)
+};
+
+function buildSparklinePoints(values, width, height) {
+    if (!Array.isArray(values) || values.length < 2) return '';
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return '';
+    const span = max - min;
+    const pad = 3;
+    const usable = height - pad * 2;
+    const stepX = width / (values.length - 1);
+    return values.map((value, index) => {
+        const x = (index * stepX).toFixed(1);
+        // Tüm aylar eşitse çizgi dibe yapışmasın, ortadan düz geçsin
+        const y = span === 0
+            ? (height / 2).toFixed(1)
+            : (height - pad - ((value - min) / span) * usable).toFixed(1);
+        return x + ',' + y;
+    }).join(' ');
+}
+
+function renderSparkline(elementId, values, tone) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const points = buildSparklinePoints(values, 300, 34);
+    el.className = 'kpi-tile-spark ' + (tone || 'neutral');
+    if (!points) {
+        el.innerHTML = '';
+        return;
+    }
+    el.innerHTML = '<svg viewBox="0 0 300 34" preserveAspectRatio="none" width="100%" height="34" aria-hidden="true" focusable="false">' +
+        '<polyline fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke" ' +
+        'stroke-linejoin="round" stroke-linecap="round" points="' + points + '"></polyline></svg>';
+}
+
+// Yıllık değişim: yalnızca İKİ yılda da veri bulunan aylar kıyaslanır. Aksi halde 3 aylık bir yıl,
+// 12 aylık önceki yılla kıyaslanıp "-%97" gibi doğru ama anlamsız bir sonuç üretirdi.
+function computeYoyDelta(allMonthly, yearStr, valueFn) {
+    if (!yearStr || !Array.isArray(allMonthly)) return null;
+    const year = parseInt(yearStr, 10);
+    if (!Number.isFinite(year)) return null;
+
+    const totalsByMonth = (target) => {
+        const map = new Map();
+        for (const row of allMonthly) {
+            if (extractYearFromMonth(row.month) !== target) continue;
+            const monthPart = String(row.month || '').slice(5, 7);
+            if (!monthPart) continue;
+            map.set(monthPart, (map.get(monthPart) || 0) + valueFn(row));
+        }
+        return map;
+    };
+
+    const current = totalsByMonth(year);
+    const previous = totalsByMonth(year - 1);
+    if (current.size === 0 || previous.size === 0) return null;
+
+    let currentSum = 0;
+    let previousSum = 0;
+    let sharedMonths = 0;
+    for (const [monthPart, value] of current) {
+        if (!previous.has(monthPart)) continue;
+        currentSum += value;
+        previousSum += previous.get(monthPart);
+        sharedMonths++;
+    }
+
+    if (sharedMonths === 0 || previousSum === 0) return null;
+    const delta = ((currentSum - previousSum) / Math.abs(previousSum)) * 100;
+    return Number.isFinite(delta) ? delta : null;
+}
+
+function formatDeltaText(pct) {
+    if (pct === null || !Number.isFinite(pct)) return '';
+    return (pct > 0 ? '+' : '') + pct.toFixed(1).replace('.', ',') + '%';
+}
+
+function setTileDelta(elementId, pct, inverse) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = formatDeltaText(pct);
+    el.textContent = text;
+    el.className = 'kpi-tile-delta ' + (text ? signalToneClass(pct, inverse) : 'neutral');
+    if (text) {
+        el.title = 'Geçen yılın aynı aylarına göre';
+    } else {
+        el.removeAttribute('title');
+    }
+}
+
+function findMarginExtremes(sorted) {
+    let best = null;
+    let worst = null;
+    for (const m of sorted) {
+        const sales = MONTHLY_FIELD.sales(m);
+        if (sales <= 0) continue;
+        const margin = (MONTHLY_FIELD.gross(m) / sales) * 100;
+        if (!Number.isFinite(margin)) continue;
+        if (!best || margin > best.margin) best = { month: m.month, margin };
+        if (!worst || margin < worst.margin) worst = { month: m.month, margin };
+    }
+    return { best, worst };
+}
+
+function formatMarginPoint(point) {
+    if (!point) return '—';
+    return formatMonthLabel(point.month) + ' · %' + point.margin.toFixed(1).replace('.', ',');
+}
+
+function renderCockpitSurfaces(view) {
+    const sorted = view.sorted || [];
+    const monthCount = sorted.length;
+
+    // Başlık altı bilgi satırı
+    const metaEl = document.getElementById('dashboardHeadMeta');
+    if (metaEl) {
+        const parts = [view.yearDisplay, monthCount + ' analiz'];
+        if (monthCount > 0) parts.push('Son ay ' + formatMonthLabel(sorted[monthCount - 1].month));
+        metaEl.textContent = parts.join(' · ');
+    }
+
+    // KPI mikro grafikleri ve yıllık değişim rozetleri
+    renderSparkline('dashSalesSpark', view.salesSeries, 'neutral');
+    renderSparkline('dashPurchaseSpark', view.purchaseSeries, 'negative');
+    renderSparkline('dashNetProfitSpark', sorted.map(MONTHLY_FIELD.net), view.netProfit < 0 ? 'negative' : 'positive');
+
+    setTileDelta('dashSalesDelta', computeYoyDelta(view.allMonthly, view.yearStr, MONTHLY_FIELD.sales), false);
+    setTileDelta('dashPurchaseDelta', computeYoyDelta(view.allMonthly, view.yearStr, MONTHLY_FIELD.purchase), true);
+    setTileDelta('dashNetProfitDelta', computeYoyDelta(view.allMonthly, view.yearStr, MONTHLY_FIELD.net), false);
+
+    // KDV kutusu
+    const vatValueEl = document.getElementById('dashVatTileValue');
+    const vatLabelEl = document.getElementById('dashVatTileLabel');
+    const vatHintEl = document.getElementById('dashVatTileHint');
+    const vatCard = document.getElementById('dashVatCard');
+    if (vatValueEl) {
+        vatValueEl.textContent = view.hasAnyVat ? formatCurrency(view.kdvDecisionAmount) : '—';
+        vatValueEl.title = view.hasAnyVat ? formatCurrency(view.kdvDecisionAmount) : 'KDV verisi yok';
+    }
+    if (vatLabelEl) vatLabelEl.textContent = view.kdvLabel || 'Net KDV';
+    if (vatHintEl) {
+        vatHintEl.textContent = view.kdvStatusLabel === 'Ödenecek'
+            ? 'Nakit çıkışı — kâr değil'
+            : (view.kdvStatusLabel === 'Devreden' ? 'Sonraki döneme devreder' : 'Mahsup sonrası net durum');
+    }
+    if (vatCard) {
+        vatCard.classList.toggle('payable', view.kdvStatusLabel === 'Ödenecek');
+        vatCard.classList.toggle('carryover', view.kdvStatusLabel === 'Devreden');
+    }
+
+    const vatSeries = view.hasVatBreakdown
+        ? sorted.map(m => (m.sales_vat || 0) - (m.purchase_vat || 0))
+        : sorted.map(m => m.total_vat ?? m.totalVat ?? 0);
+    renderSparkline('dashVatSpark', vatSeries, view.kdvStatusLabel === 'Devreden' ? 'positive' : 'negative');
+
+    // Ana sahne özeti
+    const extremes = findMarginExtremes(sorted);
+    const heroPeriod = document.getElementById('dashHeroPeriod');
+    const heroValue = document.getElementById('dashHeroValue');
+    const heroDelta = document.getElementById('dashHeroDelta');
+    const heroMargin = document.getElementById('dashHeroMargin');
+    const heroBest = document.getElementById('dashHeroBest');
+    const heroWorst = document.getElementById('dashHeroWorst');
+
+    if (heroPeriod) heroPeriod.textContent = view.yearDisplay;
+    if (heroValue) {
+        // Ana rakam nötr kalır; yönü altındaki değişim satırı taşır (zarar durumu istisna)
+        heroValue.textContent = formatCurrency(view.netProfit);
+        heroValue.className = 'hero-stat-value' + (view.netProfit < 0 ? ' negative' : '');
+    }
+    if (heroDelta) {
+        const netDelta = computeYoyDelta(view.allMonthly, view.yearStr, MONTHLY_FIELD.net);
+        const deltaText = formatDeltaText(netDelta);
+        heroDelta.textContent = deltaText ? deltaText + ' · geçen yıl aynı dönem' : '';
+        heroDelta.className = 'hero-stat-delta ' + (deltaText ? signalToneClass(netDelta) : 'neutral');
+    }
+    if (heroMargin) heroMargin.textContent = '%' + view.grossMargin.toFixed(1).replace('.', ',');
+    // "En zayıf ay" mutlak olarak zarar demek değildir; kırmızı yalnızca marj gerçekten negatifse
+    if (heroBest) {
+        heroBest.textContent = formatMarginPoint(extremes.best);
+        heroBest.classList.toggle('negative', !!extremes.best && extremes.best.margin < 0);
+    }
+    if (heroWorst) {
+        heroWorst.textContent = formatMarginPoint(extremes.worst);
+        heroWorst.classList.toggle('negative', !!extremes.worst && extremes.worst.margin < 0);
+    }
+
+    renderRailActions(view, extremes);
+}
+
+function renderRailActions(view, extremes) {
+    const list = document.getElementById('dashboardRailActionList');
+    if (!list) return;
+
+    const items = [];
+    const marginSpread = (extremes.best && extremes.worst) ? (extremes.best.margin - extremes.worst.margin) : 0;
+
+    // 1) Maliyet ve marj
+    if (view.purchaseTrend === 'yükselen') {
+        items.push({
+            tone: 'negative',
+            title: 'Alış maliyeti yükseliyor',
+            body: 'Alış trendi yukarı yönlü' + (marginSpread >= 1
+                ? '; brüt marj en iyi ' + formatMarginPoint(extremes.best) + ' iken en zayıf ' + formatMarginPoint(extremes.worst) + ' seviyesine indi.'
+                : '. Marj etkisini tedarikçi bazında kontrol edin.'),
+            cta: 'Tedarikçi kırılımını aç',
+            tab: 'suppliers'
+        });
+    } else {
+        items.push({
+            tone: view.purchaseTrend === 'düşen' ? 'positive' : 'neutral',
+            title: 'Maliyet tarafı ' + (view.purchaseTrend === 'düşen' ? 'geriliyor' : 'yatay seyrediyor'),
+            body: 'Brüt marj %' + view.grossMargin.toFixed(1).replace('.', ',') +
+                (extremes.worst ? '; en zayıf ay ' + formatMarginPoint(extremes.worst) + '.' : '.'),
+            cta: 'Tedarikçi kırılımını aç',
+            tab: 'suppliers'
+        });
+    }
+
+    // 2) KDV
+    const vatShare = view.totalSales > 0 ? (view.kdvDecisionAmount / view.totalSales) * 100 : 0;
+    if (view.kdvStatusLabel === 'Ödenecek') {
+        items.push({
+            tone: 'warning',
+            title: 'Ödenecek KDV cironun %' + vatShare.toFixed(1).replace('.', ',') + "'i",
+            body: 'Mahsup sonrası ' + formatCurrency(view.kdvDecisionAmount) + ' ödeme çıkıyor. Ay sonu nakit planında ayrı satır olarak tutulmalı.',
+            cta: 'KDV özetini gör',
+            scroll: '#dashKdvNetItem'
+        });
+    } else if (view.kdvStatusLabel === 'Devreden') {
+        items.push({
+            tone: 'positive',
+            title: 'Devreden KDV avantajı var',
+            body: formatCurrency(view.kdvDecisionAmount) + ' tutarındaki devreden KDV sonraki dönemde mahsup edilecek.',
+            cta: 'KDV özetini gör',
+            scroll: '#dashKdvNetItem'
+        });
+    } else {
+        items.push({
+            tone: 'neutral',
+            title: 'KDV tarafı nötr',
+            body: view.hasAnyVat ? 'Mahsup sonrası ödenecek KDV oluşmuyor.' : 'Yüklenen dosyalarda KDV kırılımı bulunmuyor.',
+            cta: 'KDV özetini gör',
+            scroll: '#dashKdvNetItem'
+        });
+    }
+
+    // 3) Satış trendi
+    const salesToneMap = { 'yükselen': 'positive', 'düşen': 'negative' };
+    items.push({
+        tone: salesToneMap[view.salesTrend] || 'neutral',
+        title: 'Satış trendi ' + (view.salesTrend === 'yükselen' ? 'ivme kazanıyor' : (view.salesTrend === 'düşen' ? 'zayıflıyor' : 'yatay')),
+        body: view.netProfit >= 0
+            ? 'Dönem net kârla kapanıyor: ' + formatCurrency(view.netProfit) + '.'
+            : 'Dönem net zararda: ' + formatCurrency(Math.abs(view.netProfit)) + '. Gider kalemlerini inceleyin.',
+        cta: '3 aylık tahmini gör',
+        tab: 'predictions'
+    });
+
+    list.innerHTML = items.map(item => {
+        const target = item.tab
+            ? ' data-rail-tab="' + escapeAttribute(item.tab) + '"'
+            : ' data-rail-scroll="' + escapeAttribute(item.scroll) + '"';
+        return '<div class="rail-action ' + item.tone + '">' +
+            '<span class="rail-action-dot" aria-hidden="true"></span>' +
+            '<div class="rail-action-body">' +
+                '<div class="rail-action-title">' + escapeHtml(item.title) + '</div>' +
+                '<p class="rail-action-text">' + escapeHtml(item.body) + '</p>' +
+                '<button type="button" class="rail-action-cta"' + target + '>' + escapeHtml(item.cta) + '</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+
+    bindRailActions();
+}
+
+let _railActionsBound = false;
+function bindRailActions() {
+    if (_railActionsBound) return;
+    const list = document.getElementById('dashboardRailActionList');
+    if (!list) return;
+    list.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-rail-tab], [data-rail-scroll]');
+        if (!trigger) return;
+        const tab = trigger.getAttribute('data-rail-tab');
+        if (tab) {
+            switchTab(tab);
+            return;
+        }
+        const selector = trigger.getAttribute('data-rail-scroll');
+        const target = selector ? document.querySelector(selector) : null;
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    _railActionsBound = true;
+}
+
 // ===== Dashboard Widget Config (Sıralama & Göster/Gizle) =====
 const WIDGET_CONFIG_KEY = 'dashboardWidgetConfigV2';
 const DEFAULT_WIDGET_CONFIG = [
+    // Ana kolon
     { id: 'widget-stats', label: 'İstatistik Kartları', visible: true },
-    { id: 'widget-forecast', label: 'Tahmin Özeti', visible: true },
-    { id: 'widget-ratios', label: 'Finansal Sağlık Göstergeleri', visible: true },
-    { id: 'widget-kdv', label: 'KDV Özeti', visible: true },
-    { id: 'widget-subtotal', label: 'KDV Hariç Ciro', visible: true },
     { id: 'widget-chart', label: 'Aylık Satış Grafiği', visible: true },
     { id: 'widget-pl', label: 'Kar/Zarar Analizi', visible: true },
+    { id: 'widget-ratios', label: 'Finansal Sağlık Göstergeleri', visible: true },
+    { id: 'widget-subtotal', label: 'KDV Hariç Ciro', visible: true },
     { id: 'widget-delta', label: 'Aylık Değişimler', visible: true },
     { id: 'widget-anomaly', label: 'Dikkat Çeken Noktalar', visible: true },
     { id: 'widget-recent', label: 'Son Eklenen Analizler', visible: true },
-    { id: 'widget-actions', label: 'Hızlı İşlemler', visible: true }
+    { id: 'widget-actions', label: 'Hızlı İşlemler', visible: true },
+    // Sağ karar paneli
+    { id: 'widget-forecast', label: 'Tahmin Özeti', visible: true },
+    { id: 'widget-kdv', label: 'KDV Özeti', visible: true },
+    { id: 'widget-customers', label: 'Cari Özeti', visible: true }
 ];
 
 function getWidgetConfig() {
@@ -4936,40 +5314,41 @@ function applyDashboardWidgetConfig() {
     const dashboard = document.getElementById('dashboardSection');
     if (!dashboard) return;
 
-    // Build ordered list of widget elements
-    const widgetEls = [];
-    for (const w of config) {
-        const el = dashboard.querySelector('[data-widget-id="' + w.id + '"]');
-        if (el) widgetEls.push({ el, visible: w.visible, id: w.id });
-    }
-
-    // Move widgets into correct order
     const configPanel = document.getElementById('dashboardWidgetConfig');
     const overviewPanel = dashboard.querySelector('.dashboard-overview-panel');
-    const pivot = configPanel || overviewPanel || dashboard.firstChild;
-    let insertAfter = pivot;
 
-    for (const w of widgetEls) {
-        if (w.el === configPanel) continue;
+    // Kokpit düzeninde widget'lar iki şeride dağılır (ana kolon + sağ karar paneli).
+    // Her şerit kendi içinde sıralanır; şeridin başlangıcı [data-widget-anchor] ile işaretlenir.
+    const laneCursor = new Map();
+    const cursorFor = (parent) => {
+        if (!laneCursor.has(parent)) {
+            laneCursor.set(parent, parent.querySelector(':scope > [data-widget-anchor]') || null);
+        }
+        return laneCursor.get(parent);
+    };
+
+    for (const w of config) {
+        const el = dashboard.querySelector('[data-widget-id="' + w.id + '"]');
+        if (!el || el === configPanel || el === overviewPanel) continue;
 
         // Apply visibility: dynamic sections only hide if user hid them
         const isDynamic = (w.id === 'widget-delta' || w.id === 'widget-anomaly');
         if (isDynamic) {
             // Dynamic sections have their own display logic; only force-hide if user says so
-            if (!w.visible) w.el.style.display = 'none';
+            if (!w.visible) el.style.display = 'none';
             // If visible, leave it to whatever the dynamic creator set
         } else {
-            w.el.style.display = w.visible ? '' : 'none';
+            el.style.display = w.visible ? '' : 'none';
         }
 
-        // Reorder (skip overview panel which should stay at top)
-        if (w.el !== overviewPanel && w.el.parentNode === dashboard) {
-            const nextSibling = insertAfter.nextElementSibling;
-            if (nextSibling !== w.el) {
-                dashboard.insertBefore(w.el, nextSibling);
-            }
-            insertAfter = w.el;
+        const parent = el.parentNode;
+        if (!parent || parent.nodeType !== 1) continue;
+        const cursor = cursorFor(parent);
+        const nextSibling = cursor ? cursor.nextElementSibling : parent.firstElementChild;
+        if (nextSibling !== el) {
+            parent.insertBefore(el, nextSibling);
         }
+        laneCursor.set(parent, el);
     }
 }
 
@@ -5135,7 +5514,9 @@ function renderAnomalySection(monthly) {
         if (insertAfter && insertAfter.nextElementSibling) {
             insertAfter.parentNode.insertBefore(container, insertAfter.nextElementSibling);
         } else {
-            document.getElementById('dashboardSection').appendChild(container);
+            // Kokpit düzeninde widget'lar ana şeridin içinde yaşar; şerit dışına düşmesin
+            const lane = document.querySelector('.dashboard-cockpit-main') || document.getElementById('dashboardSection');
+            lane.appendChild(container);
         }
     }
 
@@ -5326,7 +5707,9 @@ function renderDeltaSection(monthly) {
         if (chartSection && chartSection.nextElementSibling) {
             chartSection.parentNode.insertBefore(container, chartSection.nextElementSibling);
         } else {
-            document.getElementById('dashboardSection').appendChild(container);
+            // Kokpit düzeninde widget'lar ana şeridin içinde yaşar; şerit dışına düşmesin
+            const lane = document.querySelector('.dashboard-cockpit-main') || document.getElementById('dashboardSection');
+            lane.appendChild(container);
         }
     }
 

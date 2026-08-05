@@ -653,11 +653,12 @@
             </section>
 
             <!-- Dashboard Section -->
-            <section class="dashboard-section" id="dashboardSection" style="display: block;">
+            <section class="dashboard-section dashboard-cockpit" id="dashboardSection" style="display: block;">
                 <div class="dashboard-header-row">
                     <div class="section-title-block">
                         <span class="section-kicker">Finans Paneli</span>
                         <h2>Yönetim Paneli</h2>
+                        <span class="cockpit-head-meta" id="dashboardHeadMeta">Seçili dönem için finansal özet yükleniyor.</span>
                     </div>
                     <div class="dashboard-header-actions" aria-label="Dashboard işlemleri">
                         <button type="button" class="dashboard-action-btn primary dashboard-primary-action" onclick="switchTab('analyze')" title="Yeni Excel veya CSV dosyası yükle">
@@ -693,7 +694,8 @@
                         </div>
                     </div>
                 </div>
-                <p class="section-desc">Seçili dönem için finansal özet, veri yükleme ve rapor işlemleri.</p>
+                <div class="dashboard-cockpit-body">
+                <div class="dashboard-cockpit-main">
 
                 <!-- Widget Config Panel -->
                 <div class="dashboard-widget-config" id="dashboardWidgetConfig" style="display:none;">
@@ -705,7 +707,7 @@
                     <div class="dashboard-widget-config-list" id="dashboardWidgetConfigList"></div>
                 </div>
 
-                <div class="dashboard-overview-panel" id="dashboardExecutiveSummary">
+                <div class="dashboard-overview-panel" id="dashboardExecutiveSummary" data-widget-anchor>
                     <div class="dashboard-overview-copy">
                         <span class="overview-label">Yönetici Özeti</span>
                         <h3>Genel Finansal Durum</h3>
@@ -731,83 +733,69 @@
                     </div>
                 </div>
 
-                <!-- Dashboard Stats Grid -->
+                <!-- Dashboard Stats Grid — 4 ana KPI kutusu (mikro grafikli) + ikincil şerit -->
                 <div class="dashboard-stats" id="dashboardStats" data-widget-id="widget-stats">
-                    <div class="dashboard-card total-sales">
-                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-dollar-sign"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashTotalSales">₺0</span>
+                    <div class="dashboard-card kpi-tile total-sales">
+                        <div class="kpi-tile-head">
                             <span class="dashboard-card-label">Toplam Satış</span>
-                            <span class="dashboard-card-hint">Gelir tarafı</span>
+                            <span class="kpi-tile-delta" id="dashSalesDelta"></span>
                         </div>
+                        <span class="dashboard-card-value" id="dashTotalSales">₺0</span>
+                        <span class="dashboard-card-hint">Fatura toplamı, KDV dahil</span>
+                        <span class="kpi-tile-spark" id="dashSalesSpark" aria-hidden="true"></span>
                     </div>
-                    <div class="dashboard-card total-purchase">
-                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-shopping-cart"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashTotalPurchase">₺0</span>
+                    <div class="dashboard-card kpi-tile total-purchase">
+                        <div class="kpi-tile-head">
                             <span class="dashboard-card-label">Toplam Alış</span>
-                            <span class="dashboard-card-hint">Maliyet tabanı</span>
+                            <span class="kpi-tile-delta" id="dashPurchaseDelta"></span>
                         </div>
+                        <span class="dashboard-card-value" id="dashTotalPurchase">₺0</span>
+                        <span class="dashboard-card-hint">Maliyet tabanı, KDV dahil</span>
+                        <span class="kpi-tile-spark" id="dashPurchaseSpark" aria-hidden="true"></span>
                     </div>
-                    <div class="dashboard-card total-profit" id="dashProfitCard">
-                        <div class="dashboard-card-icon" id="dashProfitIcon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-trending-up-small"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashTotalProfit">₺0</span>
-                            <span class="dashboard-card-label" id="dashProfitLabel">Brüt Kâr</span>
-                            <span class="dashboard-card-hint">Satış eksi alış</span>
-                        </div>
-                    </div>
-                    <div class="dashboard-card total-profit" id="dashNetProfitCard">
-                        <div class="dashboard-card-icon" id="dashNetProfitIcon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-check-circle"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashNetProfit">₺0</span>
+                    <div class="dashboard-card kpi-tile total-profit" id="dashNetProfitCard">
+                        <div class="kpi-tile-head">
                             <span class="dashboard-card-label" id="dashNetProfitLabel">Net Kâr</span>
-                            <span class="dashboard-card-hint">Gider sonrası sonuç</span>
+                            <span class="kpi-tile-delta" id="dashNetProfitDelta"></span>
                         </div>
+                        <span class="dashboard-card-value" id="dashNetProfit">₺0</span>
+                        <span class="dashboard-card-hint">Gider sonrası, KDV hariç</span>
+                        <span class="kpi-tile-spark" id="dashNetProfitSpark" aria-hidden="true"></span>
                     </div>
-                    <div class="dashboard-card total-analyses">
-                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-file-text"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashTotalAnalyses">0</span>
-                            <span class="dashboard-card-label">Toplam Analiz</span>
-                            <span class="dashboard-card-hint">İş hacmi kapsamı</span>
+                    <div class="dashboard-card kpi-tile total-vat" id="dashVatCard">
+                        <div class="kpi-tile-head">
+                            <span class="dashboard-card-label" id="dashVatTileLabel">Ödenecek KDV</span>
+                            <span class="kpi-tile-delta" id="dashVatDelta"></span>
                         </div>
+                        <span class="dashboard-card-value" id="dashVatTileValue">₺0</span>
+                        <span class="dashboard-card-hint" id="dashVatTileHint">Nakit çıkışı — kâr değil</span>
+                        <span class="kpi-tile-spark" id="dashVatSpark" aria-hidden="true"></span>
                     </div>
-                    <div class="dashboard-card total-expenses" id="dashExpensesCard">
-                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-credit-card"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashTotalExpenses">₺0</span>
-                            <span class="dashboard-card-label">Toplam Gider</span>
-                            <span class="dashboard-card-hint">Operasyon gideri</span>
+
+                    <!-- İkincil şerit: ana 4 kutunun dışında kalan sayılar -->
+                    <div class="dashboard-stats-secondary" id="dashboardStatsSecondary">
+                        <div class="kpi-chip total-profit" id="dashProfitCard">
+                            <span class="kpi-chip-label" id="dashProfitLabel">Brüt Kâr</span>
+                            <span class="dashboard-card-value kpi-chip-value" id="dashTotalProfit">₺0</span>
                         </div>
-                    </div>
-                    <div class="dashboard-card total-customers" id="dashCustomersCard" onclick="switchTab('customers')" role="button" tabindex="0">
-                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-users"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashTotalCustomers">0</span>
-                            <span class="dashboard-card-label">Toplam Müşteri</span>
-                            <span class="dashboard-card-hint">Cari portföy</span>
+                        <div class="kpi-chip total-analyses">
+                            <span class="kpi-chip-label">Toplam Analiz</span>
+                            <span class="dashboard-card-value kpi-chip-value" id="dashTotalAnalyses">0</span>
                         </div>
-                    </div>
-                    <div class="dashboard-card total-purchase" id="dashSuppliersCard" onclick="switchTab('suppliers')" role="button" tabindex="0">
-                        <div class="dashboard-card-icon"><svg aria-hidden="true" width="24" height="24"><use href="#icon-shopping-cart"></use></svg></div>
-                        <div class="dashboard-card-content">
-                            <span class="dashboard-card-value" id="dashTotalSuppliers">0</span>
-                            <span class="dashboard-card-label">Toplam Tedarikçi</span>
-                            <span class="dashboard-card-hint">Alış kaynakları</span>
+                        <div class="kpi-chip total-expenses" id="dashExpensesCard">
+                            <span class="kpi-chip-label">Toplam Gider</span>
+                            <span class="dashboard-card-value kpi-chip-value" id="dashTotalExpenses">₺0</span>
                         </div>
+                        <button type="button" class="kpi-chip total-customers" id="dashCustomersCard" onclick="switchTab('customers')">
+                            <span class="kpi-chip-label">Toplam Müşteri</span>
+                            <span class="dashboard-card-value kpi-chip-value" id="dashTotalCustomers">0</span>
+                        </button>
+                        <button type="button" class="kpi-chip total-purchase" id="dashSuppliersCard" onclick="switchTab('suppliers')">
+                            <span class="kpi-chip-label">Toplam Tedarikçi</span>
+                            <span class="dashboard-card-value kpi-chip-value" id="dashTotalSuppliers">0</span>
+                        </button>
                     </div>
                 </div>
-
-                <button type="button" class="dashboard-forecast-widget" id="dashboardForecastWidget" data-widget-id="widget-forecast" onclick="switchTab('predictions')">
-                    <span class="forecast-widget-status" id="dashboardForecastAlert" aria-hidden="true"></span>
-                    <span class="forecast-widget-label">Tahmin Özeti</span>
-                    <strong id="dashboardForecastValue">Yükleniyor</strong>
-                    <span class="forecast-widget-meta">
-                        <span id="dashboardForecastTrend">Trend bekleniyor</span>
-                        <span id="dashboardForecastModel">En iyi model</span>
-                    </span>
-                </button>
 
                 <div class="dashboard-ratios-section" id="dashboardRatiosSection" data-widget-id="widget-ratios" style="display: none;">
                     <h3>Finansal Sağlık</h3>
@@ -905,29 +893,7 @@
                     </div>
                 </div>
 
-                <!-- KDV Summary Dashboard -->
-                <div class="dashboard-kdv-section" data-widget-id="widget-kdv">
-                    <h3>KDV Özeti (<span id="dashYearDisplayKdv">Tüm Yıllar</span>)</h3>
-                    <div class="dashboard-kdv-grid">
-                        <div class="dashboard-kdv-item">
-                            <span class="dashboard-kdv-label">Toplam Satış KDV</span>
-                            <span class="dashboard-kdv-value sales" id="dashTotalSalesTax">₺0</span>
-                            <span class="dashboard-kdv-hint">Satışlardan doğan KDV</span>
-                        </div>
-                        <div class="dashboard-kdv-item">
-                            <span class="dashboard-kdv-label">Toplam Alış KDV</span>
-                            <span class="dashboard-kdv-value purchase" id="dashTotalPurchaseTax">₺0</span>
-                            <span class="dashboard-kdv-hint">Mahsup edilecek KDV</span>
-                        </div>
-                        <div class="dashboard-kdv-item net" id="dashKdvNetItem">
-                            <span class="dashboard-kdv-label" id="dashKdvNetLabel">Net KDV Durumu</span>
-                            <span class="dashboard-kdv-value" id="dashNetTax">₺0</span>
-                            <span class="dashboard-kdv-hint" id="dashKdvNetHint"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Monthly Trend Chart -->
+                <!-- Ana sahne: net kâr özeti + aylık trend grafiği -->
                 <div class="dashboard-chart-section" data-widget-id="widget-chart">
                     <div class="dashboard-chart-header">
                         <div>
@@ -946,8 +912,22 @@
                             </button>
                         </div>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="salesTrendChart"></canvas>
+                    <div class="dashboard-hero">
+                        <div class="dashboard-hero-stat">
+                            <span class="hero-stat-label">Net Kâr · <span id="dashHeroPeriod">Tüm Yıllar</span> (KDV hariç)</span>
+                            <span class="hero-stat-value" id="dashHeroValue">₺0</span>
+                            <span class="hero-stat-delta" id="dashHeroDelta"></span>
+                            <div class="hero-stat-rows">
+                                <div class="hero-stat-row"><span>Brüt marj</span><strong id="dashHeroMargin">—</strong></div>
+                                <div class="hero-stat-row"><span>En iyi ay</span><strong id="dashHeroBest">—</strong></div>
+                                <div class="hero-stat-row"><span>En zayıf ay</span><strong id="dashHeroWorst">—</strong></div>
+                            </div>
+                        </div>
+                        <div class="dashboard-hero-chart">
+                            <div class="chart-container">
+                                <canvas id="salesTrendChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                     <div class="dashboard-chart-insights" id="dashboardChartInsights"></div>
                 </div>
@@ -959,44 +939,6 @@
                         <button type="button" class="dashboard-inline-link" onclick="switchTab('history')">Tümünü Gör</button>
                     </div>
                     <ul class="dashboard-recent-list" id="dashboardRecentList"></ul>
-                </div>
-
-                <div class="dashboard-customers-section" id="dashboardCustomersSection" data-widget-id="widget-customers">
-                    <div class="section-subheader">
-                        <h3>Müşteri Yönetimi</h3>
-                        <button type="button" class="dashboard-inline-link" onclick="switchTab('customers')">Müşterilere Git</button>
-                    </div>
-                    <div class="dashboard-customers-grid party-dashboard-grid">
-                        <div class="dashboard-customer-panel">
-                            <span class="dashboard-customer-label">Son Eklenen 5 Müşteri</span>
-                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentCustomersList">
-                                <li class="recent-empty">Henüz müşteri eklenmemiş</li>
-                            </ul>
-                        </div>
-                        <div class="dashboard-customer-panel dashboard-top-customer" id="dashboardTopCustomer">
-                            <span class="dashboard-customer-label">En Yüksek Bakiyeli Müşteri</span>
-                            <strong>-</strong>
-                            <span class="dashboard-customer-balance">₺0</span>
-                        </div>
-                        <div class="dashboard-customer-panel">
-                            <span class="dashboard-customer-label">En Yüksek Hacimli 3 Müşteri</span>
-                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardTopCustomersList">
-                                <li class="recent-empty">Henüz müşteri hareketi yok</li>
-                            </ul>
-                        </div>
-                        <div class="dashboard-customer-panel">
-                            <span class="dashboard-customer-label">En Yüksek Hacimli 3 Tedarikçi</span>
-                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardTopSuppliersList">
-                                <li class="recent-empty">Henüz tedarikçi hareketi yok</li>
-                            </ul>
-                        </div>
-                        <div class="dashboard-customer-panel">
-                            <span class="dashboard-customer-label">Son Eklenen 5 Cari</span>
-                            <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentPartiesList">
-                                <li class="recent-empty">Henüz cari hareketi yok</li>
-                            </ul>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Quick Actions -->
@@ -1018,6 +960,86 @@
                         <span>İlk Analizimi Yap</span>
                     </button>
                 </div>
+                </div><!-- /.dashboard-cockpit-main -->
+
+                <aside class="dashboard-cockpit-rail" id="dashboardRail" aria-label="Karar paneli">
+                    <!-- Şimdi ne yapmalıyım -->
+                    <div class="rail-block rail-actions" id="dashboardRailActions" data-widget-anchor>
+                        <div class="rail-title">Şimdi ne yapmalıyım</div>
+                        <div class="rail-action-list" id="dashboardRailActionList"></div>
+                    </div>
+
+                    <button type="button" class="dashboard-forecast-widget" id="dashboardForecastWidget" data-widget-id="widget-forecast" onclick="switchTab('predictions')">
+                        <span class="forecast-widget-status" id="dashboardForecastAlert" aria-hidden="true"></span>
+                        <span class="forecast-widget-label">Önümüzdeki 3 ay</span>
+                        <strong id="dashboardForecastValue">Yükleniyor</strong>
+                        <span class="forecast-widget-meta">
+                            <span id="dashboardForecastTrend">Trend bekleniyor</span>
+                            <span id="dashboardForecastModel">En iyi model</span>
+                        </span>
+                    </button>
+
+                    <!-- KDV Summary Dashboard -->
+                    <div class="dashboard-kdv-section rail-block" data-widget-id="widget-kdv">
+                        <h3>KDV Özeti (<span id="dashYearDisplayKdv">Tüm Yıllar</span>)</h3>
+                        <div class="dashboard-kdv-grid">
+                            <div class="dashboard-kdv-item">
+                                <span class="dashboard-kdv-label">Toplam Satış KDV</span>
+                                <span class="dashboard-kdv-value sales" id="dashTotalSalesTax">₺0</span>
+                                <span class="dashboard-kdv-hint">Satışlardan doğan KDV</span>
+                            </div>
+                            <div class="dashboard-kdv-item">
+                                <span class="dashboard-kdv-label">Toplam Alış KDV</span>
+                                <span class="dashboard-kdv-value purchase" id="dashTotalPurchaseTax">₺0</span>
+                                <span class="dashboard-kdv-hint">Mahsup edilecek KDV</span>
+                            </div>
+                            <div class="dashboard-kdv-item net" id="dashKdvNetItem">
+                                <span class="dashboard-kdv-label" id="dashKdvNetLabel">Net KDV Durumu</span>
+                                <span class="dashboard-kdv-value" id="dashNetTax">₺0</span>
+                                <span class="dashboard-kdv-hint" id="dashKdvNetHint"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-customers-section rail-block" id="dashboardCustomersSection" data-widget-id="widget-customers">
+                        <div class="section-subheader">
+                            <h3>Cari · en yüksek hacim</h3>
+                            <button type="button" class="dashboard-inline-link" onclick="switchTab('customers')">Tümü</button>
+                        </div>
+                        <div class="dashboard-customers-grid party-dashboard-grid">
+                            <div class="dashboard-customer-panel dashboard-top-customer" id="dashboardTopCustomer">
+                                <span class="dashboard-customer-label">En Yüksek Bakiyeli Müşteri</span>
+                                <strong>-</strong>
+                                <span class="dashboard-customer-balance">₺0</span>
+                            </div>
+                            <div class="dashboard-customer-panel">
+                                <span class="dashboard-customer-label">En Yüksek Hacimli 3 Müşteri</span>
+                                <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardTopCustomersList">
+                                    <li class="recent-empty">Henüz müşteri hareketi yok</li>
+                                </ul>
+                            </div>
+                            <div class="dashboard-customer-panel">
+                                <span class="dashboard-customer-label">En Yüksek Hacimli 3 Tedarikçi</span>
+                                <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardTopSuppliersList">
+                                    <li class="recent-empty">Henüz tedarikçi hareketi yok</li>
+                                </ul>
+                            </div>
+                            <div class="dashboard-customer-panel">
+                                <span class="dashboard-customer-label">Son Eklenen 5 Cari</span>
+                                <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentPartiesList">
+                                    <li class="recent-empty">Henüz cari hareketi yok</li>
+                                </ul>
+                            </div>
+                            <div class="dashboard-customer-panel">
+                                <span class="dashboard-customer-label">Son Eklenen 5 Müşteri</span>
+                                <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentCustomersList">
+                                    <li class="recent-empty">Henüz müşteri eklenmemiş</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+                </div><!-- /.dashboard-cockpit-body -->
             </section>
 
             <section class="customers-section" id="customersSection" style="display: none;">

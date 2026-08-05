@@ -17036,3 +17036,519 @@ body:not(.admin-user) .nav-tab#tabAdmin {
         grid-template-columns: 1fr !important;
     }
 }
+
+/* ========================================
+   Dashboard — Kokpit düzeni (tasarım turu 1 / yön 1b)
+   Sol ikon şeridi mevcut app shell'den gelir; burada yalnızca
+   Yönetim Paneli sayfasının iç düzeni tanımlanır.
+   Tüm renkler tema token'larından gelir; sabit renk yoktur.
+======================================== */
+.dashboard-cockpit {
+    --cockpit-rail-width: 320px;
+    --cockpit-gap: 20px;
+    --cockpit-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.dashboard-cockpit .cockpit-head-meta {
+    display: block;
+    margin-top: 0.35rem;
+    font-family: var(--cockpit-mono);
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-cockpit .dashboard-cockpit-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--cockpit-rail-width);
+    gap: var(--cockpit-gap);
+    align-items: start;
+    margin-top: 1rem;
+}
+
+.dashboard-cockpit .dashboard-cockpit-main {
+    min-width: 0;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+/* Veri yokken yalnızca karşılama ekranı kalır.
+   Not: `.dashboard-stats` üzerindeki eski `display: grid !important` kuralı satır içi stili ezdiği
+   için gizleme burada bölüm sınıfıyla yapılır. */
+.dashboard-cockpit.has-no-data .dashboard-stats,
+.dashboard-cockpit.has-no-data .dashboard-cockpit-rail {
+    display: none !important;
+}
+
+/* --- 4 ana KPI kutusu --- */
+.dashboard-cockpit .dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--border-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin: 1rem 0 1.25rem;
+}
+
+.dashboard-cockpit .dashboard-stats .dashboard-card.kpi-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-height: 0;
+    padding: 0.85rem 1rem 0.6rem;
+    background: var(--bg-card);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    cursor: default;
+}
+
+.dashboard-cockpit .kpi-tile-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.dashboard-cockpit .kpi-tile .dashboard-card-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.dashboard-cockpit .kpi-tile-delta {
+    font-family: var(--cockpit-mono);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.dashboard-cockpit .kpi-tile-delta.positive { color: var(--success); }
+.dashboard-cockpit .kpi-tile-delta.negative { color: var(--danger); }
+.dashboard-cockpit .kpi-tile-delta.neutral { color: var(--text-muted); }
+
+.dashboard-cockpit .kpi-tile .dashboard-card-value {
+    display: block;
+    margin: 0.45rem 0 0.2rem;
+    font-family: var(--cockpit-mono);
+    font-size: 1.45rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-cockpit .kpi-tile .dashboard-card-hint {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.55rem;
+}
+
+/* Mikro grafik; renk tonu class ile gelir, çizgi currentColor kullanır */
+.dashboard-cockpit .kpi-tile-spark {
+    display: block;
+    margin-top: auto;
+    height: 34px;
+    opacity: 0.75;
+}
+
+.dashboard-cockpit .kpi-tile-spark svg { display: block; }
+.dashboard-cockpit .kpi-tile-spark.positive { color: var(--success); }
+.dashboard-cockpit .kpi-tile-spark.negative { color: var(--danger); }
+.dashboard-cockpit .kpi-tile-spark.neutral { color: var(--text-secondary); }
+
+/* Kokpitte tek bir değişim göstergesi yeter: rozet kalır, ok gizlenir */
+.dashboard-cockpit .kpi-tile .dashboard-card-trend,
+.dashboard-cockpit .kpi-chip .dashboard-card-trend {
+    display: none;
+}
+
+/* --- İkincil şerit: ana 4 kutu dışındaki sayılar --- */
+.dashboard-cockpit .dashboard-stats-secondary {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    background: var(--border-color);
+    border-top: 1px solid var(--border-color);
+}
+
+.dashboard-cockpit .kpi-chip {
+    flex: 1 1 150px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.6rem 1rem;
+    background: var(--bg-card);
+    border: none;
+    border-radius: 0;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+}
+
+.dashboard-cockpit button.kpi-chip {
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.dashboard-cockpit button.kpi-chip:hover {
+    background: var(--bg-card-hover);
+}
+
+.dashboard-cockpit .kpi-chip-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.dashboard-cockpit .kpi-chip-value {
+    font-family: var(--cockpit-mono);
+    font-size: 0.98rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Renk yalnızca finansal sonuçta anlam taşır; sayaçlar nötr kalır */
+.dashboard-cockpit .kpi-tile .dashboard-card-value,
+.dashboard-cockpit .kpi-tile .dashboard-card-value-text,
+.dashboard-cockpit .kpi-chip.total-analyses .kpi-chip-value,
+.dashboard-cockpit .kpi-chip.total-expenses .kpi-chip-value,
+.dashboard-cockpit .kpi-chip.total-customers .kpi-chip-value,
+.dashboard-cockpit .kpi-chip.total-purchase .kpi-chip-value,
+.dashboard-cockpit .kpi-chip .dashboard-card-value-text {
+    color: var(--text-primary) !important;
+}
+
+.dashboard-cockpit .kpi-chip.total-profit .kpi-chip-value,
+.dashboard-cockpit .kpi-chip.total-profit .dashboard-card-value-text {
+    color: var(--success) !important;
+}
+
+.dashboard-cockpit .kpi-chip.total-profit.loss .kpi-chip-value,
+.dashboard-cockpit .kpi-chip.total-profit.loss .dashboard-card-value-text,
+.dashboard-cockpit #dashNetProfitCard.loss .dashboard-card-value,
+.dashboard-cockpit #dashNetProfitCard.loss .dashboard-card-value-text,
+.dashboard-cockpit .kpi-tile.total-vat.payable .dashboard-card-value {
+    color: var(--danger) !important;
+}
+
+.dashboard-cockpit .kpi-tile.total-vat.carryover .dashboard-card-value {
+    color: var(--success) !important;
+}
+
+/* --- Ana sahne: net kâr özeti + trend grafiği --- */
+.dashboard-cockpit .dashboard-hero {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 1.75rem;
+    align-items: start;
+}
+
+.dashboard-cockpit .dashboard-hero-chart { min-width: 0; }
+
+.dashboard-cockpit .hero-stat-label {
+    display: block;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
+/* Ana rakam nötr kalır; yön bilgisini altındaki değişim satırı taşır */
+.dashboard-cockpit .hero-stat-value {
+    display: block;
+    margin: 0.4rem 0 0.15rem;
+    font-family: var(--cockpit-mono);
+    font-size: 1.9rem;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.dashboard-cockpit .hero-stat-value.negative { color: var(--danger); }
+
+.dashboard-cockpit .hero-stat-delta {
+    display: block;
+    font-family: var(--cockpit-mono);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+}
+
+.dashboard-cockpit .hero-stat-delta.positive { color: var(--success); }
+.dashboard-cockpit .hero-stat-delta.negative { color: var(--danger); }
+
+.dashboard-cockpit .hero-stat-rows {
+    margin-top: 0.9rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.dashboard-cockpit .hero-stat-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    font-size: 0.8rem;
+}
+
+.dashboard-cockpit .hero-stat-row > span { color: var(--text-muted); }
+
+.dashboard-cockpit .hero-stat-row > strong {
+    font-family: var(--cockpit-mono);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.dashboard-cockpit .hero-stat-row > strong.negative { color: var(--danger); }
+
+/* --- Kâr/zarar tablosu: mono dizgi + marj çubuğu --- */
+.dashboard-cockpit .dashboard-pl-table td,
+.dashboard-cockpit .dashboard-pl-table th {
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-cockpit .dashboard-pl-table td:not(:first-child) {
+    font-family: var(--cockpit-mono);
+}
+
+.dashboard-cockpit .pl-margin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    width: 100%;
+}
+
+.dashboard-cockpit .pl-margin-track {
+    position: relative;
+    flex: 0 0 110px;
+    width: 110px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--bg-tertiary);
+    overflow: hidden;
+}
+
+.dashboard-cockpit .dashboard-pl-table th:last-child,
+.dashboard-cockpit .dashboard-pl-table td:last-child {
+    width: 190px;
+}
+
+.dashboard-cockpit .pl-margin-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: currentColor;
+    border-radius: 3px;
+}
+
+.dashboard-cockpit .pl-margin-value {
+    min-width: 52px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Sağ karar paneli --- */
+.dashboard-cockpit .dashboard-cockpit-rail .rail-block,
+.dashboard-cockpit .dashboard-cockpit-rail > .dashboard-forecast-widget {
+    width: 100%;
+    margin: 0;
+    padding: 0.9rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.dashboard-cockpit .rail-title {
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-cockpit .rail-action {
+    display: flex;
+    gap: 0.65rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.dashboard-cockpit .rail-action:first-child {
+    border-top: none;
+    padding-top: 0.15rem;
+}
+
+.dashboard-cockpit .rail-action-dot {
+    flex: 0 0 6px;
+    width: 6px;
+    height: 6px;
+    margin-top: 0.4rem;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.dashboard-cockpit .rail-action.positive .rail-action-dot { background: var(--success); }
+.dashboard-cockpit .rail-action.negative .rail-action-dot { background: var(--danger); }
+.dashboard-cockpit .rail-action.warning .rail-action-dot { background: var(--warning); }
+
+.dashboard-cockpit .rail-action-body { min-width: 0; }
+
+.dashboard-cockpit .rail-action-title {
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-primary);
+}
+
+.dashboard-cockpit .rail-action-text {
+    margin: 0.25rem 0 0.4rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    text-wrap: pretty;
+}
+
+.dashboard-cockpit .rail-action-cta {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    text-align: left;
+    min-height: 24px;
+}
+
+.dashboard-cockpit .rail-action-cta:hover { color: var(--accent-hover); }
+
+/* Panelde KDV ve cari blokları tek kolona iner */
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-kdv-grid,
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-customers-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-kdv-item,
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-customer-panel {
+    padding: 0.6rem 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-kdv-item:first-child,
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-customer-panel:first-child {
+    border-top: none;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-kdv-value,
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-customer-balance {
+    font-family: var(--cockpit-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.05rem;
+}
+
+/* KDV kaleminde renk yalnızca sonuç satırında: ödenecek kırmızı, devreden yeşil */
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-kdv-item .dashboard-kdv-value {
+    color: var(--text-primary) !important;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-kdv-item.net.carryover .dashboard-kdv-value {
+    color: var(--success) !important;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail .dashboard-kdv-item.net.payable .dashboard-kdv-value {
+    color: var(--danger) !important;
+}
+
+/* Tahmin kutusu dar şeritte alt alta dizilir */
+.dashboard-cockpit .dashboard-cockpit-rail > .dashboard-forecast-widget {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 0.35rem;
+    align-items: center;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail > .dashboard-forecast-widget strong,
+.dashboard-cockpit .dashboard-cockpit-rail > .dashboard-forecast-widget .forecast-widget-meta {
+    grid-column: 2;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail > .dashboard-forecast-widget strong {
+    font-family: var(--cockpit-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail h3 {
+    font-size: 0.86rem;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-cockpit .dashboard-cockpit-rail .section-subheader {
+    margin-bottom: 0.35rem;
+}
+
+/* --- Duyarlı davranış --- */
+@media (max-width: 1240px) {
+    .dashboard-cockpit .dashboard-cockpit-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-cockpit .dashboard-cockpit-rail {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+}
+
+@media (max-width: 960px) {
+    .dashboard-cockpit .dashboard-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-cockpit .dashboard-hero {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.1rem;
+    }
+
+    .dashboard-cockpit .dashboard-cockpit-rail {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-cockpit .dashboard-stats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dashboard-cockpit .kpi-chip {
+        flex: 1 1 100%;
+    }
+
+    /* Dar ekranda marj çubuğu yerine sadece yüzde kalır; kolon şişmesin */
+    .dashboard-cockpit .pl-margin-track { display: none; }
+
+    .dashboard-cockpit .dashboard-pl-table th:last-child,
+    .dashboard-cockpit .dashboard-pl-table td:last-child {
+        width: auto;
+    }
+}

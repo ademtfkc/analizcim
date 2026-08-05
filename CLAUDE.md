@@ -146,10 +146,35 @@ Dashboard yaklaşımı:
 - en yüksek hacimli müşteriler
 - en yüksek hacimli tedarikçiler
 - son eklenen cari hareket özeti
-- Ana KPI kartları iki satırda okunmalıdır.
-- Sıra 1: Toplam Satış, Toplam Alış, Brüt Kâr, Net Kâr
-- Sıra 2: Toplam Analiz, Toplam Gider, Toplam Müşteri, Toplam Tedarikçi
-- KPI grid masaüstünde 4 kolon, tablette 2 kolon, mobilde 1 kolon davranışını korumalıdır.
+
+### Kokpit düzeni (2026-08-05'te CEO onayıyla yürürlükte — tasarım yönü "1b Kokpit")
+
+Dashboard iki şeritli bir çalışma yüzeyidir: solda ana kolon, sağda 320px sabit karar paneli.
+`.dashboard-cockpit-body` masaüstünde `minmax(0,1fr) 320px` grididir; `≤1240px`'te tek kolona iner,
+karar paneli iki kolonlu bloklara dönüşür; `≤960px`'te tamamen alt alta gelir.
+
+- **Ana KPI alanı 4 kutudur:** Toplam Satış, Toplam Alış, Net Kâr, Ödenecek KDV.
+  Her kutu: etiket + yıllık değişim rozeti (`+%x`, geçen yıla göre) + mono/tabular ana rakam + kısa
+  açıklama + aylık mikro grafik (inline SVG, `currentColor`).
+- **Ana 4 kutu dışında kalan sayılar silinmez;** kutuların altındaki ikincil şeritte durur:
+  Brüt Kâr, Toplam Analiz, Toplam Gider, Toplam Müşteri, Toplam Tedarikçi. Müşteri/Tedarikçi çipleri
+  ilgili sekmeye gider.
+- KPI grid masaüstünde 4 kolon, `≤960px` 2 kolon, `≤600px` 1 kolon davranışını korumalıdır.
+- **Ana sahne** (`widget-chart`): solda net kâr özeti (dönem, ana rakam, YoY değişim, brüt marj,
+  en iyi/en zayıf marj ayı), sağda mevcut trend grafiği.
+- **Kâr/zarar tablosu** mono/tabular dizgi kullanır; Marj kolonunda ince oran çubuğu + yüzde bulunur
+  (çubuk rengi hücrenin pozitif/negatif tonunu izler). `≤600px`'te çubuk gizlenir, yüzde kalır.
+- **Sağ karar paneli** sırasıyla: "Şimdi ne yapmalıyım" (veriden üretilen 3 madde), Tahmin Özeti,
+  KDV Özeti, Cari Özeti. Karar maddeleri satır içi `onclick` kullanmaz; `data-rail-tab` /
+  `data-rail-scroll` ile tek bir delege dinleyici üzerinden çalışır.
+- **Renk disiplini:** yeşil/kırmızı yalnızca finansal sonuç taşıyan alanlarda kullanılır. Ana KPI
+  rakamları ve sayaçlar nötr kalır; renk değişim rozetinde, mikro grafikte, net zararda ve
+  ödenecek/devreden KDV'de görünür.
+- Widget sıralama/gizleme özelliği korunur; her şerit kendi içinde sıralanır ve şerit başlangıcı
+  `[data-widget-anchor]` ile işaretlenir.
+- **Not:** `.dashboard-overview-panel` (Yönetici Özeti) mevcut sadeleştirme kuralıyla (`styles.css`
+  içinde `display:none !important` listesi) görünmez durumdadır — bu Kokpit turundan önce de böyleydi.
+  Yönetici özeti rolünü sağ paneldeki "Şimdi ne yapmalıyım" bloğu ile ana sahnedeki net kâr özeti üstlenir.
 
 ## Yıl Karşılaştırma Sayfası Standartları
 
@@ -324,7 +349,7 @@ Son güvenli QA ve hata düzeltme turunda aşağıdaki davranışlar doğruland�
 - Cari tablosu (`.business-party-table`) `≤768px`'te kart görünümüne dönüşür (thead gizli, satır=kart, hücre=flex `etiket:değer` via `::before{content:attr(data-label)}`); masaüstünde klasik 5 kolonlu tablo korunur. Yatay kaydırma üretmemelidir.
 - Cari detay ekranında aylık hacim ve trend chart canvas'ları render edilmelidir.
 - Dashboard cari widget'ları ilgili veriyle dolmalı ve sekmelere yönlendirebilmelidir.
-- Dashboard KPI alanı iki satırlı 4 kolon mantığını korumalıdır.
+- Dashboard KPI alanı 4 ana kutu + ikincil şerit mantığını korumalıdır (bkz. "Kokpit düzeni").
 - Dashboard Tahmin Özeti widget'ı önümüzdeki 3 ay satış tahminini, trend yönünü, seçilen modeli ve uyarı durumunu göstermelidir.
 - Tahmin Özeti widget'ı Tahminler sayfasına yönlendirmelidir.
 - Tahminler sayfasında otomatik model seçimi, manuel model seçimi ve ARIMA seçimi çalışmalıdır.
@@ -399,6 +424,45 @@ Bu turda yürürlüğe giren güncel durum (detaylı geçmiş: `CHANGELOG.md`):
 - **Test:** 136 birim testi + smoke + lint temiz; iki commit GitHub main'e push, CI yeşil (`success`).
 - **Bilinen küçük backlog:** onay modalında focus-trap yok (ileri Tab arka plana kaçar; yine de yanlış silme
   tetiklemez); `setupKeyboardShortcuts` global Escape'i `#confirmModal`'dan habersiz (pratik risk düşük).
+
+### 2026-08-05 güncellemesi (Dashboard "Kokpit" tasarım turu)
+
+Claude Design projesinden (`Analizcim - Yeni Yönler.dc.html`) gelen iki yönden **1b Kokpit** CEO
+tarafından seçildi; kapsam **yalnızca Dashboard** olarak onaylandı. Yürürlükteki durum:
+
+- `public/index.html` Dashboard bölümü iki şeride ayrıldı (`.dashboard-cockpit-body` →
+  `.dashboard-cockpit-main` + `#dashboardRail`). Hiçbir element ID'si silinmedi.
+- `public/app.js`: `renderCockpitSurfaces` / `renderRailActions` / `renderSparkline` /
+  `computeYoyDelta` / `renderMarginBar` eklendi; `applyDashboardWidgetConfig` iki şeritli hale getirildi
+  (her şerit kendi içinde, `[data-widget-anchor]` başlangıcından itibaren sıralanır);
+  `DEFAULT_WIDGET_CONFIG` sırası tasarıma göre yeniden dizildi ve `widget-customers` eklendi.
+- `public/styles.css` sonuna `.dashboard-cockpit` bloğu eklendi; tamamı tema token'lı, sabit renk yok.
+- Ödenecek KDV artık ana KPI kutularından biri; Brüt Kâr ikincil şeride indi.
+- Yıllık değişim rozeti (YoY) Satış / Alış / Net Kâr için hesaplanır. **KDV kutusunda rozet yoktur:**
+  ödenecek KDV devreden-mahsuplu defterden gelir, önceki yıl için aynı defteri kurmadan yapılacak
+  karşılaştırma yanıltıcı olurdu. YoY **yalnızca iki yılda da veri bulunan ayları** kıyaslar
+  (`computeYoyDelta` → `sharedMonths`); aksi halde 2 aylık bir yıl 12 aylık yılla kıyaslanırdı.
+
+**Denetim turunda düzeltilen 6 hata (test-uzmani + kod-inceleyici):**
+
+1. **KRİTİK / finansal:** Panelin Net Kâr'ı KDV **dahil**, hemen altındaki Kâr/Zarar tablosu KDV
+   **hariç** hesaplıyordu; aynı ekranda iki farklı "Net Kâr" görünüyordu (fark = net KDV tutarı).
+   2026-07-07'deki "brüt kâr KDV hariç" kararı `/api/dashboard/latest` istemci normalizasyonunda
+   uygulanmamıştı. `computeVatExclusiveGrossProfit` ile tek tabana çekildi (`public/app.js`).
+   Bu, panelin gösterdiği kâr rakamını **düşürür** (doğru değere). Backend'e dokunulmadı.
+2. **Boş durum hiç görünmüyordu:** API veri yokken bile sıfır dolu `summary` döndürdüğü için
+   `!summary` koşulu asla tetiklenmiyordu → `hasMeaningfulSummary()`. Ayrıca `.dashboard-stats`
+   üzerindeki eski `display: grid !important` satır içi gizlemeyi eziyordu → `.has-no-data` sınıfı.
+   Hareketi olmayan dönemde Kâr/Zarar tablosu da artık gizlenir.
+3. "En zayıf ay" HTML'de sabit `class="negative"` taşıyordu, marj pozitifken bile kırmızıydı → veriye bağlandı.
+4. Net kâr mikro grafiği zarar döneminde de yeşildi → ton `view.netProfit`'e bağlandı.
+5. Marj çubuğu negatif marjda `Math.abs` yüzünden dolu görünüyordu → negatifte boş kalır, yüzde görünür.
+6. Düz (tüm ayları eşit) seride mikro grafik dibe yapışıyordu → ortadan geçer.
+
+- Doğrulama: 139 birim testi (3 yeni regresyon kilidi) + lint + smoke temiz; izole demo DB ile
+  24 aylık kârlı yıl **ve** 2 aylık zarar yılı senaryosu, 1440 / 768 / 390 viewport, koyu ve açık tema,
+  0 console hatası; sayfa düzeyinde yatay kaydırma yok. Panel Net Kâr = tablo Net Kâr (fark 0) ölçüldü.
+- **Değişmeyenler:** backend finansal kodu, API şeması, route/auth, tahmin motoru, cari import akışı.
 
 Kalan muhtemel sonraki işler:
 

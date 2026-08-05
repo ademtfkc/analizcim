@@ -114,6 +114,11 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | 2026-07-07 | README = tam profesyonel düzen; iç günlükler CHANGELOG.md'ye | "Repoda olması gereken gibi" istendi; doküman işi, kod güvende |
 | 2026-07-08 | **Tier 3:** A) önce #2 (mobil kart), sonra #3 (onay modalı); #1 ATLA | En iyi değer/risk sırası; #1 bug değil, görsel regresyon testi olmadan riskli |
 | 2026-07-08 | Tier 3 = **iki ayrı commit** (#2 `9754b57`, #3 `0b28bea`) | Temiz geçmiş; her iş tek başına geri alınabilir. Toplam orijinalle birebir doğrulandı |
+| 2026-08-05 | **Tasarım yönü: "1b Kokpit"** (Claude Design `Analizcim - Yeni Yönler.dc.html`) | CEO seçimi. Alternatif "1a Defter" açık temalı, kenar çubuğunu kaldıran daha büyük kırılım olurdu; 1b mevcut iskelete (ikon şeridi + koyu/açık tema + tablo) en yakın, riski en düşük yön |
+| 2026-08-05 | **Kapsam: yalnızca Dashboard** (app shell ve diğer sayfalar dokunulmadı) | CEO seçimi. Sonuç hemen görülür, risk dar; beğenilirse sonraki turlarda diğer sayfalara yayılır |
+| 2026-08-05 | 8 KPI kartı **silinmedi**, 4 ana kutu + ikincil şerit oldu | Tasarım "KPI 8→4" diyor ama hiçbir sayı kaybolmamalı; Brüt Kâr/Analiz/Gider/Müşteri/Tedarikçi ikincil şeritte duruyor |
+| 2026-08-05 | KDV kutusuna **yıllık değişim rozeti konmadı** | Ödenecek KDV devreden-mahsuplu defterden geliyor; önceki yıl için aynı defter kurulmadan yapılan kıyas yanıltıcı olurdu. Rozet yerine boş bırakıldı |
+| 2026-08-05 | **Panel kârı KDV hariç tabana çekildi** (istemci tarafı, backend'e dokunulmadı) | Panel KDV dahil, tablo KDV hariç hesaplıyordu → aynı ekranda iki farklı "Net Kâr". 2026-07-07'de CEO onayıyla alınan "brüt kâr KDV hariç" kararı bu noktada uygulanmamıştı; yeni bir finansal karar değil, eksik kalan uygulamanın tamamlanması. **Panelde görünen kâr rakamı düşer (doğru değere).** Geri alınması gerekirse tek fonksiyon (`computeVatExclusiveGrossProfit`) yeter |
 
 ## 8. Bekleyen Onaylar 🚦
 - **`data/pre_restore_1771112753452.db`** (Şubat'tan kalma eski geri-yükleme yedeği, ~270KB) —
@@ -126,7 +131,8 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | Derin kod denetimi (backend, adversarial güvenlik, frontend, iş mantığı) | 4 uzman ajan | ✅ TAMAM (2026-07-07) |
 | Kritik/yüksek güvenlik+finansal bulguların düzeltilmesi (Grup 1-4) | ana asistan | ✅ TAMAM (2026-07-07) |
 | Tier 3 UI turu (#2 mobil kart, #3 onay modalı) | ana asistan + test-uzmani + kod-inceleyici | ✅ TAMAM (2026-07-08), push + CI yeşil |
-| _Aktif iş yok_ — kalanlar "Sonraki Adımlar" backlog'unda | — | Beklemede |
+| Dashboard "Kokpit" tasarım turu (yön 1b, sadece Dashboard) | ana asistan | ✅ KOD TAMAM (2026-08-05) — **commit edilmedi, CEO görsel onayı bekliyor** |
+| _Başka aktif iş yok_ — kalanlar "Sonraki Adımlar" backlog'unda | — | Beklemede |
 
 ## 10. Bilinen Sorunlar 🐞
 | Sorun | Ciddiyet | Durum |
@@ -155,9 +161,36 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 
 ## 11. Sonraki Adımlar 👉
 
-### 🔜 SONRAKİ OTURUM — BURADAN BAŞLA (henüz YAPILMADI, CEO seçimi bekliyor)
-Aktif iş yok; uygulama sağlam ve CI yeşil. Yeni oturum bu dosyayı okuyup aşağıdakilerden **birini** CEO'ya
-seçtirmeli (koda geçmeden önce onay al):
+### 🔜 SONRAKİ OTURUM — BURADAN BAŞLA
+
+**Önce bunu bil:** 2026-08-05'te Dashboard "Kokpit" tasarım turu yapıldı (bkz. Bölüm 12 günlüğü ve
+CLAUDE.md → "Kokpit düzeni"). Değişiklikler **henüz commit edilmedi**; CEO görsel onayı bekliyor.
+İlk iş: CEO onayı → commit + push (tek commit yeterli, tamamı tek bir tasarım işi).
+
+**Denetimden gelen, HENÜZ YAPILMAMIŞ işler:**
+- **Özel Aralık modunda Kâr/Zarar başlığı bayat** (`renderProfitLoss`, `app.js` — başlığı `yearSelect.value`'den
+  okuyor, API'nin döndürdüğü dönemi değil). Tablo verisi doğru, yalnız etiket yanlış. Kokpit turundan
+  önce de vardı; 2 satırlık düzeltme ama P&L bölümünün ortak kodu, ayrı turda ele alınmalı.
+- **Test kapsama boşluğu (kod-inceleyici notu):** `ui-structure.test.js` yalnızca metin/yapı kilidi
+  kuruyor; `computeYoyDelta`, `findMarginExtremes`, `computeVatExclusiveGrossProfit` gibi saf
+  fonksiyonlar için gerçek birim testi yok (bunlar tarayıcı bundle'ı içinde, `require` edilemiyor).
+  Bu fonksiyonları küçük bir modüle çıkarmak ileride kalıcı çözüm olur.
+- **Backend kökü:** panelin kâr hatası istemci tarafında kapatıldı. `src/storage.js getMonthlyTotals`
+  hâlâ KDV dahil tutar döndürüyor; aynı ucu kullanan başka bir tüketici eklenirse aynı hata tekrarlar.
+  Kalıcı çözüm backend'de, ama ayrı ve tam test edilen bir turda yapılmalı.
+
+Kokpit turunun bilinçli olarak kapsam dışı bıraktıkları (CEO isterse sıradaki iş olabilir):
+- Tasarımdaki **1b sol ikon şeridi** uygulanmadı; mevcut app shell kenar çubuğu korundu (kapsam kararı).
+- **Mobilde (390px) başlık butonları sıkışık** görünüyor (`Excel'e Aktar / PDF Raporu / Widget Düzeni`).
+  Bu **Kokpit turundan ÖNCE de aynıydı** (ekran görüntüsüyle doğrulandı); `.dashboard-action-btn`
+  paylaşımlı olduğu için ayrı, dar kapsamlı bir turda ele alınmalı.
+- **Yönetici Özeti paneli** (`.dashboard-overview-panel`) mevcut sadeleştirme kuralıyla gizli
+  (`styles.css` içindeki `display:none !important` listesi) — bu da tur öncesinden geliyor.
+  Kokpit'te bu rolü sağ karar paneli üstleniyor. Geri getirilmesi istenirse ayrı karar gerekir.
+- Widget düzeni ekranı tek liste; iki şeritli düzende bir widget'ı diğer şeride taşımak mümkün değil
+  (her şerit kendi içinde sıralanır). Kullanıcıya şerit seçimi gerekirse ayrı iş.
+
+Kokpit turu öncesi backlog (hâlâ geçerli):
 
 - **ÖNERİLEN — Tier 3 kapanışı: onay modalı focus-trap + Escape çakışması** (küçük, düşük risk).
   `#confirmModal` açıkken klavye odağını modal içinde tut (ileri Tab arka plana kaçmasın) ve
@@ -246,6 +279,8 @@ tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-08-05 | test-uzmani + kod-inceleyici + ana asistan | **Kokpit kalite kapısı — 6 hata bulundu ve düzeltildi.** test-uzmani: (1) KRİTİK panel Net Kâr ≠ tablo Net Kâr (KDV dahil/hariç çelişkisi, fark = net KDV), (2) YÜKSEK boş durum ekranı hiç tetiklenmiyor (API sıfır dolu summary dönüyor + `.dashboard-stats` üzerinde `display:grid !important`), (3) kısmi yıl YoY'u tam yılla kıyaslıyor. kod-inceleyici **RET**: (4) "En zayıf ay" HTML'de sabit `class="negative"`, (5) net kâr mikro grafiği zararda da yeşil; ayrıca `.pl-margin*` scope'suz, dinamik bölüm fallback'i şerit dışına düşebiliyor, düz seride sparkline dibe yapışıyor. Ana asistan ek olarak (6) negatif marjda dolu görünen marj çubuğunu düzeltti ve artık gereksiz `console.log("[KDV]")` satırını sildi. **Doğrulama:** 139 birim testi (3 yeni kilit) + lint + smoke temiz; izole demo DB'de kârlı yıl (24 ay) ve zarar yılı (2 ay) senaryosu, 1440/768/390, koyu+açık tema, 0 console hatası. Panel Net Kâr = tablo Net Kâr (fark **0**) ölçüldü; zararda hero/spark/tile kırmızı, kârda "en zayıf ay" artık kırmızı değil | `public/app.js`, `public/index.html`, `public/styles.css`, `tests/unit/ui-structure.test.js`, `CLAUDE.md`, `PROJE_DURUMU.md` |
+| 2026-08-05 | ana asistan | **Dashboard "Kokpit" tasarım turu (yön 1b, kapsam sadece Dashboard):** Claude Design projesi (`0e4fb079…`) okundu; `support.js` yalnızca tasarım tuvali motoru olduğu için koda taşınmadı. Dashboard iki şeride ayrıldı (ana kolon + 320px karar paneli). 4 ana KPI kutusu (Satış/Alış/Net Kâr/Ödenecek KDV) mikro grafik + YoY rozetiyle; kalan 5 sayı ikincil şeritte korundu. Ana sahne net kâr özeti + grafik; Kâr/Zarar tablosuna marj çubuğu; sağ panele veriden üretilen "Şimdi ne yapmalıyım" (satır içi onclick YOK, delege dinleyici). `applyDashboardWidgetConfig` iki şeritli hale getirildi. Ölü kod temizliği: kullanılmayan `profitIcon` değişkeni + `dashProfitIcon`/`dashNetProfitIcon` ikon elemanları. **Doğrulama:** lint temiz, 137 birim testi (1 yeni regresyon kilidi), smoke geçti; izole demo DB (24 ay) ile 1440/768/390 + koyu/açık tema turu, 0 console hatası, sayfa düzeyinde yatay kaydırma yok. Finansal hesap / API / route-auth / tahmin motoru / cari import'a dokunulmadı | `public/index.html`, `public/app.js`, `public/styles.css`, `tests/unit/ui-structure.test.js`, `CLAUDE.md`, `PROJE_DURUMU.md` |
 | 2026-07-08 | ana asistan | **Oturum kapanış notu:** Bölüm 11'e "🔜 SONRAKİ OTURUM — buradan başla" bloğu eklendi (öneri: onay modalı focus-trap + Escape; alternatifler: session store, bağımlılık turu, pre_restore.db kararı). Yeni oturum ambiguity'siz devralsın diye | `PROJE_DURUMU.md` |
 | 2026-07-08 | ana asistan | **Doküman düzeltme turu:** CLAUDE.md/README.md/PROJE_DURUMU.md güncel koda göre uyumlandı. Migration 001→010, `docs/` içeriği (screenshots+superpowers), dosya satır sayıları, npm audit (20 açık/0 kritik), stale "AÇIK" satırlar ✅ olarak düzeltildi (CSP, formül nötrleme, dedup, jsPDF, gradyan, kâr paydası), git init "bekleyen onay"dan çıkarıldı, Tier 3 davranışları/kararları işlendi. Yalnız doküman; kod dosyalarına dokunulmadı | `CLAUDE.md`, `README.md`, `PROJE_DURUMU.md` |
 | 2026-07-08 | ana asistan | **Tier 3 commit + push:** #2 ve #3 iç içe değişiklikleri hunk bazında iki ayrı commit'e ayrıldı (`9754b57` mobil kart, `0b28bea` onay modalı). Toplam orijinalle birebir doğrulandı (268+/29-). GitHub main'e push, CI yeşil (`success`) | `git`, GitHub |

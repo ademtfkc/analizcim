@@ -311,6 +311,83 @@ describe('UI structure rules', () => {
         assert.match(css, /\.business-party-table td\[data-label\]::before\s*\{\s*content: attr\(data-label\)/);
     });
 
+    test('dashboard uses the cockpit layout: 4 KPI tiles, hero stage and a decision rail', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        // İki şeritli iskelet: ana kolon + sağ karar paneli
+        assert.match(html, /class="dashboard-section dashboard-cockpit"/);
+        assert.match(html, /class="dashboard-cockpit-main"/);
+        assert.match(html, /id="dashboardRail"/);
+
+        // 4 ana KPI kutusu mikro grafik + yıllık değişim rozeti taşır
+        ['dashSalesSpark', 'dashPurchaseSpark', 'dashNetProfitSpark', 'dashVatSpark'].forEach(id => {
+            assert.match(html, new RegExp('id="' + id + '"'));
+        });
+        ['dashSalesDelta', 'dashPurchaseDelta', 'dashNetProfitDelta'].forEach(id => {
+            assert.match(html, new RegExp('id="' + id + '"'));
+        });
+
+        // Ana 4 kutu dışında kalan sayılar ikincil şeritte korunur (veri kaybı yok)
+        ['dashTotalProfit', 'dashTotalAnalyses', 'dashTotalExpenses', 'dashTotalCustomers', 'dashTotalSuppliers'].forEach(id => {
+            assert.match(html, new RegExp('id="' + id + '"'));
+        });
+
+        // Ana sahne: net kâr özeti grafiğin yanında
+        assert.match(html, /id="dashHeroValue"/);
+        assert.match(html, /id="dashHeroMargin"/);
+        assert.match(html, /id="salesTrendChart"/);
+
+        // "Şimdi ne yapmalıyım" paneli veriden üretilir ve satır içi onclick kullanmaz
+        assert.match(html, /id="dashboardRailActionList"/);
+        assert.match(js, /function renderRailActions\(/);
+        assert.match(js, /data-rail-tab=/);
+        assert.doesNotMatch(js, /rail-action-cta"\s*onclick/);
+
+        // Widget sıralaması iki şeridi de tanır (şerit başı [data-widget-anchor] ile işaretli)
+        assert.match(html, /data-widget-anchor/);
+        assert.match(js, /\[data-widget-anchor\]/);
+
+        // Tema token'ları: kokpit bloğunda sabit renk yok
+        const cockpitBlock = css.slice(css.indexOf('.dashboard-cockpit {'));
+        assert.ok(cockpitBlock.length > 0);
+        assert.doesNotMatch(cockpitBlock, /#[0-9a-fA-F]{3,8}\b/);
+        assert.match(cockpitBlock, /\.dashboard-cockpit \.dashboard-cockpit-body\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) var\(--cockpit-rail-width\)/);
+    });
+
+    test('dashboard profit uses the VAT-excluded base so the hero number matches the P&L table', () => {
+        const js = readPublicFile('app.js');
+
+        // Tek kaynak: panel aylık verisi de Kâr/Zarar tablosuyla aynı KDV hariç tabanı kullanır
+        assert.match(js, /function computeVatExclusiveGrossProfit\(/);
+        assert.ok((js.match(/computeVatExclusiveGrossProfit\(/g) || []).length >= 4);
+
+        // Regresyon kilidi: ham (KDV dahil) satış - alış farkı doğrudan gross_profit'e yazılmaz
+        assert.doesNotMatch(js, /gross_profit:\s*\(sales\[i\]\s*\|\|\s*0\)\s*-\s*\(purchases\[i\]\s*\|\|\s*0\)/);
+
+        // Boş panel gerçekten tetiklenebilmeli (API sıfır dolu summary döndürüyor)
+        assert.match(js, /function hasMeaningfulSummary\(/);
+        assert.match(js, /monthly\.length === 0 && !hasMeaningfulSummary\(summary\)/);
+    });
+
+    test('cockpit colors follow the data instead of hardcoded tones', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+
+        // "En zayıf ay" her zaman kırmızı olmamalı; sınıf veriye göre atanır
+        assert.doesNotMatch(html, /id="dashHeroWorst"[^>]*class="[^"]*negative/);
+        assert.match(js, /heroWorst\.classList\.toggle\('negative',[^\n]*margin < 0\)/);
+        assert.match(js, /heroBest\.classList\.toggle\('negative',[^\n]*margin < 0\)/);
+
+        // Net kâr mikro grafiği zararda yeşil kalmamalı
+        assert.match(js, /renderSparkline\('dashNetProfitSpark',[^\n]*view\.netProfit < 0 \? 'negative' : 'positive'\)/);
+
+        // Yıllık değişim yalnızca iki yılda da bulunan ayları kıyaslar (kısmi yıl yanılgısı)
+        assert.match(js, /sharedMonths/);
+        assert.match(js, /if \(sharedMonths === 0 \|\| previousSum === 0\) return null;/);
+    });
+
     test('destructive actions use the themed confirm modal instead of native confirm()', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');
