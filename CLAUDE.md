@@ -464,14 +464,64 @@ tarafından seçildi; kapsam **yalnızca Dashboard** olarak onaylandı. Yürürl
   0 console hatası; sayfa düzeyinde yatay kaydırma yok. Panel Net Kâr = tablo Net Kâr (fark 0) ölçüldü.
 - **Değişmeyenler:** backend finansal kodu, API şeması, route/auth, tahmin motoru, cari import akışı.
 
-Kalan muhtemel sonraki işler:
+### 2026-08-05/06 güncellemesi (Kokpit dili tüm sayfalara yayıldı + 5 sessiz hata)
 
-- Bağımlılık: `xlsx` (npm'de yama yok) ve `sqlite3@6` (kırıcı) geçişini çok kullanıcılı/ağ senaryosunda ayrı, tam test edilen turda ele almak.
-- MemoryStore yerine kalıcı session store (teknik borç).
-- Büyük frontend refactor: inline `onclick` → `addEventListener` (CSP'den `'unsafe-inline'` kaldırılabilsin).
-- Genel integration harness içindeki açık handle / kapanış davranışını temizlemek.
-- Onay modalı focus-trap + Escape çakışması (küçük erişilebilirlik iyileştirmesi).
+Kapsam CEO onayıyla genişletildi: "tam yeniden düzen", dört sayfa. Hedef **lokal, tek kullanıcı**.
+
+**Ortak kokpit temeli:** `.cockpit-page` / `.cockpit-body` / `.cockpit-main` / `.cockpit-rail`
+sayfa bağımsız sınıflardır; her sayfa ana kolon + 320px karar paneli düzenini paylaşır
+(`≤1240px` tek kolon, `≤960px` tamamen alt alta). Ortak parçalar: `.rail-block`, `.rail-title`,
+`.rail-facts`/`.rail-fact`, `.rail-action*` ve `renderRailFacts()` / `renderRailActionItems()`
+yardımcıları. Karar panelleri **her zaman veriden üretilir**, satır içi `onclick` kullanılmaz.
+
+| Sayfa | Karar panelinde ne var |
+|---|---|
+| Panel (Dashboard) | Şimdi ne yapmalıyım · Tahmin Özeti · KDV Özeti · Cari Özeti |
+| Yıl Karşılaştırma | Şimdi ne yapmalıyım · Yıl özeti · Öne çıkan aylar |
+| Gider | Şimdi ne yapmalıyım · Gider yapısı · En büyük kalemler |
+| Müşteriler / Tedarikçiler | Şimdi ne yapmalıyım · Portföy-tedarik özeti · En yüksek hacim |
+| Tahminler | Şimdi ne yapmalıyım · 3 aylık beklenti · Model ve veri künyesi |
+
+**Korunanlar:** Tahminler'in sürükle-bırak kart düzeni (9 kart), cari tablosunun mobil kart
+görünümü, widget sıralama/gizleme, tüm element ID'leri, finansal formüller, route/auth.
+
+**Tasarım turu sırasında bulunan ve düzeltilen 5 sessiz hata:**
+
+1. **Gider adları hiç kaydedilmiyordu (KRİTİK).** `routes/expenses.js` validator `item.name`
+   isterken ön yüz `label` gönderiyordu; her kayıt 400 dönüyor, `setExpensesLocalData` hatayı
+   `catch (_) {}` ile yutuyordu. Giderler yalnız localStorage'da kalıyordu. Sanitizer de
+   storage'ın okuduğu `{label,id,date}` yerine `{name,amount,category}` üretiyordu.
+2. **Her tuş vuruşunda kayıt isteği** gidiyordu ("debounceSave" adına rağmen gecikme yoktu);
+   DELETE+INSERT eşzamanlı çalışınca satırlar çoğalıyordu. 450 ms gecikme + promise zinciri.
+3. **"Tüm yıl" giderleri panelde görünmüyordu.** `getExpenseItemsTotalByYear` `month='all'`
+   satırlarını `byMonth`'a koymuyordu; `getMonthlyProfitLoss` ise 12 aya dağıtıyordu. Aynı kural
+   uygulandı.
+4. **Özel Aralık Kâr/Zarar bölümünü hiç etkilemiyordu** (başlık bayat, tablo 12 ay). Artık
+   aralığa göre süzülüyor, toplamlar backend formülüyle yeniden hesaplanıyor; tüm dönem
+   başlıkları tek `_dashboardPeriodLabel`'dan besleniyor.
+5. **Onay modalında klavye tuzağı yoktu**, Escape global kısayola sızıyordu. Odak tuzağı +
+   capture aşamasında `stopPropagation` eklendi; gating aynen korundu.
+
+**Test altyapısı:** panel hesapları `public/js/dashboard-metrics.js` modülüne çıkarıldı
+(`vat-ledger.js` ile aynı UMD kalıbı, `app.js`'ten ÖNCE yüklenir) ve **26 gerçek birim testi**
+yazıldı. `npm run test:integration` artık `--test-force-exit` ile kapanıyor.
+
+**Doğrulanan son durum:** `npm run verify` yeşil — **171 birim + 33 entegrasyon + 1 smoke**.
+Altı sekme 1440/390 viewport, koyu+açık tema, 0 console hatası, sayfa düzeyinde yatay kaydırma yok.
+
+Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hiçbiri acil değil):
+
+- Bağımlılık: `xlsx` (npm'de yama yok) ve `sqlite3@6` (kırıcı) — yalnızca çok kullanıcılı/ağ
+  senaryosuna geçilirse gerekir.
+- MemoryStore yerine kalıcı session store — yalnızca sunucuya kurulursa gerekir.
+- Büyük frontend refactor: inline `onclick` → `addEventListener` (CSP'den `'unsafe-inline'`
+  kaldırılabilsin). Yeni yazılan karar panellerinde satır içi `onclick` zaten yok.
+- `src/storage.js getMonthlyTotals` hâlâ KDV dahil tutar döndürüyor; panel ucu artık KDV hariç
+  `grossProfit` serisini kendisi üretiyor, ama bu fonksiyonu kullanan yeni bir tüketici eklenirse
+  aynı hata tekrarlayabilir.
 - Büyük veri setlerinde cari liste/detay performansını ve ARIMA sonuçlarını gözlemlemek.
+- `initPredictionsLayout` ölü kod: bağlı olduğu `predictionLayoutSelect` HTML'de yok, fonksiyon
+  en başta return ediyor. Ya seçici geri eklenmeli ya fonksiyon silinmeli.
 
 ## Ayarlar Sayfası Standartları
 
