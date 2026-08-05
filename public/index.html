@@ -1042,15 +1042,18 @@
                 </div><!-- /.cockpit-body -->
             </section>
 
-            <section class="customers-section" id="customersSection" style="display: none;">
+            <section class="customers-section cockpit-page" id="customersSection" style="display: none;">
                 <div class="customers-header">
                     <div>
                         <span class="section-kicker">Cari Portföy</span>
                         <h2>Müşteri Yönetimi</h2>
-                        <p class="section-desc">Müşteri bilgilerini tek yerde tutun; bakiye ve işlem geçmişi alanı fatura modülü için hazır kalsın.</p>
+                        <span class="cockpit-head-meta" id="customersHeadMeta">Müşteri portföyü yükleniyor</span>
                     </div>
                     <button type="button" class="dashboard-action-btn primary" onclick="openCustomerModal()">Yeni Müşteri</button>
                 </div>
+
+                <div class="cockpit-body">
+                <div class="cockpit-main">
 
                 <div class="customers-toolbar">
                     <label class="sr-only" for="customerSearchInput">Müşteri ara</label>
@@ -1118,17 +1121,39 @@
                         <p>Henüz müşteri bulunamadı. Excel dosyası yükleyerek otomatik ekleyebilirsiniz.</p>
                     </div>
                 </div>
+                </div><!-- /.cockpit-main -->
+
+                <aside class="cockpit-rail" id="customersRail" aria-label="Müşteri karar paneli">
+                    <div class="rail-block rail-actions">
+                        <div class="rail-title">Şimdi ne yapmalıyım</div>
+                        <div class="rail-action-list" id="customersRailActionList"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">Portföy özeti</div>
+                        <div class="rail-facts" id="customersRailFacts"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">En yüksek hacim</div>
+                        <div class="rail-facts" id="customersRailTop"></div>
+                    </div>
+                </aside>
+                </div><!-- /.cockpit-body -->
             </section>
 
-            <section class="customers-section" id="suppliersSection" style="display: none;">
+            <section class="customers-section cockpit-page" id="suppliersSection" style="display: none;">
                 <div class="customers-header">
                     <div>
                         <span class="section-kicker">Alış Kaynakları</span>
                         <h2>Tedarikçiler</h2>
-                        <p class="section-desc">Alış faturalarından otomatik çıkarılan tedarikçi hacmi, bakiye ve hareketleri.</p>
+                        <span class="cockpit-head-meta" id="suppliersHeadMeta">Tedarikçi listesi yükleniyor</span>
                     </div>
                     <button type="button" class="dashboard-action-btn primary" onclick="switchTab('analyze')">Excel Yükle</button>
                 </div>
+
+                <div class="cockpit-body">
+                <div class="cockpit-main">
 
                 <div class="business-party-panel">
                     <div class="business-party-filters">
@@ -1163,9 +1188,28 @@
                         <p>Henüz tedarikçi bulunamadı. Excel dosyası yükleyerek otomatik ekleyebilirsiniz.</p>
                     </div>
                 </div>
+                </div><!-- /.cockpit-main -->
+
+                <aside class="cockpit-rail" id="suppliersRail" aria-label="Tedarikçi karar paneli">
+                    <div class="rail-block rail-actions">
+                        <div class="rail-title">Şimdi ne yapmalıyım</div>
+                        <div class="rail-action-list" id="suppliersRailActionList"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">Tedarik özeti</div>
+                        <div class="rail-facts" id="suppliersRailFacts"></div>
+                    </div>
+
+                    <div class="rail-block">
+                        <div class="rail-title">En yüksek hacim</div>
+                        <div class="rail-facts" id="suppliersRailTop"></div>
+                    </div>
+                </aside>
+                </div><!-- /.cockpit-body -->
             </section>
 
-            <section class="party-detail-section" id="partyDetailSection" style="display: none;">
+            <section class="party-detail-section cockpit-page" id="partyDetailSection" style="display: none;">
                 <div class="customers-header">
                     <div>
                         <span class="section-kicker" id="partyDetailKicker">Cari Detay</span>

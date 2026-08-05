@@ -2099,6 +2099,7 @@ async function loadBusinessParties(type = 'customer') {
             return;
         }
         renderBusinessPartyRows(type, data.parties || []);
+        renderBusinessPartyRail(type, data.parties || []);
     } catch (error) {
         console.error('Business parties load error:', error);
         showError('Cari listesi yüklenirken hata oluştu.');
@@ -2122,6 +2123,90 @@ function renderBusinessPartyRows(type, parties) {
             <td data-label="Son İşlem">${escapeHtml(formatDisplayDate(party.lastTransactionDate))}</td>
             <td data-label="Bakiye"><strong class="${customerBalanceClass(party.balance || 0)}">${escapeHtml(formatCurrency(party.balance || 0))}</strong></td>
         </tr>`).join('');
+}
+
+// Cari sayfalarının karar paneli: portföy özeti, en yüksek hacimli 5 cari ve aksiyon önerileri
+function renderBusinessPartyRail(type, parties) {
+    const musteriMi = type === 'customer';
+    const onEk = musteriMi ? 'customers' : 'suppliers';
+    const kelime = musteriMi ? 'müşteri' : 'tedarikçi';
+
+    const meta = document.getElementById(onEk + 'HeadMeta');
+    const toplamHacim = parties.reduce((acc, p) => acc + (p.totalVolume || 0), 0);
+    const toplamIslem = parties.reduce((acc, p) => acc + (p.transactionCount || 0), 0);
+    const acikBakiye = parties.reduce((acc, p) => acc + (p.balance || 0), 0);
+
+    if (meta) {
+        meta.textContent = parties.length
+            ? `${parties.length} ${kelime} · ${toplamIslem} işlem · ${formatCurrency(toplamHacim)} hacim`
+            : `Henüz ${kelime} kaydı yok`;
+    }
+
+    const sirali = parties.slice().sort((a, b) => (b.totalVolume || 0) - (a.totalVolume || 0));
+    const ilkBes = sirali.slice(0, 5);
+    const ilkUcPay = toplamHacim > 0
+        ? (sirali.slice(0, 3).reduce((acc, p) => acc + (p.totalVolume || 0), 0) / toplamHacim) * 100
+        : 0;
+
+    renderRailFacts(onEk + 'RailFacts', [
+        { label: 'Toplam hacim', value: formatCurrency(toplamHacim) },
+        { label: 'İşlem sayısı', value: String(toplamIslem) },
+        { label: 'Ortalama işlem', value: toplamIslem > 0 ? formatCurrency(toplamHacim / toplamIslem) : '—' },
+        { label: 'Net bakiye', value: formatCurrency(acikBakiye), tone: acikBakiye > 0 ? 'positive' : (acikBakiye < 0 ? 'negative' : '') },
+        { label: 'İlk 3 cari payı', value: toplamHacim > 0 ? '%' + ilkUcPay.toFixed(1).replace('.', ',') : '—',
+          tone: ilkUcPay >= 60 ? 'negative' : '' }
+    ]);
+
+    renderRailFacts(onEk + 'RailTop', ilkBes.length
+        ? ilkBes.map(p => ({ label: p.name || '-', value: formatCurrency(p.totalVolume || 0) }))
+        : [{ label: 'Kayıt yok', value: '—' }]);
+
+    const items = [];
+
+    if (parties.length === 0) {
+        items.push({
+            tone: 'neutral',
+            title: `Henüz ${kelime} yok`,
+            body: 'Excel yüklediğinizde faturalardaki karşı taraflar otomatik olarak bu listeye düşer.'
+        });
+    } else {
+        if (ilkUcPay >= 60) {
+            items.push({
+                tone: 'warning',
+                title: 'Hacim az sayıda caride toplanmış',
+                body: `İlk 3 ${kelime} toplam hacmin %${ilkUcPay.toFixed(0)}'ını oluşturuyor. ` +
+                    (musteriMi ? 'Bu yoğunlaşma satış riski demektir.' : 'Tek tedarikçiye bağımlılık pazarlık gücünü düşürür.')
+            });
+        } else {
+            items.push({
+                tone: 'positive',
+                title: 'Hacim dengeli dağılmış',
+                body: `İlk 3 ${kelime} toplam hacmin %${ilkUcPay.toFixed(0)}'ını oluşturuyor.`
+            });
+        }
+
+        const enBuyuk = sirali[0];
+        if (enBuyuk) {
+            items.push({
+                tone: 'neutral',
+                title: `En yüksek hacim: ${enBuyuk.name || '-'}`,
+                body: `${formatCurrency(enBuyuk.totalVolume || 0)} hacim, ${enBuyuk.transactionCount || 0} işlem. ` +
+                    `Son işlem ${formatDisplayDate(enBuyuk.lastTransactionDate)}.`
+            });
+        }
+
+        const bakiyeliler = parties.filter(p => Math.abs(p.balance || 0) > 0);
+        if (bakiyeliler.length > 0) {
+            items.push({
+                tone: acikBakiye < 0 ? 'negative' : 'warning',
+                title: `${bakiyeliler.length} caride açık bakiye var`,
+                body: `Net bakiye ${formatCurrency(acikBakiye)}. ` +
+                    (musteriMi ? 'Tahsilat takibi gereken kayıtlar olabilir.' : 'Ödeme planında dikkate alınmalı.')
+            });
+        }
+    }
+
+    renderRailActionItems(onEk + 'RailActionList', items);
 }
 
 function formatDisplayDate(value) {

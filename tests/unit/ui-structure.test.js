@@ -480,6 +480,29 @@ describe('UI structure rules', () => {
         assert.match(js, /_expenseSaveChain = _expenseSaveChain/);
     });
 
+    test('cari pages use the cockpit layout with a data-driven rail', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(html, /class="customers-section cockpit-page" id="customersSection"/);
+        assert.match(html, /class="customers-section cockpit-page" id="suppliersSection"/);
+        assert.match(html, /class="party-detail-section cockpit-page"/);
+
+        ['customersRail', 'customersRailActionList', 'customersRailFacts', 'customersRailTop',
+         'suppliersRail', 'suppliersRailActionList', 'suppliersRailFacts', 'suppliersRailTop',
+         'customersHeadMeta', 'suppliersHeadMeta'].forEach(id => {
+            assert.match(html, new RegExp('id="' + id + '"'));
+        });
+
+        assert.match(js, /function renderBusinessPartyRail\(type, parties\)/);
+        assert.match(js, /renderBusinessPartyRail\(type, data\.parties \|\| \[\]\);/);
+        assert.match(css, /\.party-detail-section\.cockpit-page \.party-metrics-grid\s*\{/);
+
+        // Mobil kart görünümü korunmalı (isim hücresi mono dizgiye kaçmasın)
+        assert.match(css, /\.customers-section\.cockpit-page \.business-party-table td\.bp-cell-name\s*\{[\s\S]*?font-family: inherit/);
+    });
+
     test('destructive actions use the themed confirm modal instead of native confirm()', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');
