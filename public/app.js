@@ -2001,12 +2001,13 @@ function renderCustomers(customers) {
         </article>`).join('');
 }
 
+// Bu fonksiyon yalnız ELLE eklenen müşteri listesini besler.
+// "Toplam Müşteri" sayacı ve "En Yüksek Fatura Hacimli Müşteri" paneli bilerek burada DEĞİL:
+// ikisi de fatura (cari) tarafından gelir; bkz. loadBusinessPartyDashboardSummary.
 async function loadCustomerDashboardSummary() {
-    const totalEl = document.getElementById('dashTotalCustomers');
     const section = document.getElementById('dashboardCustomersSection');
     const recentList = document.getElementById('dashboardRecentCustomersList');
-    const topEl = document.getElementById('dashboardTopCustomer');
-    if (!totalEl && !section && !recentList && !topEl) return;
+    if (!section && !recentList) return;
 
     try {
         const response = await fetch('/api/customers/summary');
@@ -2014,7 +2015,6 @@ async function loadCustomerDashboardSummary() {
         if (!response.ok || !data.success) return;
 
         const summary = data.summary || {};
-        if (totalEl) totalEl.textContent = summary.totalCount || 0;
         if (section) section.style.display = 'block';
         if (recentList) {
             const recent = summary.recentCustomers || [];
@@ -2023,18 +2023,6 @@ async function loadCustomerDashboardSummary() {
                     <span class="recent-link-btn">${escapeHtml(customer.fullName || '-')}</span>
                     <span class="recent-metrics"><span>${escapeHtml(customer.email || 'E-posta yok')}</span></span>
                 </li>`).join('') : '<li class="recent-empty">Henüz müşteri eklenmemiş</li>';
-        }
-        if (topEl) {
-            const top = summary.highestBalanceCustomer;
-            topEl.innerHTML = top ? `
-                <span class="dashboard-customer-label">En Yüksek Bakiyeli Müşteri</span>
-                <strong>${escapeHtml(top.fullName || '-')}</strong>
-                <span class="dashboard-customer-balance ${customerBalanceClass(top.balance)}">${escapeHtml(formatCurrency(top.balance || 0))}</span>
-            ` : `
-                <span class="dashboard-customer-label">En Yüksek Bakiyeli Müşteri</span>
-                <strong>-</strong>
-                <span class="dashboard-customer-balance">₺0</span>
-            `;
         }
     } catch (error) {
         console.warn('Customer dashboard summary failed:', error);
@@ -2245,7 +2233,10 @@ function renderBusinessPartyDetail(detail) {
     document.getElementById('partyTotalVolume').textContent = formatCurrency(metrics.totalVolume || 0);
     const balanceEl = document.getElementById('partyBalance');
     balanceEl.textContent = formatCurrency(metrics.balance || 0);
-    balanceEl.className = customerBalanceClass(metrics.balance || 0);
+    // Renk YOK: balance = satış hacmi - alış hacmi, bir cari ya hep satış ya hep alış hareketi
+    // taşıdığı için işaret carinin türüne göre sabittir (müşteri +, tedarikçi -). Renk bilgi
+    // taşımaz, "borç/alacak" yanılsaması üretirdi. Gerçek bakiye takibi ayrı kapsamdır.
+    balanceEl.className = '';
     document.getElementById('partyLastTransaction').textContent = `${formatDisplayDate(metrics.lastTransactionDate)} · ${formatCurrency(metrics.lastTransactionAmount || 0)}`;
     document.getElementById('partyAverageAmount').textContent = formatCurrency(metrics.averageAmount || 0);
 
@@ -2306,7 +2297,8 @@ async function loadBusinessPartyDashboardSummary() {
     const topCustomersEl = document.getElementById('dashboardTopCustomersList');
     const topSuppliersEl = document.getElementById('dashboardTopSuppliersList');
     const recentPartiesEl = document.getElementById('dashboardRecentPartiesList');
-    if (!totalCustomersEl && !totalSuppliersEl && !topCustomersEl && !topSuppliersEl && !recentPartiesEl) return;
+    const topCustomerEl = document.getElementById('dashboardTopCustomer');
+    if (!totalCustomersEl && !totalSuppliersEl && !topCustomersEl && !topSuppliersEl && !recentPartiesEl && !topCustomerEl) return;
 
     try {
         const response = await fetch('/api/business-parties/dashboard-summary');
@@ -2315,12 +2307,30 @@ async function loadBusinessPartyDashboardSummary() {
         const summary = data.summary || {};
         if (totalCustomersEl) totalCustomersEl.textContent = summary.totalCustomers || 0;
         if (totalSuppliersEl) totalSuppliersEl.textContent = summary.totalSuppliers || 0;
+        renderDashboardTopCustomer(topCustomerEl, (summary.topCustomers || [])[0]);
         renderDashboardPartyList(topCustomersEl, summary.topCustomers || [], 'customer', 'Henüz müşteri hareketi yok');
         renderDashboardPartyList(topSuppliersEl, summary.topSuppliers || [], 'supplier', 'Henüz tedarikçi hareketi yok');
         renderDashboardPartyList(recentPartiesEl, summary.recentParties || [], null, 'Henüz cari hareketi yok');
     } catch (error) {
         console.warn('Business party dashboard summary failed:', error);
     }
+}
+
+// Panelin tepe müşteri kutusu. Rakam FATURA HACMİdir (kesilen satış faturalarının toplamı),
+// ödenmemiş bakiye değildir — 2026-08-06'daki etiket dürüstlüğü kararının panel ayağı.
+// Renk sınıfı bilerek verilmez: müşteri hacmi tanım gereği hep pozitiftir, renk bilgi taşımaz.
+function renderDashboardTopCustomer(container, party) {
+    if (!container) return;
+    const label = '<span class="dashboard-customer-label">En Yüksek Fatura Hacimli Müşteri</span>';
+    container.innerHTML = party ? `
+        ${label}
+        <strong>${escapeHtml(party.name || '-')}</strong>
+        <span class="dashboard-customer-balance">${escapeHtml(formatCurrency(party.totalVolume || 0))}</span>
+    ` : `
+        ${label}
+        <strong>-</strong>
+        <span class="dashboard-customer-balance">₺0</span>
+    `;
 }
 
 function renderDashboardPartyList(container, parties, forcedType, emptyText) {

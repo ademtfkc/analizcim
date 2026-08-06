@@ -908,168 +908,137 @@ function pickNum(obj, keys) {
     return 0;
 }
 
+const MONTHLY_TOTALS_SQL = `SELECT user_id, date, sales_filename, purchase_filename, sales_amount, purchase_amount, sales_tax, purchase_tax,
+                             sales_json, purchase_json
+                      FROM analyses WHERE user_id = ? AND deleted_at IS NULL ORDER BY date ASC`;
+
+/**
+ * Bir analiz satırının rapor dönemini ("YYYY-AA") bulur.
+ * Önce dosya adı (geçmiş sayfasıyla tutarlı), yoksa kayıt tarihi. Hiçbiri okunmazsa null.
+ */
+function resolveAnalysisPeriodKey(row) {
+    const fromSales = parseDateFromFilename(row.sales_filename);
+    if (fromSales) return `${fromSales.year}-${String(fromSales.month).padStart(2, '0')}`;
+    const fromPurchase = parseDateFromFilename(row.purchase_filename);
+    if (fromPurchase) return `${fromPurchase.year}-${String(fromPurchase.month).padStart(2, '0')}`;
+    const d = new Date(row.date);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 7);
+}
+
+/**
+ * Bir analiz satırını aylık toplama ekler. `getMonthlyTotals` ve `getMonthlyTotalsInRange`
+ * bunu paylaşır; yeni bir aylık sorgu eklenirse KDV ayrıştırması burada hazır gelir.
+ */
+function accumulateMonthlyRow(monthlyMap, row, key) {
+    if (!monthlyMap[key]) {
+        monthlyMap[key] = { sales: 0, purchases: 0, vat: 0, salesVat: 0, purchaseVat: 0 };
+    }
+
+    let salesAmt = _fin(row.sales_amount);
+    let purchaseAmt = _fin(row.purchase_amount);
+
+    // --- KDV: önce DB kolonları, satış ve alış AYRI tutulur ---
+    let salesVatAmt = _fin(row.sales_tax);
+    let purchaseVatAmt = _fin(row.purchase_tax);
+
+    // --- Yedek: DB vergi kolonları 0 ise JSON gövdesinden oku ---
+    if (salesVatAmt + purchaseVatAmt === 0) {
+        let salesObj = null;
+        let purchaseObj = null;
+        try { salesObj = JSON.parse(row.sales_json || '{}'); } catch (_) { salesObj = {}; }
+        try { purchaseObj = JSON.parse(row.purchase_json || '{}'); } catch (_) { purchaseObj = {}; }
+
+        salesVatAmt = pickNum(salesObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
+        purchaseVatAmt = pickNum(purchaseObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
+
+        // DB tutar kolonları da 0 ise aynı gövdeden tamamla
+        if (salesAmt === 0) {
+            salesAmt = pickNum(salesObj, ['totalAmount', 'total_amount', 'gross', 'Genel Toplam', 'gross_amount']);
+        }
+        if (purchaseAmt === 0) {
+            purchaseAmt = pickNum(purchaseObj, ['totalAmount', 'total_amount', 'gross', 'Genel Toplam', 'gross_amount']);
+        }
+    }
+
+    monthlyMap[key].sales += salesAmt;
+    monthlyMap[key].purchases += purchaseAmt;
+    monthlyMap[key].vat += salesVatAmt + purchaseVatAmt;
+    monthlyMap[key].salesVat += salesVatAmt;
+    monthlyMap[key].purchaseVat += purchaseVatAmt;
+}
+
+/** Aylık toplama haritasını dizi biçimine çevirir. */
+function serializeMonthlyMap(monthlyMap, sortedKeys) {
+    return {
+        labels: sortedKeys,
+        sales: sortedKeys.map(k => monthlyMap[k].sales),
+        purchases: sortedKeys.map(k => monthlyMap[k].purchases),
+        vat: sortedKeys.map(k => monthlyMap[k].vat),
+        salesVat: sortedKeys.map(k => monthlyMap[k].salesVat),
+        purchaseVat: sortedKeys.map(k => monthlyMap[k].purchaseVat)
+    };
+}
+
 /**
  * Build monthly aggregation.
  * Reads every analysis row individually so we can combine:
  *   - DB scalar columns (sales_amount, purchase_amount, sales_tax, purchase_tax)
  *   - JSON blobs (sales_json, purchase_json) as fallback for vat / net / gross
  *
- * Returns { labels: string[], sales: number[], purchases: number[], vat: number[] }
+ * Returns { labels, sales, purchases, vat, salesVat, purchaseVat } — all number[] except labels.
  * Optional year filter (number) and userId filter.
+ *
+ * DİKKAT — KDV tuzağı: `sales` ve `purchases` KDV DAHİL tutarlardır, `vat` ise satış+alış
+ * KDV'sinin BİRLEŞİK toplamıdır. Bu yüzden `sales - purchases` brüt kâr DEĞİLDİR ve
+ * `sales - vat` de KDV hariç satış değildir. 2026-07-07 kararı gereği brüt kâr KDV hariç
+ * hesaplanır; doğru türetme:
+ *     KDV hariç satış = sales - salesVat
+ *     KDV hariç alış  = purchases - purchaseVat
+ *     brüt kâr        = (sales - salesVat) - (purchases - purchaseVat)
  */
 function getMonthlyTotals(year, userId = 1) {
     return new Promise((resolve, reject) => {
-        const sql = `SELECT user_id, date, sales_filename, purchase_filename, sales_amount, purchase_amount, sales_tax, purchase_tax,
-                             sales_json, purchase_json
-                      FROM analyses WHERE user_id = ? AND deleted_at IS NULL ORDER BY date ASC`;
-
-        db.all(sql, [userId], (err, rows) => {
+        db.all(MONTHLY_TOTALS_SQL, [userId], (err, rows) => {
             if (err) return reject(err);
 
             const monthlyMap = {};
 
             for (const row of (rows || [])) {
-                // Rapor dönemini dosya adlarından al (geçmiş sayfasıyla tutarlı); yoksa kayıt tarihine düş
-                let key = null;
-                const fromSales = parseDateFromFilename(row.sales_filename);
-                const fromPurchase = parseDateFromFilename(row.purchase_filename);
-                if (fromSales) {
-                    key = `${fromSales.year}-${String(fromSales.month).padStart(2, '0')}`;
-                } else if (fromPurchase) {
-                    key = `${fromPurchase.year}-${String(fromPurchase.month).padStart(2, '0')}`;
-                }
-                if (!key) {
-                    const d = new Date(row.date);
-                    if (isNaN(d.getTime())) continue;
-                    key = d.toISOString().slice(0, 7);
-                }
+                const key = resolveAnalysisPeriodKey(row);
+                if (!key) continue;
                 if (year && key.slice(0, 4) !== String(year)) continue;
-
-                if (!monthlyMap[key]) {
-                    monthlyMap[key] = { sales: 0, purchases: 0, vat: 0 };
-                }
-
-                // --- Sales amount ---
-                let salesAmt = _fin(row.sales_amount);
-                // --- Purchase amount ---
-                let purchaseAmt = _fin(row.purchase_amount);
-
-                // --- VAT: try DB columns first ---
-                let vatAmt = _fin(row.sales_tax) + _fin(row.purchase_tax);
-
-                // --- Fallback: read from JSON blobs if DB tax columns are 0 ---
-                if (vatAmt === 0) {
-                    let salesObj = null;
-                    let purchaseObj = null;
-                    try { salesObj = JSON.parse(row.sales_json || '{}'); } catch (_) { salesObj = {}; }
-                    try { purchaseObj = JSON.parse(row.purchase_json || '{}'); } catch (_) { purchaseObj = {}; }
-
-                    const salesVat = pickNum(salesObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
-                    const purchaseVat = pickNum(purchaseObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
-                    vatAmt = salesVat + purchaseVat;
-
-                    // Also back-fill sales/purchase from JSON if DB columns were 0
-                    if (salesAmt === 0) {
-                        salesAmt = pickNum(salesObj, ['totalAmount', 'total_amount', 'gross', 'Genel Toplam', 'gross_amount']);
-                    }
-                    if (purchaseAmt === 0) {
-                        purchaseAmt = pickNum(purchaseObj, ['totalAmount', 'total_amount', 'gross', 'Genel Toplam', 'gross_amount']);
-                    }
-                }
-
-                monthlyMap[key].sales += salesAmt;
-                monthlyMap[key].purchases += purchaseAmt;
-                monthlyMap[key].vat += vatAmt;
+                accumulateMonthlyRow(monthlyMap, row, key);
             }
 
             let sortedKeys = Object.keys(monthlyMap).sort();
             if (year) {
                 sortedKeys = sortedKeys.filter(k => k.slice(0, 4) === String(year));
             }
-            resolve({
-                labels: sortedKeys,
-                sales: sortedKeys.map(k => monthlyMap[k].sales),
-                purchases: sortedKeys.map(k => monthlyMap[k].purchases),
-                vat: sortedKeys.map(k => monthlyMap[k].vat)
-            });
+            resolve(serializeMonthlyMap(monthlyMap, sortedKeys));
         });
     });
 }
 
+/** `getMonthlyTotals` ile aynı çıktı sözleşmesi — aynı KDV tuzağı uyarısı geçerlidir. */
 function getMonthlyTotalsInRange(userId, startYm, endYm) {
     return new Promise((resolve, reject) => {
-        const sql = `SELECT user_id, date, sales_filename, purchase_filename, sales_amount, purchase_amount, sales_tax, purchase_tax,
-                             sales_json, purchase_json
-                      FROM analyses WHERE user_id = ? AND deleted_at IS NULL ORDER BY date ASC`;
-
-        db.all(sql, [userId], (err, rows) => {
+        db.all(MONTHLY_TOTALS_SQL, [userId], (err, rows) => {
             if (err) return reject(err);
 
             const monthlyMap = {};
 
             for (const row of (rows || [])) {
-                // Rapor dönemini dosya adlarından al (geçmiş sayfasıyla tutarlı); yoksa kayıt tarihine düş
-                let key = null;
-                const fromSales = parseDateFromFilename(row.sales_filename);
-                const fromPurchase = parseDateFromFilename(row.purchase_filename);
-                if (fromSales) {
-                    key = `${fromSales.year}-${String(fromSales.month).padStart(2, '0')}`;
-                } else if (fromPurchase) {
-                    key = `${fromPurchase.year}-${String(fromPurchase.month).padStart(2, '0')}`;
-                }
-                if (!key) {
-                    const d = new Date(row.date);
-                    if (isNaN(d.getTime())) continue;
-                    key = d.toISOString().slice(0, 7);
-                }
+                const key = resolveAnalysisPeriodKey(row);
+                if (!key) continue;
                 if (key < startYm || key > endYm) continue;
-
-                if (!monthlyMap[key]) {
-                    monthlyMap[key] = { sales: 0, purchases: 0, vat: 0 };
-                }
-
-                // --- Sales amount ---
-                let salesAmt = _fin(row.sales_amount);
-                // --- Purchase amount ---
-                let purchaseAmt = _fin(row.purchase_amount);
-
-                // --- VAT: try DB columns first ---
-                let vatAmt = _fin(row.sales_tax) + _fin(row.purchase_tax);
-
-                // --- Fallback: read from JSON blobs if DB tax columns are 0 ---
-                if (vatAmt === 0) {
-                    let salesObj = null;
-                    let purchaseObj = null;
-                    try { salesObj = JSON.parse(row.sales_json || '{}'); } catch (_) { salesObj = {}; }
-                    try { purchaseObj = JSON.parse(row.purchase_json || '{}'); } catch (_) { purchaseObj = {}; }
-
-                    const salesVat = pickNum(salesObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
-                    const purchaseVat = pickNum(purchaseObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
-                    vatAmt = salesVat + purchaseVat;
-
-                    // Also back-fill sales/purchase from JSON if DB columns were 0
-                    if (salesAmt === 0) {
-                        salesAmt = pickNum(salesObj, ['totalAmount', 'total_amount', 'gross', 'Genel Toplam', 'gross_amount']);
-                    }
-                    if (purchaseAmt === 0) {
-                        purchaseAmt = pickNum(purchaseObj, ['totalAmount', 'total_amount', 'gross', 'Genel Toplam', 'gross_amount']);
-                    }
-                }
-
-                monthlyMap[key].sales += salesAmt;
-                monthlyMap[key].purchases += purchaseAmt;
-                monthlyMap[key].vat += vatAmt;
+                accumulateMonthlyRow(monthlyMap, row, key);
             }
 
             const sortedKeys = Object.keys(monthlyMap)
                 .sort()
                 .filter(key => key >= startYm && key <= endYm);
-            resolve({
-                labels: sortedKeys,
-                sales: sortedKeys.map(k => monthlyMap[k].sales),
-                purchases: sortedKeys.map(k => monthlyMap[k].purchases),
-                vat: sortedKeys.map(k => monthlyMap[k].vat)
-            });
+            resolve(serializeMonthlyMap(monthlyMap, sortedKeys));
         });
     });
 }
@@ -1082,56 +1051,56 @@ function _fin(v) {
 
 /**
  * Fills missing months between first and last label so charts get a continuous time axis.
- * Returns a new object { labels, sales, purchases, vat } with 0 for months that had no data.
+ * Returns a new object { labels, sales, purchases, vat, salesVat, purchaseVat } with 0 for
+ * months that had no data. KDV dizileri de doldurulur; aksi halde KDV hariç seri türetmek
+ * isteyen tüketici boş dizi görür (bkz. getMonthlyTotals'daki KDV tuzağı notu).
  */
 function fillMissingMonths(result) {
     if (!result || !result.labels || result.labels.length === 0) return result;
-    const { labels, sales = [], purchases = [], vat = [] } = result;
+    const { labels, sales = [], purchases = [], vat = [], salesVat = [], purchaseVat = [] } = result;
     const map = {};
     labels.forEach((key, i) => {
         map[key] = {
             sales: Number(sales[i]) || 0,
             purchases: Number(purchases[i]) || 0,
-            vat: Number(vat[i]) || 0
+            vat: Number(vat[i]) || 0,
+            salesVat: Number(salesVat[i]) || 0,
+            purchaseVat: Number(purchaseVat[i]) || 0
         };
     });
     const first = labels[0];
     const last = labels[labels.length - 1];
     const [y1, m1] = first.split('-').map(Number);
     const [y2, m2] = last.split('-').map(Number);
-    const filledLabels = [];
-    const filledSales = [];
-    const filledPurchases = [];
-    const filledVat = [];
+    const filled = { labels: [], sales: [], purchases: [], vat: [], salesVat: [], purchaseVat: [] };
     let y = y1;
     let m = m1;
     while (y < y2 || (y === y2 && m <= m2)) {
         const key = `${y}-${String(m).padStart(2, '0')}`;
-        filledLabels.push(key);
         const d = map[key];
-        filledSales.push(d ? d.sales : 0);
-        filledPurchases.push(d ? d.purchases : 0);
-        filledVat.push(d ? d.vat : 0);
+        filled.labels.push(key);
+        filled.sales.push(d ? d.sales : 0);
+        filled.purchases.push(d ? d.purchases : 0);
+        filled.vat.push(d ? d.vat : 0);
+        filled.salesVat.push(d ? d.salesVat : 0);
+        filled.purchaseVat.push(d ? d.purchaseVat : 0);
         m += 1;
         if (m > 12) { m = 1; y += 1; }
     }
-    return {
-        labels: filledLabels,
-        sales: filledSales,
-        purchases: filledPurchases,
-        vat: filledVat
-    };
+    return filled;
 }
 
 // ============================================
 // EXPENSES
 // ============================================
 
-// --- User preferences (theme, predictions layout/order, chart type) ---
+// --- User preferences (theme, chart type) ---
+// Not: `predictions_layout_id` / `predictions_card_order` anahtarları Tahminler sayfası sabit
+// düzene geçtiğinde (2026-08-06) ölü kaldı ve varsayılan listeden çıkarıldı.
 function getUserPreferences(userId, keys) {
     return new Promise((resolve, reject) => {
         if (!userId) return resolve({});
-        const wantKeys = Array.isArray(keys) ? keys : (keys ? [keys] : ['theme', 'predictions_layout_id', 'predictions_card_order', 'chartType']);
+        const wantKeys = Array.isArray(keys) ? keys : (keys ? [keys] : ['theme', 'chartType']);
         const placeholders = wantKeys.map(() => '?').join(',');
         const sql = `SELECT key, value FROM user_preferences WHERE user_id = ? AND key IN (${placeholders})`;
         db.all(sql, [userId, ...wantKeys], (err, rows) => {
@@ -1161,8 +1130,6 @@ function migrateUserPreferences(userId, data) {
         getUserPreferences(userId).then(existing => {
             const toInsert = [];
             if (data.theme != null && existing.theme === undefined) toInsert.push(['theme', data.theme]);
-            if (data.predictions_layout_id != null && existing.predictions_layout_id === undefined) toInsert.push(['predictions_layout_id', data.predictions_layout_id]);
-            if (data.predictions_card_order != null && existing.predictions_card_order === undefined) toInsert.push(['predictions_card_order', typeof data.predictions_card_order === 'string' ? data.predictions_card_order : JSON.stringify(data.predictions_card_order)]);
             if (toInsert.length === 0) return resolve({ migrated: [] });
             const stmt = db.prepare(`INSERT OR IGNORE INTO user_preferences (user_id, key, value) VALUES (?, ?, ?)`);
             let idx = 0;
@@ -1851,11 +1818,27 @@ function sortBusinessParties(parties, sort) {
     return sorted;
 }
 
+// Silinen (soft-delete edilmiş) analizden gelen cari hareketlerini hariç tutan SQL parçası.
+// party_transactions'a dokunan HER toplulaştırma sorgusu bunu kullanmalıdır; süzgeci elle
+// tekrarlamak yerine buradan çağırmak, yeni bir sorgu eklendiğinde unutulmasını engeller.
+//
+// Neden NOT EXISTS, neden JOIN değil:
+//  - `source_history_id` NULL olabilir (cari import'tan önce yazılmış eski satırlar). INNER JOIN
+//    bu satırları sessizce yok ederdi — kullanıcı gözünde veri kaybı olurdu.
+//  - Analiz kaydı tamamen silinmişse (dangling id) satır yine korunur.
+//  - Yalnız GERÇEKTEN soft-delete edilmiş bir analize bağlı satırlar süzülür.
+// `alias` yalnız kod içinden sabit değerlerle çağrılır, kullanıcı girdisi değildir.
+function livePartyTransactionCondition(alias = 'party_transactions') {
+    return `NOT EXISTS (SELECT 1 FROM analyses deleted_src
+        WHERE deleted_src.id = ${alias}.source_history_id
+          AND deleted_src.deleted_at IS NOT NULL)`;
+}
+
 async function getBusinessParties(userId, options = {}) {
     const type = options.type === 'supplier' ? 'supplier' : 'customer';
     const limit = Math.min(Math.max(parseInt(options.limit || 100, 10) || 100, 1), 500);
     const offset = Math.max(parseInt(options.offset || 0, 10) || 0, 0);
-    const where = ['user_id = ?', 'party_type = ?'];
+    const where = ['user_id = ?', 'party_type = ?', livePartyTransactionCondition()];
     const params = [userId, type];
     const search = String(options.search || '').trim().toLowerCase();
     const minVolume = Number(options.minVolume || 0);
@@ -1888,6 +1871,7 @@ async function getBusinessParties(userId, options = {}) {
               WHERE pt2.party_id = party_transactions.party_id
                 AND pt2.party_type = party_transactions.party_type
                 AND pt2.user_id = party_transactions.user_id
+                AND ${livePartyTransactionCondition('pt2')}
               ORDER BY pt2.transaction_date DESC, pt2.id DESC LIMIT 1) as lastTransactionAmount,
             AVG(amount) as averageAmount,
             MAX(created_at) as createdAt
@@ -1914,6 +1898,7 @@ async function getBusinessPartyDetail(userId, type, id) {
     const transactions = await dbAll(`SELECT *
         FROM party_transactions
         WHERE user_id = ? AND party_type = ? AND party_id = ?
+          AND ${livePartyTransactionCondition()}
         ORDER BY date(transaction_date) DESC, id DESC`, [userId, partyType, id]);
     if (transactions.length === 0) return null;
 
@@ -1965,9 +1950,11 @@ async function getBusinessPartyDashboardSummary(userId) {
     const customerRows = await getBusinessParties(userId, { type: 'customer', sort: 'volume_desc', limit: 3 });
     const supplierRows = await getBusinessParties(userId, { type: 'supplier', sort: 'volume_desc', limit: 3 });
     const totalCustomers = await dbGet(`SELECT COUNT(DISTINCT party_id) as total
-        FROM party_transactions WHERE user_id = ? AND party_type = 'customer'`, [userId]);
+        FROM party_transactions WHERE user_id = ? AND party_type = 'customer'
+          AND ${livePartyTransactionCondition()}`, [userId]);
     const totalSuppliers = await dbGet(`SELECT COUNT(DISTINCT party_id) as total
-        FROM party_transactions WHERE user_id = ? AND party_type = 'supplier'`, [userId]);
+        FROM party_transactions WHERE user_id = ? AND party_type = 'supplier'
+          AND ${livePartyTransactionCondition()}`, [userId]);
     const recentRows = await dbAll(`SELECT
             party_id as id,
             party_type as type,
@@ -1981,6 +1968,7 @@ async function getBusinessPartyDashboardSummary(userId) {
             MAX(created_at) as createdAt
         FROM party_transactions
         WHERE user_id = ?
+          AND ${livePartyTransactionCondition()}
         GROUP BY party_type, party_id
         ORDER BY datetime(MAX(created_at)) DESC, MAX(transaction_date) DESC
         LIMIT 5`, [userId]);

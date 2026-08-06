@@ -25,7 +25,10 @@ function registerPreferenceRoutes(app, deps) {
         }
         try {
             const body = req.body || {};
-            const allowedKeys = ['theme', 'predictions_layout_id', 'predictions_card_order', 'chartType'];
+            // Tahminler sayfası 2026-08-06'da sabit düzene geçti; `predictions_layout_id` ve
+            // `predictions_card_order` anahtarları o gün anlamsızlaştı ve listeden çıkarıldı.
+            // Eski DB satırları bilerek silinmedi (zararsız, veri silme CEO onay kapısıdır).
+            const allowedKeys = ['theme', 'chartType'];
 
             for (const key of allowedKeys) {
                 if (!Object.hasOwn(body, key)) continue;
@@ -50,10 +53,9 @@ function registerPreferenceRoutes(app, deps) {
         }
         try {
             const body = req.body || {};
+            // Yalnız tema taşınır: tarayıcıdaki eski localStorage tercihini bir kez DB'ye çeker.
             await storage.migrateUserPreferences(req.session.userId, {
-                theme: body.theme ? sanitizeString(String(body.theme)) : undefined,
-                predictions_layout_id: body.predictions_layout_id ? sanitizeString(String(body.predictions_layout_id)) : undefined,
-                predictions_card_order: body.predictions_card_order ? sanitizeString(String(body.predictions_card_order)) : undefined
+                theme: body.theme ? sanitizeString(String(body.theme)) : undefined
             });
             const preferences = await storage.getUserPreferences(req.session.userId);
             return res.json({ success: true, preferences });

@@ -637,6 +637,29 @@ describe('UI structure rules', () => {
         assert.match(css, /\.pending-users-empty\s*\{/);
     });
 
+    test('dashboard top-customer panel is fed by invoice volume, not manual balance', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        // Etiket dürüstlüğü: gösterilen rakam fatura hacmi, ödenmemiş bakiye değil
+        assert.match(html, /En Yüksek Fatura Hacimli Müşteri/);
+        assert.doesNotMatch(html, /En Yüksek Bakiyeli Müşteri/);
+        assert.doesNotMatch(js, /En Yüksek Bakiyeli Müşteri/);
+
+        // Kutu cari (party) özetinden beslenir; manuel müşteri ucundan DEĞİL
+        assert.match(js, /function renderDashboardTopCustomer\(/);
+        assert.match(js, /renderDashboardTopCustomer\(topCustomerEl, \(summary\.topCustomers \|\| \[\]\)\[0\]\)/);
+        assert.doesNotMatch(js, /highestBalanceCustomer/);
+
+        // "Toplam Müşteri" sayacına tek fonksiyon yazar (iki yazıcı yarış üretiyordu)
+        assert.equal((js.match(/dashTotalCustomers/g) || []).length, 1);
+
+        // Cari yüzeylerinde sabit renk sinyali yok
+        assert.doesNotMatch(js, /balanceEl\.className = customerBalanceClass/);
+        assert.doesNotMatch(css, /#partyBalance\.(positive|negative)/);
+    });
+
     test('system tab exposes recent audit operations list', () => {
         const html = readPublicFile('index.html');
         const js = readPublicFile('app.js');

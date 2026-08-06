@@ -2,7 +2,7 @@ const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
 const XLSX = require('xlsx');
 const { Blob } = require('buffer');
-const { createTestClient, seedUser, uniqueUsername } = require('../helpers/test-server');
+const { createTestClient, seedUser, uniqueUsername, dbRun } = require('../helpers/test-server');
 
 function createWorkbook(rows, headers) {
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -153,6 +153,85 @@ describe('Integration Tests - Business Parties From Excel', () => {
         // Geçersiz ay reddedilir
         assert.equal((await client.request('/api/analysis/top-customers?type=sales&year=2024&month=13')).status, 400);
         assert.equal((await client.request('/api/analysis/top-products?type=sales&year=2024&month=0')).status, 400);
+    });
+
+    test('soft-deleted analysis disappears from party list, detail and dashboard summary', async (t) => {
+        const client = await createTestClient(t);
+        if (!client) return;
+
+        const user = await seedUser({ username: uniqueUsername('party_softdelete'), password: 'Test1234!' });
+        await client.login(user.username, user.password);
+
+        // İki ayrı analiz: biri kalacak, biri silinecek.
+        const kalanForm = new FormData();
+        kalanForm.append('salesFile', new Blob([createWorkbook(
+            [['15.01.2024', 'Kalan Musteri', 1000, 200, 1200]],
+            ['Tarih', 'Müşteri Adı', 'Net', 'KDV', 'Genel Toplam']
+        )]), '2024_01_sales.xlsx');
+        kalanForm.append('duplicateAction', 'version');
+        assert.equal((await client.request('/api/analyze', { method: 'POST', body: kalanForm })).status, 200);
+
+        const silinecekForm = new FormData();
+        silinecekForm.append('salesFile', new Blob([createWorkbook(
+            [['15.02.2024', 'Silinecek Musteri', 5000, 1000, 6000]],
+            ['Tarih', 'Müşteri Adı', 'Net', 'KDV', 'Genel Toplam']
+        )]), '2024_02_sales.xlsx');
+        silinecekForm.append('purchaseFile', new Blob([createWorkbook(
+            [['16.02.2024', 'Silinecek Tedarik', 700, 140, 840]],
+            ['Tarih', 'Tedarikçi', 'Net', 'KDV', 'Genel Toplam']
+        )]), '2024_02_purchase.xlsx');
+        silinecekForm.append('duplicateAction', 'version');
+        assert.equal((await client.request('/api/analyze', { method: 'POST', body: silinecekForm })).status, 200);
+
+        // Cari import'tan ÖNCE yazılmış eski satırları temsil eder: source_history_id NULL.
+        // Bu satır hiçbir analize bağlı olmadığı için silme sonrası da KALMALIDIR.
+        await dbRun(`INSERT INTO party_transactions (
+            user_id, party_type, party_id, party_name, normalized_name, invoice_type,
+            transaction_date, amount, net, vat, description, source_history_id,
+            source_file, source_row_index, source_key
+        ) VALUES (?, 'customer', 9001, 'Oksuz Musteri', 'oksuz musteri', 'sales',
+            '2024-03-01', 2500, 2500, 0, '', NULL, 'eski.xlsx', 1, ?)`,
+        [user.id, `orphan-${user.id}`]);
+
+        const before = await client.request('/api/business-parties?type=customer&sort=volume_desc');
+        assert.equal(before.status, 200);
+        assert.equal(before.body.total, 3);
+
+        const beforeSummary = await client.request('/api/business-parties/dashboard-summary');
+        assert.equal(beforeSummary.body.summary.totalCustomers, 3);
+        assert.equal(beforeSummary.body.summary.totalSuppliers, 1);
+
+        const silinecek = before.body.parties.find((party) => party.name === 'Silinecek Musteri');
+        assert.ok(silinecek, 'silinecek müşteri listede bulunmalı');
+
+        // Silinecek analizin geçmiş kaydını bul ve soft-delete et.
+        const history = await client.request('/api/history');
+        assert.equal(history.status, 200);
+        const hedef = history.body.history.find((row) => String(row.salesFileName || row.sales_filename || '').includes('2024_02'));
+        assert.ok(hedef, 'silinecek analiz geçmişte bulunmalı');
+        assert.equal((await client.request(`/api/history/${hedef.id}`, { method: 'DELETE' })).status, 200);
+
+        // Liste: silinen analizin carileri düşer, diğerleri korunur.
+        const after = await client.request('/api/business-parties?type=customer&sort=volume_desc');
+        assert.equal(after.status, 200);
+        assert.equal(after.body.total, 2);
+        const kalanIsimler = after.body.parties.map((party) => party.name).sort();
+        assert.deepEqual(kalanIsimler, ['Kalan Musteri', 'Oksuz Musteri']);
+
+        // Tedarikçi tarafı da süzülmeli.
+        const suppliersAfter = await client.request('/api/business-parties?type=supplier');
+        assert.equal(suppliersAfter.body.total, 0);
+
+        // Detay ekranı: silinen carinin hareketi kalmadığı için 404 döner.
+        const detail = await client.request(`/api/business-parties/customer/${silinecek.id}`);
+        assert.equal(detail.status, 404);
+
+        // Panel özeti sayaçları da düşmeli.
+        const afterSummary = await client.request('/api/business-parties/dashboard-summary');
+        assert.equal(afterSummary.status, 200);
+        assert.equal(afterSummary.body.summary.totalCustomers, 2);
+        assert.equal(afterSummary.body.summary.totalSuppliers, 0);
+        assert.ok(!afterSummary.body.summary.recentParties.some((party) => party.name === 'Silinecek Musteri'));
     });
 
     test('business party list filters by search, date range and minimum volume', async (t) => {

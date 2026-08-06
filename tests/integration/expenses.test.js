@@ -148,6 +148,42 @@ describe('Integration Tests - Expenses And Preferences', () => {
         assert.equal(readResponse.body.success, true);
     });
 
+    test('retired predictions layout keys are rejected by the preferences allowlist', async (t) => {
+        const client = await createTestClient(t);
+        if (!client) return;
+
+        const user = await seedUser({ username: uniqueUsername('deadprefs'), password: 'Test1234!' });
+        await client.login(user.username, user.password);
+
+        // Tahminler sayfası sabit düzene geçtiği için bu iki anahtar artık yazılamaz
+        const saveResponse = await client.request('/api/user/preferences', {
+            method: 'PUT',
+            json: {
+                theme: 'dark',
+                predictions_layout_id: 'layout-a',
+                predictions_card_order: '["chart","table"]'
+            }
+        });
+
+        assert.equal(saveResponse.status, 200);
+        assert.equal(saveResponse.body.preferences.theme, 'dark');
+        assert.equal(saveResponse.body.preferences.predictions_layout_id, undefined);
+        assert.equal(saveResponse.body.preferences.predictions_card_order, undefined);
+
+        // Taşıma ucu da yalnız temayı taşır
+        const migrateResponse = await client.request('/api/user/preferences/migrate', {
+            method: 'POST',
+            json: { theme: 'light', predictions_layout_id: 'layout-b' }
+        });
+
+        assert.equal(migrateResponse.status, 200);
+        assert.equal(migrateResponse.body.preferences.predictions_layout_id, undefined);
+
+        const readResponse = await client.request('/api/user/preferences');
+        assert.equal(readResponse.body.preferences.predictions_layout_id, undefined);
+        assert.equal(readResponse.body.preferences.predictions_card_order, undefined);
+    });
+
     test('expense years endpoint returns an array', async (t) => {
         const client = await createTestClient(t);
         if (!client) return;

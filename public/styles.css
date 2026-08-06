@@ -5770,17 +5770,8 @@ body {
     font-size: 1.25rem;
 }
 
-.party-metric-card strong.positive,
-.business-party-table .positive,
-#partyBalance.positive {
-    color: var(--success);
-}
-
-.party-metric-card strong.negative,
-.business-party-table .negative,
-#partyBalance.negative {
-    color: var(--danger);
-}
+/* Not: cari yüzeylerinde pozitif/negatif renk kuralı bilerek YOKTUR.
+   Fatura hacmi tanım gereği tek işaretlidir (müşteri +, tedarikçi -), renk bilgi taşımaz. */
 
 .party-charts-grid .dashboard-chart-card {
     min-height: 340px;
