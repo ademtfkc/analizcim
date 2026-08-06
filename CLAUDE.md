@@ -231,6 +231,9 @@ Kurallar:
 - `period` filtresi `6`, `12`, `all` değerlerini desteklemeli.
 - A Tahmin tablosu mümkün olduğunca tek ekrana sığmalı; gereksiz `overflow-x` veya kalıcı yatay scroll üretmemeli.
 - C Risk ve D Senaryo kartları masaüstünde aynı satırda, eşit yükseklik/genişlik hissiyle hizalanmalıdır.
+- **Kart düzeni SABİTTİR (2026-08-06 CEO kararı).** Sürükle-bırak ve kullanıcıya özel sıralama
+  kaldırılmıştır, geri eklenmemelidir. Sıra HTML'deki sıradır; yeni kart eklenirse hem HTML sırasına
+  hem `data-card-id` genişlik kuralına eklenmelidir.
 
 ## Tahmin Motoru Standartları
 
@@ -509,6 +512,53 @@ yazıldı. `npm run test:integration` artık `--test-force-exit` ile kapanıyor.
 **Doğrulanan son durum:** `npm run verify` yeşil — **171 birim + 33 entegrasyon + 1 smoke**.
 Altı sekme 1440/390 viewport, koyu+açık tema, 0 console hatası, sayfa düzeyinde yatay kaydırma yok.
 
+### 2026-08-06 güncellemesi (CEO revizyon turu + cari bakiye gerçeği)
+
+**Yürürlükteki 6 değişiklik (commit `7732e4f`):**
+
+1. **KPI hairline'ı:** `.dashboard-stats` üzerindeki eski `gap: 1rem !important` kuralı 1px ayırıcıyı
+   eziyordu (kalın gri bant). Kokpit ızgaralarında `gap: 1px !important` kullanılır — bu `!important`
+   gereklidir, kaldırılırsa bant geri gelir.
+2. **Kenar çubuğu:** bulanıklık (`backdrop-filter`) KALDIRILDI (CEO kararı). `.sidebar-overlay` görünmez
+   tam ekran tıklama yakalayıcıdır; `.sidebar.open` opak panel + yumuşak gölge. Geri eklenmemelidir.
+3. **Tahminler sabit düzen:** sürükle-bırak ve kullanıcıya özel sıralama TAMAMEN kaldırıldı.
+   Kart sırası HTML'deki sıradır: grafik (tam) → tablo (tam) → risk+senaryo → finansal sağlık+büyüme →
+   karar etkisi+aksiyon → CFO (tam). Genişlikler `data-card-id` ile CSS'te verilir. Yan yana çiftler
+   aynı ızgara satırında olduğu için yükseklikleri otomatik eşitlenir (C/D kuralı böyle sağlanıyor).
+4. **"En Çok" sekmesi:** başlık kısa, **yıl + ay** filtresi var. `getTopCustomers`/`getTopProducts`
+   `month` parametresi alır ve filtreyi **iki döngüde de** uygular (ana döngü + yıl seçiliyken çalışan
+   ikinci döngü). İkincisi atlanırsa ay filtresi sessizce etkisiz kalır — bu hata bir kez yaşandı.
+5. **Tek ölçü sistemi:** `.cockpit-page` altında `--control-height: 38px`, `--control-radius`,
+   `--control-gap`, `--section-gap`. Tüm başlık satırları, buton/seçici yükseklikleri, filtre satırları
+   ve bölüm arası boşluklar buradan gelir. **Dikkat:** dokunmatik cihazda 44px hedefi, aynı
+   `.cockpit-page` önekiyle `@media (hover:none) and (pointer:coarse)` içinde geri kazandırılmıştır;
+   ölçü sistemine yeni seçici eklerken bu listeye de eklenmelidir.
+6. **Cari etiket dürüstlüğü:** "Bakiye" → "Fatura Toplamı", "Net Bakiye" → "Net Fatura Tutarı".
+   Renk sinyali kaldırıldı (aşağıdaki gerekçe).
+
+**CARİ BAKİYE GERÇEĞİ (araştırma sonucu — yeni özellik yazmadan önce oku):**
+
+- `party_transactions.balance = salesVolume - purchaseVolume`. Bir cari kaydı ya tamamen satış
+  (müşteri) ya tamamen alış (tedarikçi) hareketinden oluşur (`storage.js`: `partyType = invoiceType
+  === 'sales' ? 'customer' : 'supplier'`). Sonuç: **bakiye matematiksel olarak hacme eşittir**;
+  müşteride hep artı, tedarikçide hep eksi. Renk sabit olduğu için hiçbir bilgi taşımıyordu, kaldırıldı.
+- **Sistemde tahsilat/ödeme kaydı kavramı YOK.** Şema `invoice_type IN ('sales','purchase')` ile
+  kilitli. Yani gösterilen rakam ödenmemiş kalan değil, kesilen faturaların toplamıdır.
+- **Eski analizler cari ekranında görünmez.** `party_transactions` yalnızca yeni yükleme sırasında
+  dolar (`server.js` `/api/analyze` ve `/api/analyze/merge`). Migration geriye dönük doldurma yapmaz.
+- **Backfill teknik olarak mümkün değil:** `analyses.sales_json` satır bazlı karşı taraf/tarih
+  saklamaz, yalnızca analiz başına en büyük 5 karşı tarafın tarihsiz toplamı vardır. Doğru cari ancak
+  Excel yeniden yüklenerek gelir (mükerrer koruması çalışıyor, ikinci import 0 satır ekler).
+- Gerçek borç/alacak takibi istenirse bu bir **kapsam genişlemesidir**: `invoice_type`'a
+  `payment`/`collection` eklemek + giriş ekranı gerekir. Etiket düzeltmesiyle karıştırılmamalıdır.
+
+**Kalite kapısı bu turda 2 tur döndü:** test-uzmani mobilde flex-basis'in yükseklik olarak okunduğunu
+(butonlar 140px, başlıklar 280px) yakaladı; kod-inceleyici RET verip dokunmatik 44px ezilmesini, sabit
+cari rengini ve eksik kalıcı testleri tespit etti. Hepsi düzeltildi.
+
+**Doğrulanan son durum:** lint temiz, **174 birim + 34 entegrasyon + 1 smoke** geçti. 8 sekmede tüm
+kontroller 38px, sayfa düzeyinde yatay kaydırma 0, 390px'te buton çakışması yok.
+
 Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hiçbiri acil değil):
 
 - Bağımlılık: `xlsx` (npm'de yama yok) ve `sqlite3@6` (kırıcı) — yalnızca çok kullanıcılı/ağ
@@ -520,8 +570,22 @@ Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hi
   `grossProfit` serisini kendisi üretiyor, ama bu fonksiyonu kullanan yeni bir tüketici eklenirse
   aynı hata tekrarlayabilir.
 - Büyük veri setlerinde cari liste/detay performansını ve ARIMA sonuçlarını gözlemlemek.
-- `initPredictionsLayout` ölü kod: bağlı olduğu `predictionLayoutSelect` HTML'de yok, fonksiyon
-  en başta return ediyor. Ya seçici geri eklenmeli ya fonksiyon silinmeli.
+- **CEO kararı bekleyen:** gerçek bakiye takibi (tahsilat/ödeme kaydı) — yukarıdaki "cari bakiye
+  gerçeği" bölümüne bakın. Ayrıca eski raporların cari listesine katılması için ilgili Excel'lerin
+  yeniden yüklenmesi gerekiyor; hangi dönemler isteniyorsa CEO söyleyecek.
+- Silinen (soft-delete) analizin cari hareketleri listede kalmaya devam ediyor: `getBusinessParties`
+  `deleted_at` filtresi uygulamıyor. Küçük, bağımsız hata; ayrı turda.
+- Öksüz kullanıcı tercihi: `predictions_layout_id` / `predictions_card_order_v4` artık hiçbir ön yüz
+  kodu tarafından okunmuyor ama `routes/preferences.js` allowlist'inde duruyor. Zararsız, temizlenebilir.
+
+## En Çok Sayfası Standartları
+
+- Başlık kısadır: **"En Çok"** (eski "En Çok Satılan Firmalar ve Ürünler" kullanılmaz).
+- Dönem seçimi **yıl + ay** olarak yapılır; ay `Tüm yıl` veya 1-12 değerlerini alır.
+- Ay filtresi hem "En Çok Satış Yapılan Firmalar" hem "En Çok Alınan Tedarikçiler" listesine uygulanır.
+- Dönem bilgisi dosya adından okunur (geçmiş ve panel ile aynı kural).
+- API (`/api/analysis/top-customers`, `/api/analysis/top-products`) `month` parametresi alır ve
+  yanıtta `month` alanını döndürür; eski alanlar korunur.
 
 ## Ayarlar Sayfası Standartları
 

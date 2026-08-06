@@ -70,9 +70,9 @@
 | `src/validators.js` | Girdi doğrulama | ~410 |
 | `src/database.js` | DB bağlantısı ve şema | ~310 |
 | `src/backup-manager.js` / `src/archive-manager.js` | Yedekleme / arşiv (soft-delete) | ~290 / ~270 |
-| `public/app.js` | TÜM ön yüz mantığı tek dosyada (`showConfirm` onay modalı dahil) | ~8450 |
-| `public/styles.css` | TÜM stiller tek dosyada (`.business-party-table` mobil kart + `.btn-danger` dahil) | ~17040 |
-| `public/index.html` | Ana uygulama iskeleti (`#confirmModal` iskeleti dahil) | ~2390 |
+| `public/app.js` | TÜM ön yüz mantığı tek dosyada (`showConfirm` onay modalı dahil) | ~8970 |
+| `public/styles.css` | TÜM stiller tek dosyada (kokpit ölçü sistemi + mobil kart + `.btn-danger` dahil) | ~17640 |
+| `public/index.html` | Ana uygulama iskeleti (`#confirmModal` iskeleti dahil) | ~2540 |
 
 ## 4. Veri Yapısı Özeti 🗄️
 _(Migration dosyalarından çıkarıldı — kod ile çelişirse koda güvenilir.)_
@@ -99,6 +99,13 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | `routes/preferences.js` | Tercih kaydet/oku | Kullanıcı |
 
 ## 6. Tasarım Sistemi Özeti 🎨
+- **Kokpit dili (2026-08-05/06):** 6 sayfa iki şeritli — ana kolon + 320px karar paneli. Ortak
+  sınıflar `.cockpit-page / .cockpit-body / .cockpit-main / .cockpit-rail`, ortak parçalar
+  `.rail-block`, `.rail-facts`, `.rail-action*` ve `renderRailFacts()` / `renderRailActionItems()`.
+- **Tek ölçü sistemi:** `.cockpit-page` altında `--control-height: 38px`, `--control-radius: 9px`,
+  `--control-gap`, `--section-gap`. Tüm buton/seçici yükseklikleri ve bölüm boşlukları buradan gelir.
+  Dokunmatik cihazda 44px hedefi ayrı bir medya sorgusuyla korunur.
+- **Kenar çubuğu:** bulanıklık yok, panel opak + yumuşak gölge (CEO kararı).
 - **Yaklaşım:** Modern dark/light SaaS; Linear/Vercel sadeliği + finansal dashboard ciddiyeti.
 - **Renk semantiği:** pozitif=success(yeşil), negatif=danger(kırmızı), nötr — anlam taşır, korunur.
 - **Tema:** `public/styles.css` içinde token bazlı; tema tercihi Ayarlar sayfasında.
@@ -119,12 +126,22 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | 2026-08-05 | 8 KPI kartı **silinmedi**, 4 ana kutu + ikincil şerit oldu | Tasarım "KPI 8→4" diyor ama hiçbir sayı kaybolmamalı; Brüt Kâr/Analiz/Gider/Müşteri/Tedarikçi ikincil şeritte duruyor |
 | 2026-08-05 | KDV kutusuna **yıllık değişim rozeti konmadı** | Ödenecek KDV devreden-mahsuplu defterden geliyor; önceki yıl için aynı defter kurulmadan yapılan kıyas yanıltıcı olurdu. Rozet yerine boş bırakıldı |
 | 2026-08-06 | **Kokpit dili dört sayfaya yayıldı — "tam yeniden düzen"** | CEO seçimi. Riski önden bildirildi; Tahminler'in sürükle-bırak kart düzeni yıkılmadan iki şeritli kabuğa alındı |
+| 2026-08-06 | **Tahminler'de sürükle-bırak KALDIRILDI, düzen sabit** | CEO kararı. "Kaç zamandır adam akıllı layout oturtamadık" sorununun kökü sıranın kullanıcıya bırakılmasıydı; sabit düzen olmadan garanti verilemiyordu |
+| 2026-08-06 | Kenar çubuğunda **bulanıklık kalksın, panel opak** | CEO kararı. Bulanık şerit yapay duruyordu ve ekranı keskin bir dikey çizgiyle bölüyordu |
+| 2026-08-06 | Revizyon kapsamı = **görsel düzensizlik** (içerik yeniden kurgulanmadı) | CEO kararı. Sorun bilgide değil ölçüde/hizalamada; tek ölçü sistemi kuruldu |
+| 2026-08-06 | Cari ekranında **"Bakiye" etiketi düzeltildi, gerçek bakiye takibi YAPILMADI** | Rakam ödenmemiş kalan değil fatura toplamı; etiketi düzeltmek risksiz, gerçek takip ise kapsam genişlemesi (tahsilat/ödeme kaydı + giriş ekranı) ve CEO onayı bekliyor |
 | 2026-08-06 | Hedef **lokal, tek kullanıcı** | CEO seçimi. Oturum saklama, bağımlılık yükseltmesi ve CSP sertleştirmesi bu hedefte gereksiz; enerji hata avı ve cilaya harcandı |
 | 2026-08-06 | Eski yedek `data/pre_restore_1771112753452.db` **kalsın** | CEO kararı; bekleyen onaylardan çıkarıldı, bir daha sorulmayacak |
 | 2026-08-05 | **Panel kârı KDV hariç tabana çekildi** (istemci tarafı, backend'e dokunulmadı) | Panel KDV dahil, tablo KDV hariç hesaplıyordu → aynı ekranda iki farklı "Net Kâr". 2026-07-07'de CEO onayıyla alınan "brüt kâr KDV hariç" kararı bu noktada uygulanmamıştı; yeni bir finansal karar değil, eksik kalan uygulamanın tamamlanması. **Panelde görünen kâr rakamı düşer (doğru değere).** Geri alınması gerekirse tek fonksiyon (`computeVatExclusiveGrossProfit`) yeter |
 
 ## 8. Bekleyen Onaylar 🚦
-- _(boş)_ — `data/pre_restore_1771112753452.db` için CEO 2026-08-06'da "kalsın" dedi; konu kapandı.
+- **Gerçek bakiye takibi yapılsın mı?** Bugünkü "Fatura Toplamı" ödenmemiş kalanı göstermiyor; gerçek
+  borç/alacak için `invoice_type`'a `payment`/`collection` eklemek + tahsilat/ödeme giriş ekranı
+  gerekiyor. Kapsam genişlemesi olduğu için CEO onayı bekliyor.
+- **Eski raporlar cari listesine katılsın mı?** Tek yol ilgili Excel dosyalarını yeniden yüklemek
+  (backfill teknik olarak imkânsız — satır bazlı veri saklanmıyor). Hangi dönemler isteniyorsa CEO
+  belirtecek. Mükerrer koruması çalışıyor, ikinci yükleme veriyi ikiye katlamaz.
+- _(kapandı)_ `data/pre_restore_1771112753452.db` için CEO 2026-08-06'da "kalsın" dedi.
 - _(Not: `git init` + private GitHub deposu 2026-07-07'de CEO onayıyla TAMAMLANDI; CI kurulu ve yeşil.)_
 
 ## 9. Devam Eden İşler 🔨
@@ -136,6 +153,7 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | Dashboard "Kokpit" tasarım turu (yön 1b) | ana asistan | ✅ TAMAM — CEO onayladı, commit `7b783e1`, CI yeşil |
 | Kokpit dilinin dört sayfaya yayılması (Karşılaştırma, Gider, Cari, Tahminler) | ana asistan | ✅ TAMAM (2026-08-06), 4 commit push'landı |
 | Test altyapısı + finansal kök + küçük hata avı | ana asistan | ✅ TAMAM (2026-08-06) |
+| CEO revizyon turu (renk bandı, kenar çubuğu, sabit tahmin düzeni, En Çok ay filtresi, tek ölçü, cari etiket) | ana asistan + 2 denetim ajanı | ✅ TAMAM (2026-08-06), commit `7732e4f`, CI yeşil |
 | _Başka aktif iş yok_ — kalanlar "Sonraki Adımlar" backlog'unda | — | Beklemede |
 
 ## 10. Bilinen Sorunlar 🐞
@@ -167,20 +185,44 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 
 ### 🔜 SONRAKİ OTURUM — BURADAN BAŞLA
 
-**Önce bunu bil:** 2026-08-05/06 oturumunda Kokpit tasarım turu **6 sayfada tamamlandı** ve tamamı
-commit + push edildi (CI yeşil): `7b783e1` Panel, `f50a989` hata avı, `508ddac` test altyapısı +
-finansal kök, `afccd3f` Yıl Karşılaştırma, `22be1cf` Gider (+3 veri kaybı hatası), `95b73a6` Cari,
-`77af643` Tahminler. Aktif iş yok; `npm run verify` yeşil (171 birim + 33 entegrasyon + smoke).
+**Önce bunu bil:** 2026-08-05/06 oturumunda Kokpit tasarım turu 6 sayfada tamamlandı, ardından CEO
+geri bildirimleriyle bir revizyon turu yapıldı. **Hepsi commit + push edildi, CI yeşil.** Aktif iş yok.
 
-Detay: CLAUDE.md → "2026-08-05/06 güncellemesi (Kokpit dili tüm sayfalara yayıldı + 5 sessiz hata)".
+| Commit | İş |
+|---|---|
+| `7b783e1` | Panel "Kokpit" düzeni + panel kârı KDV hariç tabana çekildi |
+| `f50a989` | Özel Aralık kâr/zarar süzmesi, onay modalı odak tuzağı, mobil rapor butonları |
+| `508ddac` | Panel hesapları `dashboard-metrics.js` modülüne + KDV hariç kâr sunucuda kapatıldı |
+| `afccd3f` | Ortak kokpit temeli + Yıl Karşılaştırma |
+| `22be1cf` | Gider sayfası + 3 sessiz veri kaybı hatası |
+| `95b73a6` | Cari sayfaları (Müşteriler / Tedarikçiler / detay) |
+| `77af643` | Tahminler sayfası |
+| `f56c7c6` | Doküman turu |
+| `7732e4f` | **CEO revizyon turu** (renk bandı, kenar çubuğu, sabit tahmin düzeni, En Çok ay filtresi, tek ölçü sistemi, cari etiket dürüstlüğü) |
+
+Doğrulama: `npm run lint` temiz, **174 birim + 34 entegrasyon + 1 smoke** geçiyor.
+
+Detay okuma sırası: CLAUDE.md → "2026-08-06 güncellemesi (CEO revizyon turu + cari bakiye gerçeği)"
+ve "2026-08-05/06 güncellemesi (Kokpit dili tüm sayfalara yayıldı + 5 sessiz hata)".
+
+**CEO'ya sorulmuş, cevap bekleyen iki soru (Bölüm 8'de de var):**
+1. Gerçek bakiye takibi (tahsilat/ödeme kaydı) istenir mi? — kapsam genişlemesi.
+2. Eski raporların cari listesine katılması için hangi dönemlerin Excel'i yeniden yüklenecek?
 
 **Önceki turdan gelen üç madde bu oturumda KAPATILDI:** Özel Aralık başlığı + tablo süzmesi
 (`f50a989`), test kapsama boşluğu (`dashboard-metrics.js` + 26 birim testi, `508ddac`) ve
 finansal kökün sunucuda kapatılması (`508ddac`).
 
-**Kalan tek not:** `src/storage.js getMonthlyTotals` hâlâ KDV dahil tutar döndürüyor. Panel uçları
-artık KDV hariç `grossProfit` serisini kendileri üretiyor, ama bu fonksiyonu kullanan YENİ bir
-tüketici eklenirse aynı hata tekrarlayabilir.
+**Kalan teknik notlar (hiçbiri acil değil, hedef lokal/tek kullanıcı):**
+- `src/storage.js getMonthlyTotals` hâlâ KDV dahil tutar döndürüyor. Panel uçları artık KDV hariç
+  `grossProfit` serisini kendileri üretiyor, ama bu fonksiyonu kullanan YENİ bir tüketici eklenirse
+  aynı hata tekrarlayabilir.
+- Silinen (soft-delete) analizin cari hareketleri listede kalıyor: `getBusinessParties` `deleted_at`
+  filtresi uygulamıyor.
+- Öksüz kullanıcı tercihi: `predictions_layout_id` / `predictions_card_order_v4` artık okunmuyor ama
+  `routes/preferences.js` allowlist'inde duruyor.
+- Dashboard "En Yüksek Bakiyeli Müşteri" widget'ı manuel `customers.balance` alanından besleniyor;
+  Excel'den otomatik oluşan cariler için bu alan hep 0. İki farklı "bakiye" kavramı yan yana duruyor.
 
 Kokpit turunun bilinçli olarak kapsam dışı bıraktıkları (CEO isterse sıradaki iş olabilir):
 - Tasarımdaki **1b sol ikon şeridi** uygulanmadı; mevcut app shell kenar çubuğu korundu (kapsam kararı).
@@ -282,6 +324,8 @@ tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-08-06 | ana asistan + test-uzmani + kod-inceleyici | **CEO revizyon turu (`7732e4f`):** 6 iş — (1) KPI ızgarasındaki gri bant (eski `gap:1rem !important` hairline'ı eziyordu) → `gap:1px !important`; (2) kenar çubuğu bulanıklığı kaldırıldı, panel opak; (3) Tahminler'de sürükle-bırak TAMAMEN kaldırıldı, tek sabit düzen + 128 ölü CSS kuralı (~27 KB) silindi; (4) "En Çok" başlığı kısaldı + yıl/ay filtresi (backend `month` parametresi, filtre iki döngüde de); (5) tek ölçü sistemi (`--control-height:38px` vb.) 8 sayfaya uygulandı, Ayarlar da `.cockpit-page` oldu; (6) cari "Bakiye" → "Fatura Toplamı" (araştırma: rakam ödenmemiş bakiye değil, fatura toplamı) + hep 0 dönen `lastTransactionAmount` düzeltildi. **Kalite kapısı 2 tur döndü:** test-uzmani mobilde flex-basis'in yükseklik olarak okunduğunu (butonlar 140px, başlıklar 280px) yakaladı; kod-inceleyici RET verdi (dokunmatik 44px ezilmesi, sabit cari rengi, eksik kalıcı test) — hepsi düzeltildi. 174 birim + 34 entegrasyon + smoke geçti, CI yeşil | `public/index.html`, `public/app.js`, `public/styles.css`, `src/server.js`, `src/storage.js`, 2 test dosyası |
+| 2026-08-06 | araştırma ajanı | **Cari bakiye araştırması:** "Bakiye" kolonunun gerçekte ödenmemiş bakiye DEĞİL, kesilen faturaların toplamı olduğu kanıtlandı (sistemde tahsilat/ödeme kavramı yok, şema `invoice_type IN ('sales','purchase')` ile kilitli). Eski analizlerin cari ekranına hiç girmediği ve satır bazlı veri saklanmadığı için backfill'in imkânsız olduğu doğrulandı. Ayrıca `lastTransactionAmount`'ın SQL'de hiç seçilmediği (hep 0 döndüğü) ve silinen analizlerin cari hareketlerinin listede kaldığı tespit edildi | (okuma + izole test DB) |
 | 2026-08-06 | ana asistan | **Kokpit dili dört sayfaya yayıldı (adım 3):** ortak `.cockpit-page/.cockpit-body/.cockpit-main/.cockpit-rail` temeli kuruldu; Yıl Karşılaştırma (`afccd3f`), Gider (`22be1cf`), Cari — Müşteriler/Tedarikçiler/detay (`95b73a6`) ve Tahminler (`77af643`) iki şeritli düzene geçti. Her sayfaya veriden üretilen karar paneli eklendi (satır içi onclick yok). Tahminler'in sürükle-bırak kart düzeni, cari mobil kart görünümü ve tüm element ID'leri korundu. Doğrulama: `npm run verify` yeşil (171 birim + 33 entegrasyon + smoke), 6 sekme 1440/390 + koyu/açık tema, 0 console hatası | `public/index.html`, `public/app.js`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
 | 2026-08-06 | ana asistan | **Gider modülünde 3 sessiz veri kaybı hatası (tasarım turunda ortaya çıktı):** (1) gider adları hiç kaydedilmiyordu — validator `name` isterken ön yüz `label` gönderiyor, hata `catch(_){}` ile yutuluyordu; (2) her tuş vuruşunda kayıt + DELETE/INSERT yarışı satırları çoğaltıyordu; (3) "tüm yıl" giderleri panelde görünmüyordu. Üçü de düzeltildi, 3 yeni entegrasyon testi eklendi | `src/routes/expenses.js`, `src/storage.js`, `public/app.js`, `tests/integration/expenses.test.js` |
 | 2026-08-06 | ana asistan | **Adım 2 — test altyapısı + finansal kök (`508ddac`):** panel hesapları `public/js/dashboard-metrics.js` modülüne çıkarıldı + 26 gerçek birim testi; `/api/dashboard/latest` ve `/range` artık KDV hariç `grossProfit` serisi döndürüyor (summary.gross_profit 10.439.320 → 8.699.433, profit-loss ucuyla fark 0); `npm run test:integration` `--test-force-exit` ile kapanıyor | `public/js/dashboard-metrics.js`, `src/server.js`, `public/app.js`, `package.json`, +2 test dosyası |

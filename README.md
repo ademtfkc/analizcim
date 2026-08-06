@@ -34,12 +34,14 @@ makinesinde kalır.
 ## Temel Özellikler
 
 - Excel yükleyip satış/alış/KDV/brüt kâr/net kâr analizi
-- Karar odaklı **Dashboard** (KPI kartları, finansal sağlık, Kâr/Zarar tablosu, trend grafikleri)
+- Karar odaklı **Dashboard** (4 ana KPI + mikro grafikler, finansal sağlık, Kâr/Zarar tablosu, trend grafikleri)
 - **Tahminler**: 4 modelli (Linear, Exponential Smoothing, Holt-Winters, ARIMA) otomatik model seçimli tahmin motoru
 - **Yıl Karşılaştırma**: YoY delta kartları + aylık karşılaştırma
+- **En Çok**: yıl ve ay bazlı en yüksek hacimli firma/tedarikçi sıralaması
 - **Cari yönetimi**: Excel'den otomatik müşteri/tedarikçi çıkarımı + manuel müşteri kartları
 - Gider yönetimi, geçmiş analizler, çöp kutusu ve arşivleme
 - PDF ve Excel dışa aktarma
+- **Kokpit arayüzü**: her sayfada solda içerik, sağda veriden üretilen "Şimdi ne yapmalıyım" karar paneli
 - Modern dark/light SaaS arayüz, collapsible sidebar, responsive tasarım (mobilde cari listesi kart görünümüne dönüşür)
 - Tema uyumlu onay pencereleri (silme/onay işlemlerinde tarayıcının kutusu yerine)
 - Kullanıcı girişi, admin onay akışı ve rol yönetimi
@@ -143,8 +145,13 @@ Cari/müşteri/tedarikçi başlıkları, genel açıklama/ürün kolonlarına g�
 tarih, tutar, KDV, dosya kaynağı ve fatura yönü saklanır.
 
 `Müşteriler` ve `Tedarikçiler` sekmelerinde arama, tarih/hacim filtresi ve sıralama; detay ekranında
-toplam hacim, net bakiye, son işlem, ortalama tutar, aylık hacim grafiği, 12 ay trendi ve tam hareket
-dökümü bulunur. Liste masaüstünde tablo, telefon/tablette (≤768px) yatay kaydırma yerine kart görünümüdür.
+toplam hacim, net fatura tutarı, son işlem, ortalama tutar, aylık hacim grafiği, 12 ay trendi ve tam
+hareket dökümü bulunur. Liste masaüstünde tablo, telefon/tablette (≤768px) yatay kaydırma yerine kart
+görünümüdür.
+
+> **Not (bakiye kavramı):** Listelerdeki **"Fatura Toplamı"** kesilen faturaların toplamıdır —
+> ödenmemiş bakiye DEĞİLDİR. Uygulamada tahsilat/ödeme kaydı kavramı yoktur, dolayısıyla bu rakamdan
+> hiçbir ödeme düşülmez. Gerçek borç/alacak takibi ayrı bir özellik olarak ele alınmalıdır.
 
 > **Not (geçmiş veriler):** Cari listesi yalnızca **yeni yüklenen** Excel dosyalarından otomatik
 > dolar. Bu özellik eklenmeden önce yüklenmiş eski analizler cari listesine **otomatik girmez**.
@@ -153,9 +160,11 @@ dökümü bulunur. Liste masaüstünde tablo, telefon/tablette (≤768px) yatay 
 
 ## Dashboard
 
-İşletmenin finansal görünümünü hızlı karar alınabilecek biçimde sunar: genel durum özeti, KPI kartları,
-finansal sağlık göstergeleri, KDV görünümü, trend grafikleri, Kâr/Zarar tablosu, öncelikler, cari
-özetleri (müşteri/tedarikçi sayısı, en yüksek hacimliler) ve önümüzdeki 3 ay Tahmin Özeti widget'ı.
+İşletmenin finansal görünümünü hızlı karar alınabilecek biçimde sunar. Sol kolonda 4 ana KPI kutusu
+(Toplam Satış, Toplam Alış, Net Kâr, Ödenecek KDV — her biri yıllık değişim rozeti ve aylık mikro
+grafikle), ana sahnede net kâr özeti + trend grafiği, altında Kâr/Zarar tablosu, finansal sağlık
+göstergeleri ve KDV hariç ciro yer alır. Sağdaki karar panelinde "Şimdi ne yapmalıyım" maddeleri,
+önümüzdeki 3 ay tahmini, KDV özeti ve cari özeti bulunur.
 
 Ana KPI kartları iki satırlı 4 kolon düzenindedir (masaüstü 4 / tablet 2 / mobil 1):
 
@@ -175,6 +184,9 @@ Ocak-Aralık grouped bar chart ve Toplam satırlı aylık karşılaştırma tabl
 Aylık satış verisi üzerinde birden fazla istatistiksel modeli karşılaştırır ve en düşük hatalı modeli
 otomatik seçer. Muhasebeci feedback kartı, 1/3/6/12 ay horizonları, güven aralıklı ana grafik, model
 karşılaştırma tablosu, risk/senaryo, aksiyon planı ve CFO analizi içerir.
+
+Kart düzeni sabittir (grafik → tablo → risk+senaryo → finansal sağlık+büyüme → karar etkisi+aksiyon →
+CFO); yan yana duran kartlar aynı yükseklikte hizalanır.
 
 **Tahmin motoru** (`src/predictor.js`) aylık satış verisini temel alır:
 

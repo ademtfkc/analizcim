@@ -5,6 +5,59 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-08-06 — CEO revizyon turu
+
+CEO'nun ekran görüntüleriyle bildirdiği 5 sorun + 1 soru ele alındı.
+
+- **KPI ızgarasındaki gri bant** düzeltildi: `.dashboard-stats` üzerindeki eski `gap: 1rem !important`
+  kuralı 1px hairline aralığını eziyordu. Kokpit ızgaralarında `gap: 1px !important` kullanılıyor.
+- **Kenar çubuğu bulanıklığı kaldırıldı**: `.sidebar-overlay` artık görünmez tam ekran tıklama
+  yakalayıcı, `.sidebar.open` opak panel + yumuşak gölge. Ekranı bölen keskin dikey şerit gitti.
+- **Tahminler sabit düzene geçti**: sürükle-bırak ve kullanıcıya özel sıralama tamamen kaldırıldı
+  (10 fonksiyon + 128 ölü CSS kuralı, ~27 KB silindi). Yeni sıra: grafik → tablo → risk+senaryo →
+  finansal sağlık+büyüme → karar etkisi+aksiyon → CFO. Yan yana çiftler otomatik eşit yükseklikte.
+- **"En Çok" sekmesi**: başlık kısaldı, **yıl + ay filtresi** eklendi (firmalar ve ürünler).
+  Backend `getTopCustomers`/`getTopProducts` `month` parametresi aldı; filtre hem ana döngüde hem
+  yıl seçiliyken çalışan ikinci döngüde uygulanıyor. API yanıtına `month` alanı eklendi.
+- **Tek ölçü sistemi**: `.cockpit-page` altında `--control-height: 38px` vb.; 8 sayfada başlıklar,
+  butonlar, seçiciler, filtre satırları ve bölüm boşlukları tek kaynaktan geliyor. Ayarlar da dahil.
+  Dokunmatik cihazda 44px hedefi ayrı medya sorgusuyla korundu.
+- **Cari etiket dürüstlüğü**: "Bakiye" → "Fatura Toplamı", "Net Bakiye" → "Net Fatura Tutarı".
+  Araştırma, bu rakamın ödenmemiş bakiye değil kesilen faturaların toplamı olduğunu kanıtladı
+  (sistemde tahsilat/ödeme kaydı kavramı yok). Yanıltıcı "tahsilat takibi" metni ve veriye göre
+  değişmeyen sabit yeşil/kırmızı renk kaldırıldı.
+- **Hata düzeltmesi**: `getBusinessParties` SQL'inde hiç seçilmediği için API'de hep `0` dönen
+  `lastTransactionAmount` alt sorguyla düzeltildi.
+
+Kalite kapısı iki tur döndü: test-uzmani mobilde `flex-basis` değerlerinin yükseklik olarak
+okunduğunu (butonlar 140px, başlıklar 280px) yakaladı; kod-inceleyici RET verip dokunmatik 44px
+hedefinin ezilmesini, sabit cari rengini ve eksik kalıcı testleri tespit etti. Hepsi düzeltildi.
+
+Doğrulama: lint temiz, 174 birim + 34 entegrasyon (2 yeni) + smoke geçti.
+
+## 2026-08-05 — Kokpit tasarım turu (6 sayfa)
+
+Claude Design projesindeki iki yönden **1b "Kokpit"** CEO tarafından seçildi ve altı sayfaya yayıldı:
+Panel, Yıl Karşılaştırma, Gider, Müşteriler, Tedarikçiler, Tahminler. Her sayfa iki şeride bölündü
+(ana kolon + 320px karar paneli); karar panelleri veriden üretiliyor, satır içi `onclick` kullanmıyor.
+
+Tasarım turu sırasında ortaya çıkan ve düzeltilen sessiz hatalar:
+
+- **Panel kârı KDV dahil hesaplanıyordu**, Kâr/Zarar tablosu KDV hariç — aynı ekranda iki farklı
+  "Net Kâr" görünüyordu (fark = net KDV). Hem istemcide hem `/api/dashboard/*` uçlarında tek tabana
+  çekildi; sunucu artık KDV hariç `grossProfit` serisi döndürüyor.
+- **Gider adları hiç kaydedilmiyordu**: validator `name` isterken ön yüz `label` gönderiyor, hata
+  `catch (_) {}` ile yutuluyordu. Giderler yalnızca localStorage'da kalıyordu.
+- **Her tuş vuruşunda kayıt isteği** gidiyordu; DELETE+INSERT yarışı satırları çoğaltıyordu
+  (450 ms gecikme + promise zinciri).
+- **"Tüm yıl" giderleri panelde görünmüyordu** (`getExpenseItemsTotalByYear` `month='all'` satırlarını
+  aylara dağıtmıyordu).
+- **Özel Aralık, Kâr/Zarar bölümünü hiç etkilemiyordu** (başlık bayat, tablo 12 ay gösteriyordu).
+- **Onay modalında odak tuzağı yoktu**, Escape global kısayola sızıyordu.
+
+Test altyapısı: panel hesapları `public/js/dashboard-metrics.js` modülüne çıkarıldı ve 26 gerçek
+birim testi yazıldı; `npm run test:integration` artık `--test-force-exit` ile kapanıyor.
+
 ## 2026-07-08 — Kullanıcı testi ve hata düzeltmeleri
 
 Gerçek kullanıcı gibi kapsamlı test (izole demo DB üzerinde 58 HTTP + 10 yazma testi) ve iki uzman
