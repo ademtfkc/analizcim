@@ -1613,6 +1613,11 @@ app.get('/api/dashboard/latest', async (req, res) => {
         }
 
         // Build separate salesVat / purchasesVat from history entries
+        // BORÇ (2026-08-07): `storage.getMonthlyTotals` artık aynı `salesVat`/`purchasesVat`
+        // dizilerini kendisi döndürüyor; aşağıdaki blok onları ezip aynı hesabı ikinci kez yapıyor.
+        // Sadeleştirme bilerek ertelendi: bu blok JSON gövdesini, storage ise önce `sales_tax`
+        // kolonunu okuyor — eski kayıtlarda ikisi ayrışabilir, tek tabana çekmek ayrı bir
+        // doğrulama turu ister. Ayrıca buradaki `limit: 1000` sessiz bir tavandır.
         const allHistory = await storage.getHistory({ userId: req.session.userId, limit: 1000, sort: 'date_asc', year: selectedYear || null });
         const salesVatByMonth = {};
         const purchVatByMonth = {};
@@ -1832,6 +1837,8 @@ app.get('/api/dashboard/range', async (req, res) => {
             monthly.vat = monthly.vat.slice(0, minLen);
         }
 
+        // BORÇ (2026-08-07): `/api/dashboard/latest` içindeki KDV türetmesinin ikizi.
+        // Gerekçe ve sadeleştirme koşulu için oradaki nota bakın.
         const allHistory = await storage.getHistory({ limit: 1000, sort: 'date_asc', year: null, userId });
         const salesVatByMonth = {};
         const purchVatByMonth = {};

@@ -100,13 +100,13 @@ describe('storage.getMonthlyTotals KDV ayrıştırması', () => {
 
         // Yeni alanlar: KDV hariç seri artık doğru türetilebilir
         assert.equal(monthly.salesVat[idx], 1800);
-        assert.equal(monthly.purchaseVat[idx], 900);
+        assert.equal(monthly.purchasesVat[idx], 900);
         assert.equal(monthly.sales[idx] - monthly.salesVat[idx], 10000);
-        assert.equal(monthly.purchases[idx] - monthly.purchaseVat[idx], 5000);
+        assert.equal(monthly.purchases[idx] - monthly.purchasesVat[idx], 5000);
 
         // 2026-07-07 kararı: brüt kâr KDV hariç tabandan hesaplanır
         const grossProfit = (monthly.sales[idx] - monthly.salesVat[idx])
-            - (monthly.purchases[idx] - monthly.purchaseVat[idx]);
+            - (monthly.purchases[idx] - monthly.purchasesVat[idx]);
         assert.equal(grossProfit, 5000);
         // Tuzağın kendisi: ham fark KDV dahil olduğu için farklı çıkar
         assert.notEqual(monthly.sales[idx] - monthly.purchases[idx], grossProfit);
@@ -134,7 +134,7 @@ describe('storage.getMonthlyTotals KDV ayrıştırması', () => {
         assert.equal(monthly.purchases[idx], 1180);
         assert.equal(monthly.vat[idx], 540);
         assert.equal(monthly.salesVat[idx], 360);
-        assert.equal(monthly.purchaseVat[idx], 180);
+        assert.equal(monthly.purchasesVat[idx], 180);
     });
 
     test('fillMissingMonths KDV dizilerini de doldurur (boş ay = 0)', () => {
@@ -144,12 +144,12 @@ describe('storage.getMonthlyTotals KDV ayrıştırması', () => {
             purchases: [5900, 1180],
             vat: [2700, 540],
             salesVat: [1800, 360],
-            purchaseVat: [900, 180]
+            purchasesVat: [900, 180]
         });
 
         assert.deepEqual(filled.labels, ['2024-01', '2024-02', '2024-03']);
         assert.deepEqual(filled.salesVat, [1800, 0, 360]);
-        assert.deepEqual(filled.purchaseVat, [900, 0, 180]);
+        assert.deepEqual(filled.purchasesVat, [900, 0, 180]);
         assert.deepEqual(filled.vat, [2700, 0, 540]);
         assert.deepEqual(filled.sales, [11800, 0, 2360]);
     });
@@ -170,7 +170,7 @@ describe('storage.getMonthlyTotals KDV ayrıştırması', () => {
         const idx = monthly.labels.indexOf('2024-01');
         assert.notEqual(idx, -1, 'Ocak 2024 dönemi bulunmalı');
         assert.equal(monthly.salesVat[idx], 1800);
-        assert.equal(monthly.purchaseVat[idx], 0);
+        assert.equal(monthly.purchasesVat[idx], 0);
         assert.equal(monthly.sales[idx] - monthly.salesVat[idx], 10000);
     });
 });

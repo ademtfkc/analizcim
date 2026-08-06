@@ -932,7 +932,7 @@ function resolveAnalysisPeriodKey(row) {
  */
 function accumulateMonthlyRow(monthlyMap, row, key) {
     if (!monthlyMap[key]) {
-        monthlyMap[key] = { sales: 0, purchases: 0, vat: 0, salesVat: 0, purchaseVat: 0 };
+        monthlyMap[key] = { sales: 0, purchases: 0, vat: 0, salesVat: 0, purchasesVat: 0 };
     }
 
     let salesAmt = _fin(row.sales_amount);
@@ -940,17 +940,17 @@ function accumulateMonthlyRow(monthlyMap, row, key) {
 
     // --- KDV: önce DB kolonları, satış ve alış AYRI tutulur ---
     let salesVatAmt = _fin(row.sales_tax);
-    let purchaseVatAmt = _fin(row.purchase_tax);
+    let purchasesVatAmt = _fin(row.purchase_tax);
 
     // --- Yedek: DB vergi kolonları 0 ise JSON gövdesinden oku ---
-    if (salesVatAmt + purchaseVatAmt === 0) {
+    if (salesVatAmt + purchasesVatAmt === 0) {
         let salesObj = null;
         let purchaseObj = null;
         try { salesObj = JSON.parse(row.sales_json || '{}'); } catch (_) { salesObj = {}; }
         try { purchaseObj = JSON.parse(row.purchase_json || '{}'); } catch (_) { purchaseObj = {}; }
 
         salesVatAmt = pickNum(salesObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
-        purchaseVatAmt = pickNum(purchaseObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
+        purchasesVatAmt = pickNum(purchaseObj, ['totalTax', 'total_tax', 'vat', 'Toplam KDV', 'vat_amount', 'total_vat']);
 
         // DB tutar kolonları da 0 ise aynı gövdeden tamamla
         if (salesAmt === 0) {
@@ -963,9 +963,9 @@ function accumulateMonthlyRow(monthlyMap, row, key) {
 
     monthlyMap[key].sales += salesAmt;
     monthlyMap[key].purchases += purchaseAmt;
-    monthlyMap[key].vat += salesVatAmt + purchaseVatAmt;
+    monthlyMap[key].vat += salesVatAmt + purchasesVatAmt;
     monthlyMap[key].salesVat += salesVatAmt;
-    monthlyMap[key].purchaseVat += purchaseVatAmt;
+    monthlyMap[key].purchasesVat += purchasesVatAmt;
 }
 
 /** Aylık toplama haritasını dizi biçimine çevirir. */
@@ -976,7 +976,7 @@ function serializeMonthlyMap(monthlyMap, sortedKeys) {
         purchases: sortedKeys.map(k => monthlyMap[k].purchases),
         vat: sortedKeys.map(k => monthlyMap[k].vat),
         salesVat: sortedKeys.map(k => monthlyMap[k].salesVat),
-        purchaseVat: sortedKeys.map(k => monthlyMap[k].purchaseVat)
+        purchasesVat: sortedKeys.map(k => monthlyMap[k].purchasesVat)
     };
 }
 
@@ -986,7 +986,7 @@ function serializeMonthlyMap(monthlyMap, sortedKeys) {
  *   - DB scalar columns (sales_amount, purchase_amount, sales_tax, purchase_tax)
  *   - JSON blobs (sales_json, purchase_json) as fallback for vat / net / gross
  *
- * Returns { labels, sales, purchases, vat, salesVat, purchaseVat } — all number[] except labels.
+ * Returns { labels, sales, purchases, vat, salesVat, purchasesVat } — all number[] except labels.
  * Optional year filter (number) and userId filter.
  *
  * DİKKAT — KDV tuzağı: `sales` ve `purchases` KDV DAHİL tutarlardır, `vat` ise satış+alış
@@ -994,8 +994,8 @@ function serializeMonthlyMap(monthlyMap, sortedKeys) {
  * `sales - vat` de KDV hariç satış değildir. 2026-07-07 kararı gereği brüt kâr KDV hariç
  * hesaplanır; doğru türetme:
  *     KDV hariç satış = sales - salesVat
- *     KDV hariç alış  = purchases - purchaseVat
- *     brüt kâr        = (sales - salesVat) - (purchases - purchaseVat)
+ *     KDV hariç alış  = purchases - purchasesVat
+ *     brüt kâr        = (sales - salesVat) - (purchases - purchasesVat)
  */
 function getMonthlyTotals(year, userId = 1) {
     return new Promise((resolve, reject) => {
@@ -1051,13 +1051,13 @@ function _fin(v) {
 
 /**
  * Fills missing months between first and last label so charts get a continuous time axis.
- * Returns a new object { labels, sales, purchases, vat, salesVat, purchaseVat } with 0 for
+ * Returns a new object { labels, sales, purchases, vat, salesVat, purchasesVat } with 0 for
  * months that had no data. KDV dizileri de doldurulur; aksi halde KDV hariç seri türetmek
  * isteyen tüketici boş dizi görür (bkz. getMonthlyTotals'daki KDV tuzağı notu).
  */
 function fillMissingMonths(result) {
     if (!result || !result.labels || result.labels.length === 0) return result;
-    const { labels, sales = [], purchases = [], vat = [], salesVat = [], purchaseVat = [] } = result;
+    const { labels, sales = [], purchases = [], vat = [], salesVat = [], purchasesVat = [] } = result;
     const map = {};
     labels.forEach((key, i) => {
         map[key] = {
@@ -1065,14 +1065,14 @@ function fillMissingMonths(result) {
             purchases: Number(purchases[i]) || 0,
             vat: Number(vat[i]) || 0,
             salesVat: Number(salesVat[i]) || 0,
-            purchaseVat: Number(purchaseVat[i]) || 0
+            purchasesVat: Number(purchasesVat[i]) || 0
         };
     });
     const first = labels[0];
     const last = labels[labels.length - 1];
     const [y1, m1] = first.split('-').map(Number);
     const [y2, m2] = last.split('-').map(Number);
-    const filled = { labels: [], sales: [], purchases: [], vat: [], salesVat: [], purchaseVat: [] };
+    const filled = { labels: [], sales: [], purchases: [], vat: [], salesVat: [], purchasesVat: [] };
     let y = y1;
     let m = m1;
     while (y < y2 || (y === y2 && m <= m2)) {
@@ -1083,7 +1083,7 @@ function fillMissingMonths(result) {
         filled.purchases.push(d ? d.purchases : 0);
         filled.vat.push(d ? d.vat : 0);
         filled.salesVat.push(d ? d.salesVat : 0);
-        filled.purchaseVat.push(d ? d.purchaseVat : 0);
+        filled.purchasesVat.push(d ? d.purchasesVat : 0);
         m += 1;
         if (m > 12) { m = 1; y += 1; }
     }
