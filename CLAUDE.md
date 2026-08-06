@@ -559,6 +559,41 @@ cari rengini ve eksik kalıcı testleri tespit etti. Hepsi düzeltildi.
 **Doğrulanan son durum:** lint temiz, **174 birim + 34 entegrasyon + 1 smoke** geçti. 8 sekmede tüm
 kontroller 38px, sayfa düzeyinde yatay kaydırma 0, 390px'te buton çakışması yok.
 
+### 2026-08-07 güncellemesi (sağlamlaştırma turu)
+
+CEO odak kararı: görünür yeni özellik yok, sessiz hataları kapat. **Yürürlükteki 5 değişiklik**
+(commit `d4542c2` + `f4730b7`, detay: `CHANGELOG.md`):
+
+1. **Silinen analizin cari hareketleri artık süzülüyor.** `storage.livePartyTransactionCondition(alias)`
+   yardımcısı `party_transactions`'a dokunan **6 sorgunun tamamında** kullanılır. Yeni bir cari sorgusu
+   yazan herkes bu yardımcıyı çağırmalıdır. **`NOT EXISTS` deseni bilinçlidir:** `INNER JOIN`'e
+   çevrilirse `source_history_id` alanı `NULL` olan eski satırlar sessizce kaybolur (entegrasyon
+   testi bu inceliği kilitler).
+2. **Panelin tepe müşteri kutusu fatura hacminden beslenir**, manuel `customers.balance`'tan değil.
+   Etiket: **"En Yüksek Fatura Hacimli Müşteri"**. `renderDashboardTopCustomer` bilerek renk sınıfı
+   vermez (müşteri hacmi tanım gereği hep pozitiftir). `dashTotalCustomers` sayacının **tek** yazıcısı
+   vardır (`loadBusinessPartyDashboardSummary`); ikinci bir yazıcı eklenirse yarış durumu geri gelir.
+   Manuel müşteri CRUD akışı ve `customers.balance` alanı korunur.
+3. **`getMonthlyTotals` / `getMonthlyTotalsInRange` artık `salesVat` ve `purchasesVat` de döndürür.**
+   Ekleme yapıldı, mevcut `sales` / `purchases` / `vat` alanları birebir aynı. **Tuzak aynen duruyor:**
+   `sales` ve `purchases` KDV **dahil**, `vat` ise satış+alış **birleşik**. Doğru türetme:
+   `brüt kâr = (sales - salesVat) - (purchases - purchasesVat)`. `sales - purchases` brüt kâr DEĞİLDİR.
+4. **Ölü tercih anahtarları kaldırıldı:** `predictions_layout_id`, `predictions_card_order` artık
+   allowlist'te, varsayılan okuma listesinde ve migrate ucunda yok. DB satırları bilerek silinmedi.
+5. **Bağımlılık:** `npm audit fix` (`--force` YOK) ile **20 açık → 8**. `package.json` değişmedi.
+   Kalan 8'in **1'i kritik** (`tar` ← `node-gyp` ← `sqlite3` derleme zinciri) — bu tur eklemedi,
+   önceden de vardı; yalnız `npm install` sırasında derleme yaparken çalışır, çalışan sunucu
+   tetiklemez. Kapatmak kırıcı `sqlite3@6` ister.
+
+**Bilinçli borç (kodda "BORÇ" notu var):** `src/server.js`'in iki ucu (`/api/dashboard/latest` ve özel
+aralık) `getHistory({limit: 1000})` ile KDV'yi yeniden türetip storage'dan gelen dizileri **ezer**.
+Sadeleştirilmedi çünkü sunucu bloğu önce JSON `totalTax`'ı, storage önce `sales_tax` kolonunu okur;
+eski kayıtlarda ikisi ayrışabilir. Oradaki `limit: 1000` sessiz bir tavandır.
+
+**Doğrulanan son durum:** lint temiz, **179 birim + 36 entegrasyon + 1 smoke** geçti. İki denetim
+ajanı ONAY: test-uzmani düzeltmeleri geçici bozup testlerin gerçekten kırıldığını kanıtladı,
+kod-inceleyici SQL enjeksiyonu / yetki / lockfile farkını denetledi.
+
 Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hiçbiri acil değil):
 
 - Bağımlılık: `xlsx` (npm'de yama yok) ve `sqlite3@6` (kırıcı) — yalnızca çok kullanıcılı/ağ
@@ -566,17 +601,14 @@ Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hi
 - MemoryStore yerine kalıcı session store — yalnızca sunucuya kurulursa gerekir.
 - Büyük frontend refactor: inline `onclick` → `addEventListener` (CSP'den `'unsafe-inline'`
   kaldırılabilsin). Yeni yazılan karar panellerinde satır içi `onclick` zaten yok.
-- `src/storage.js getMonthlyTotals` hâlâ KDV dahil tutar döndürüyor; panel ucu artık KDV hariç
-  `grossProfit` serisini kendisi üretiyor, ama bu fonksiyonu kullanan yeni bir tüketici eklenirse
-  aynı hata tekrarlayabilir.
+- `src/server.js`'in iki ucundaki KDV yeniden-türetmesini storage'ın dizilerine indirgemek
+  (yukarıdaki "bilinçli borç"), `limit: 1000` tavanı dahil.
 - Büyük veri setlerinde cari liste/detay performansını ve ARIMA sonuçlarını gözlemlemek.
 - **CEO kararı bekleyen:** gerçek bakiye takibi (tahsilat/ödeme kaydı) — yukarıdaki "cari bakiye
   gerçeği" bölümüne bakın. Ayrıca eski raporların cari listesine katılması için ilgili Excel'lerin
   yeniden yüklenmesi gerekiyor; hangi dönemler isteniyorsa CEO söyleyecek.
-- Silinen (soft-delete) analizin cari hareketleri listede kalmaya devam ediyor: `getBusinessParties`
-  `deleted_at` filtresi uygulamıyor. Küçük, bağımsız hata; ayrı turda.
-- Öksüz kullanıcı tercihi: `predictions_layout_id` / `predictions_card_order_v4` artık hiçbir ön yüz
-  kodu tarafından okunmuyor ama `routes/preferences.js` allowlist'inde duruyor. Zararsız, temizlenebilir.
+- _(kapandı 2026-08-07)_ ~~Silinen analizin cari hareketleri listede kalıyor~~ · ~~öksüz tercih
+  anahtarları~~ — ikisi de yukarıdaki sağlamlaştırma turunda düzeltildi.
 
 ## En Çok Sayfası Standartları
 

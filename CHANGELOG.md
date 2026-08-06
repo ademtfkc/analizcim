@@ -5,6 +5,68 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-08-07 — Sağlamlaştırma turu
+
+CEO odak kararı: görünür yeni özellik yok. Belgede yazılı ama hiç kapatılmamış sessiz hatalar
+kapatıldı, ölü ayarlar temizlendi, dış kütüphane açıkları güvenli sınırlar içinde azaltıldı.
+
+**Düzeltilen sessiz hatalar**
+
+- **Silinen analizin cari hareketleri listede kalıyordu.** Bir analiz silindiğinde (soft-delete)
+  o analizden gelen fatura satırları cari listesinde, cari detayında ve panel widget'larında
+  durmaya devam ediyordu; rakamlar şişik kalıyordu. `storage.livePartyTransactionCondition()`
+  yardımcısı yazıldı ve `party_transactions`'a dokunan 6 sorgunun tamamına uygulandı — böylece
+  ileride yeni bir sorgu eklenirse süzgeç unutulamaz. `INNER JOIN` yerine `NOT EXISTS` seçildi:
+  `source_history_id` alanı `NULL` olan eski satırlar (ve kaydı bulunmayan id'ler) hayatta kalır.
+- **Panelin "En Yüksek Bakiyeli Müşteri" kutusu Excel carileri için hep boştu.** Kutu manuel
+  girilen `customers.balance` alanından besleniyordu; Excel'den otomatik oluşan carilerde bu alan
+  hep `0`. Artık cari sayfasıyla aynı dili konuşuyor: fatura hacmi, etiket **"En Yüksek Fatura
+  Hacimli Müşteri"**. Manuel müşteri CRUD akışı ve `customers.balance` alanı korundu.
+- **`dashTotalCustomers` sayacının iki yazıcısı vardı** (manuel müşteri özeti + cari özeti);
+  hangisi sonra dönerse o kazanıyordu. Tek yazıcıya indirildi.
+- **Cari detayındaki sabit yeşil/kırmızı renk kaldırıldı.** `balance = satış hacmi − alış hacmi`
+  ve bir cari ya hep satış ya hep alış hareketi taşıdığı için işaret carinin türüne göre sabitti;
+  renk bilgi taşımıyor, "borç/alacak" yanılsaması üretiyordu. 2026-08-06 etiket dürüstlüğü
+  kararının kalan ayağı.
+- **`getMonthlyTotals` KDV tuzağı azaltıldı.** Fonksiyon `sales`/`purchases` dizilerini KDV
+  **dahil**, KDV'yi ise satış+alış birleşik tek `vat` dizisinde döndürüyor; yeni bir tüketici
+  `sales - purchases` yazsa 2026-07-07'de kapatılan finansal hata geri gelirdi. Dönüşe `salesVat`
+  ve `purchasesVat` dizileri **eklendi** (mevcut alanlar birebir aynı kaldı) ve fonksiyon başına
+  tuzağı anlatan bir uyarı yazıldı. `getMonthlyTotalsInRange` ile paylaşılan ~60 satır kopya kod
+  tek yere indi.
+
+**Temizlik**
+
+- Tahminler sayfası sabit düzene geçtiğinde (2026-08-06) anlamsızlaşan `predictions_layout_id` ve
+  `predictions_card_order` tercih anahtarları allowlist'ten, varsayılan okuma listesinden ve
+  taşıma ucundan çıkarıldı. Veritabanındaki eski satırlar **bilerek silinmedi**.
+- `public/styles.css`'ten üç ölü cari renk kuralı silindi.
+
+**Bağımlılıklar**
+
+- `npm audit fix` (**`--force` kullanılmadı**): **20 açık → 8**. `package.json` değişmedi; yalnız
+  `package-lock.json` minor/patch yükseltmeler aldı (express 4.22.2, qs 6.15.3, dompurify 3.4.13,
+  express-rate-limit 8.6.2, ajv, body-parser, minimatch, js-yaml, flatted, ip-address vb.).
+- Kalan 8 açığın 1'i kritik: `tar` ← `node-gyp` ← `sqlite3` derleme zinciri. Bu açık **bu turda
+  eklenmedi**, önceden de vardı; yalnız `npm install` sırasında native binding derlenirken çalışır,
+  çalışan sunucu tetiklemez. Kapatmak `sqlite3@6` (kırıcı büyük sürüm) ister — ayrı tur.
+- `xlsx` için npm'de hâlâ yama yok. Mitigasyon aynı: lokal, tek kullanıcı, 10MB yükleme limiti.
+
+**Bilinçli olarak ertelenen**
+
+- `src/server.js`'in iki ucu (`/api/dashboard/latest` ve özel aralık) KDV'yi `getHistory` üzerinden
+  yeniden türetip storage'dan geleni eziyor. Sadeleştirme ertelendi: sunucu bloğu önce JSON
+  `totalTax`'ı, storage ise önce `sales_tax` kolonunu okuyor; eski kayıtlarda ikisi ayrışabilir.
+  Koda "BORÇ" notu düşüldü. Oradaki `limit: 1000` de sessiz bir tavan.
+
+**Doğrulama:** `npm run lint` temiz; **179 birim + 36 entegrasyon + 1 smoke** geçti (önceki tur:
+174 + 34 + 1). İzole QA (geçici veritabanı, loopback, gerçek veriye dokunulmadan) panel, tahmin ve
+cari akışlarını doğruladı. Kalite kapısında test-uzmani düzeltmeleri geçici olarak bozup testlerin
+gerçekten kırıldığını kanıtladı; kod-inceleyici SQL enjeksiyonu, yetki kontrolü ve lockfile farkını
+denetleyip **ONAY** verdi.
+
+---
+
 ## 2026-08-06 — CEO revizyon turu
 
 CEO'nun ekran görüntüleriyle bildirdiği 5 sorun + 1 soru ele alındı.

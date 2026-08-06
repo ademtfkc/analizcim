@@ -154,6 +154,7 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | Kokpit dilinin dört sayfaya yayılması (Karşılaştırma, Gider, Cari, Tahminler) | ana asistan | ✅ TAMAM (2026-08-06), 4 commit push'landı |
 | Test altyapısı + finansal kök + küçük hata avı | ana asistan | ✅ TAMAM (2026-08-06) |
 | CEO revizyon turu (renk bandı, kenar çubuğu, sabit tahmin düzeni, En Çok ay filtresi, tek ölçü, cari etiket) | ana asistan + 2 denetim ajanı | ✅ TAMAM (2026-08-06), commit `7732e4f`, CI yeşil |
+| Sağlamlaştırma turu (3 sessiz hata + ölü ayar + güvenli bağımlılık yamaları) | ana asistan + test-uzmani + kod-inceleyici | ✅ TAMAM (2026-08-07), commit `d4542c2` + `f4730b7` |
 | _Başka aktif iş yok_ — kalanlar "Sonraki Adımlar" backlog'unda | — | Beklemede |
 
 ## 10. Bilinen Sorunlar 🐞
@@ -166,7 +167,11 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | Oturum sertleştirme: `sameSite`, girişte `regenerate()`, login limiti 200→10 | Orta | ✅ DÜZELTİLDİ (Grup 3). auth 7/7, rate-limiter testi güncellendi. (Kalan: MemoryStore teknik borç) |
 | Hata mesajı sızıntısı (merkezi middleware + dashboard-range) | Orta | ✅ DÜZELTİLDİ (detay log'a, kullanıcıya genel mesaj). Kalan ~11 `err.message` noktası düşük öncelik |
 | Excel/CSV dışa aktarımında formül enjeksiyonu (`=`,`+`,`-`,`@` nötrlenmiyor) | Orta→Düşük | ✅ DÜZELTİLDİ (`validators.neutralizeSpreadsheetCell` + `buildHistoryExcelBuffer`, 3 test) |
-| DEPS: `npm audit` = **20 açık (0 kritik / 10 yüksek / 8 orta / 2 düşük)**. `xlsx` npm'de fix YOK; gerisi `--force` + kırıcı `sqlite3@6` istiyor | Yüksek | KARAR: canlıyı kırmamak için ŞİMDİLİK bağımlılık değiştirilmedi. jsPDF kritik'i kapatıldı (4.2.1). Gerçek risk düşük (lokal, tek kullanıcı). Mitigasyon: 10MB upload limiti |
+| DEPS: `npm audit` = **8 açık (1 kritik / 5 yüksek / 2 düşük)** — 2026-08-07'de 20'den indi | Yüksek | KISMEN KAPATILDI (2026-08-07, `f4730b7`). `npm audit fix` (`--force` YOK) 12 açığı kapattı; `package.json` değişmedi, yalnız lockfile minor/patch aldı. **Kalan 1 kritik yeni değil:** `tar` ← `node-gyp` ← `sqlite3` derleme zinciri; yalnız `npm install` sırasında native binding derlerken çalışır, çalışan sunucu tetiklemez. `sqlite3@6` kırıcı olduğu için ertelendi. `xlsx` npm'de hâlâ yamasız (lokal tek kullanıcı + 10MB limit mitigasyon) |
+| **Silinen (soft-delete) analizin cari hareketleri listede/detayda/panel özetinde kalıyordu** → rakamlar şişik | Yüksek | ✅ DÜZELTİLDİ (2026-08-07). `storage.livePartyTransactionCondition()` + 6 sorgu. `NOT EXISTS` kullanıldı ki `source_history_id IS NULL` eski satırlar hayatta kalsın; entegrasyon testi bu inceliği kilitliyor |
+| Panelde "En Yüksek Bakiyeli Müşteri" Excel carilerinde hep boştu (manuel `customers.balance`'tan besleniyordu) | Orta | ✅ DÜZELTİLDİ (2026-08-07). Artık fatura hacminden besleniyor, etiket "En Yüksek Fatura Hacimli Müşteri". Ayrıca `dashTotalCustomers` sayacının iki yazıcısı (yarış durumu) teke indi. Manuel müşteri CRUD ve `customers.balance` alanı korundu |
+| `getMonthlyTotals` KDV tuzağı: `sales`/`purchases` KDV DAHİL, `vat` ise satış+alış birleşik → yeni bir tüketici `sales - purchases` yaparsa finansal hata döner | Orta | ✅ AZALTILDI (2026-08-07). Eklemeli `salesVat`/`purchasesVat` dizileri + fonksiyon başına uyarı JSDoc'u; mevcut alanlar birebir aynı. `getMonthlyTotalsInRange` ile ~60 satır kopya kod paylaşılan yardımcılara indi |
+| Öksüz tercih anahtarları (`predictions_layout_id`, `predictions_card_order`) allowlist'te duruyordu | Düşük | ✅ DÜZELTİLDİ (2026-08-07). Allowlist'ten, varsayılan okuma listesinden ve migrate ucundan çıkarıldı. DB satırları bilerek silinmedi (veri silme CEO onay kapısı) |
 | **FİNANSAL: Brüt Kâr KDV DAHİL hesaplanıyordu** → ana kâr KPI'ı KDV kadar şişikti | **KRİTİK** | ✅ DÜZELTİLDİ (2026-07-07). KDV hariç: `calculateSummary`, `getMonthlyProfitLoss` (satır 2555), YoY (`server.js:1486`), `computeAndSaveSummary`. Geçmiş 20 kayıt migration 010 ile yeniden hesaplandı (6.11M→5.11M). Yedek: `data/backups/pre_vat_fix_*.db`. 96/96 test geçti |
 | FİNANSAL: `parseNumber` parantezli negatif `(1.234,56)` → 0, satır sessizce kayboluyordu | Yüksek | ✅ DÜZELTİLDİ (parantez+sondaki eksi negatif olarak parse ediliyor, 9/9 kanıt) |
 | FİNANSAL: `predictor.js` yetersiz-veri dalında korunması gereken alanlar `undefined` | Yüksek | ✅ DÜZELTİLDİ (confidenceBands/purchase/profit/netProfit/businessStats eklendi) |
@@ -185,8 +190,17 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 
 ### 🔜 SONRAKİ OTURUM — BURADAN BAŞLA
 
-**Önce bunu bil:** 2026-08-05/06 oturumunda Kokpit tasarım turu 6 sayfada tamamlandı, ardından CEO
-geri bildirimleriyle bir revizyon turu yapıldı. **Hepsi commit + push edildi, CI yeşil.** Aktif iş yok.
+**Önce bunu bil:** 2026-08-07'de bir **sağlamlaştırma turu** yapıldı (CEO odak kararı: görünür yeni
+özellik yok, sessiz hataları kapat). Kokpit tasarım turu ve CEO revizyon turu bundan önce bitmişti.
+**Hepsi commit edildi.** Aktif iş yok.
+
+| Commit | İş |
+|---|---|
+| `d4542c2` | Üç sessiz hata (silinen analizin carileri, panel müşteri widget'ı, KDV tuzağı) + ölü tercih anahtarları |
+| `f4730b7` | Güvenli bağımlılık yamaları (20 açık → 8) + KDV alan adı hizalaması |
+
+Doğrulama: lint temiz, **179 birim + 36 entegrasyon + 1 smoke** geçiyor. İki denetim ajanı da ONAY
+verdi; test-uzmani düzeltmeleri geçici olarak bozup testlerin gerçekten kırıldığını kanıtladı.
 
 | Commit | İş |
 |---|---|
@@ -200,29 +214,23 @@ geri bildirimleriyle bir revizyon turu yapıldı. **Hepsi commit + push edildi, 
 | `f56c7c6` | Doküman turu |
 | `7732e4f` | **CEO revizyon turu** (renk bandı, kenar çubuğu, sabit tahmin düzeni, En Çok ay filtresi, tek ölçü sistemi, cari etiket dürüstlüğü) |
 
-Doğrulama: `npm run lint` temiz, **174 birim + 34 entegrasyon + 1 smoke** geçiyor.
-
-Detay okuma sırası: CLAUDE.md → "2026-08-06 güncellemesi (CEO revizyon turu + cari bakiye gerçeği)"
+Detay okuma sırası: CLAUDE.md → "2026-08-07 güncellemesi (sağlamlaştırma turu)",
+"2026-08-06 güncellemesi (CEO revizyon turu + cari bakiye gerçeği)"
 ve "2026-08-05/06 güncellemesi (Kokpit dili tüm sayfalara yayıldı + 5 sessiz hata)".
 
 **CEO'ya sorulmuş, cevap bekleyen iki soru (Bölüm 8'de de var):**
 1. Gerçek bakiye takibi (tahsilat/ödeme kaydı) istenir mi? — kapsam genişlemesi.
 2. Eski raporların cari listesine katılması için hangi dönemlerin Excel'i yeniden yüklenecek?
 
-**Önceki turdan gelen üç madde bu oturumda KAPATILDI:** Özel Aralık başlığı + tablo süzmesi
-(`f50a989`), test kapsama boşluğu (`dashboard-metrics.js` + 26 birim testi, `508ddac`) ve
-finansal kökün sunucuda kapatılması (`508ddac`).
+**2026-08-07 turunda KAPATILAN dört madde:** silinen analizin cari hareketleri, panel müşteri
+widget'ı, `getMonthlyTotals` KDV tuzağı ve öksüz tercih anahtarları (detay: Bölüm 10).
 
 **Kalan teknik notlar (hiçbiri acil değil, hedef lokal/tek kullanıcı):**
-- `src/storage.js getMonthlyTotals` hâlâ KDV dahil tutar döndürüyor. Panel uçları artık KDV hariç
-  `grossProfit` serisini kendileri üretiyor, ama bu fonksiyonu kullanan YENİ bir tüketici eklenirse
-  aynı hata tekrarlayabilir.
-- Silinen (soft-delete) analizin cari hareketleri listede kalıyor: `getBusinessParties` `deleted_at`
-  filtresi uygulamıyor.
-- Öksüz kullanıcı tercihi: `predictions_layout_id` / `predictions_card_order_v4` artık okunmuyor ama
-  `routes/preferences.js` allowlist'inde duruyor.
-- Dashboard "En Yüksek Bakiyeli Müşteri" widget'ı manuel `customers.balance` alanından besleniyor;
-  Excel'den otomatik oluşan cariler için bu alan hep 0. İki farklı "bakiye" kavramı yan yana duruyor.
+- **KDV türetmesi iki yerde:** `src/server.js`'in iki ucu (`/api/dashboard/latest` ve özel aralık)
+  `getHistory({limit: 1000})` ile KDV'yi yeniden hesaplayıp storage'dan gelen `salesVat`/`purchasesVat`
+  dizilerini eziyor. Sadeleştirme bilerek ertelendi: sunucu bloğu önce JSON `totalTax`'ı, storage ise
+  önce `sales_tax` kolonunu okuyor — eski kayıtlarda ikisi ayrışabilir, tek tabana çekmek ayrı bir
+  doğrulama turu ister. Ayrıca oradaki `limit: 1000` sessiz bir tavandır. Kodda "BORÇ" notu var.
 
 Kokpit turunun bilinçli olarak kapsam dışı bıraktıkları (CEO isterse sıradaki iş olabilir):
 - Tasarımdaki **1b sol ikon şeridi** uygulanmadı; mevcut app shell kenar çubuğu korundu (kapsam kararı).
@@ -237,14 +245,13 @@ Kokpit turunun bilinçli olarak kapsam dışı bıraktıkları (CEO isterse sır
 
 Kokpit turu öncesi backlog (hâlâ geçerli):
 
-- **ÖNERİLEN — Tier 3 kapanışı: onay modalı focus-trap + Escape çakışması** (küçük, düşük risk).
-  `#confirmModal` açıkken klavye odağını modal içinde tut (ileri Tab arka plana kaçmasın) ve
-  `setupKeyboardShortcuts` global Escape'ini `confirmModal` açıkken devre dışı bırak. Az önce yapılan işin
-  doğal devamı, aynı bölge, hızlı kazanım. (Detay: aşağıda "Diğer ertelenenler".)
+- _(kapandı 2026-08-06, `f50a989`)_ ~~Onay modalı focus-trap + Escape çakışması~~ — odak tuzağı ve
+  capture aşamasında `stopPropagation` eklendi.
 - **Alternatif 1 — MemoryStore → kalıcı session store** (orta, teknik borç): sunucu yeniden başlayınca
   oturumlar düşmesin. Tek kullanıcı/lokal için kritik değil ama "gerçek app" olgunluğu.
 - **Alternatif 2 — Bağımlılık turu (`xlsx` / `sqlite3@6`)** (YÜKSEK RİSK, kırıcı): ayrı, tam test edilen tur
-  gerektirir. Şimdilik risk düşük (lokal, tek kullanıcı, 10MB limit). Acele YOK.
+  gerektirir. **Güvenli olan kısım 2026-08-07'de zaten yapıldı** (20 açık → 8); kalan 8 için `--force` ve
+  kırıcı büyük sürüm şart. Şimdilik risk düşük (lokal, tek kullanıcı, 10MB limit). Acele YOK.
 - **Bekleyen küçük karar:** `data/pre_restore_1771112753452.db` (~270KB eski yedek) silinsin mi? (Bölüm 8.)
 
 **Not:** Büyük frontend refactor (inline `onclick` → `addEventListener`) CSP'den `'unsafe-inline'`
@@ -297,13 +304,11 @@ sürükle-bırak dinleyici sızıntısı (`initPredictionsDragDrop` idempotent),
   teknik borç; görsel regresyon testi olmadan riskli. İleride ayrı turda.
 
 ### Diğer ertelenenler (backlog)
-- **Onay modalı focus-trap yok:** ileri Tab odağı modal dışına (arka plan butonuna) kaçırıyor. Enter yine de
-  silme tetiklemiyor (zararsız), ama küçük erişilebilirlik iyileştirmesi — `#confirmModal` açıkken focus-trap.
-- **Escape çakışması (düşük):** `setupKeyboardShortcuts` global Escape `confirmModal`'dan habersiz; confirm modalı
-  başka modal üstünde açılırsa alttaki de kapanabilir. Gating bozulmuyor. Mevcut çağrı noktaları satır butonlarından
-  tetikleniyor (modal içinden değil), pratik risk düşük.
-- Bağımlılık: `xlsx` (npm fix yok), `sqlite3@6` (kırıcı) — çok kullanıcılı senaryoda ayrı tur.
-- MemoryStore → kalıcı session store · tahmin "layout" ölü kodu (`initPredictionsLayout`, zararsız no-op) · CONTRIBUTING/issue şablonları.
+- _(kapandı 2026-08-06)_ ~~Onay modalı focus-trap yok · Escape çakışması~~ — `f50a989` ile kapatıldı.
+- _(kapandı 2026-08-06)_ ~~Tahmin "layout" ölü kodu (`initPredictionsLayout`)~~ — sabit düzen turunda silindi.
+- Bağımlılık: `xlsx` (npm fix yok), `sqlite3@6` (kırıcı, altındaki `tar` kritiğini de taşıyor) — çok
+  kullanıcılı senaryoda ayrı tur.
+- MemoryStore → kalıcı session store · CONTRIBUTING/issue şablonları.
 
 ### Güvenli test/QA yöntemi (yeni oturumda tekrar kurulabilir)
 Gerçek `data/analiz.db`'ye DOKUNMADAN test için: sunucuyu izole geçici DB ile başlat —
@@ -324,6 +329,7 @@ tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-08-07 | ana asistan + test-uzmani + kod-inceleyici | **Sağlamlaştırma turu (`d4542c2` + `f4730b7`).** CEO odak kararı: görünür yeni özellik yok, sessiz hataları kapat. (1) Silinen analizin cari hareketleri listede/detayda/panel özetinde kalıyordu → `livePartyTransactionCondition()` yardımcısı + `party_transactions`'a dokunan 6 sorgu. `NOT EXISTS` seçildi ki `source_history_id IS NULL` eski satırlar hayatta kalsın. (2) Panelin "En Yüksek Bakiyeli Müşteri" kutusu manuel `customers.balance`'tan besleniyordu, Excel carilerinde hep 0'dı → fatura hacmine bağlandı, etiket "En Yüksek Fatura Hacimli Müşteri"; ayrıca `dashTotalCustomers` sayacının iki yazıcısı (yarış durumu) teke indi ve cari detayındaki bilgi taşımayan sabit renk kaldırıldı. (3) `getMonthlyTotals`/`getMonthlyTotalsInRange` eklemeli `salesVat`/`purchasesVat` döndürüyor + uyarı JSDoc'u; ~60 satır kopya kod paylaşılan yardımcılara indi. (4) Ölü tercih anahtarları (`predictions_layout_id`, `predictions_card_order`) allowlist'ten çıkarıldı, DB satırları bilerek silinmedi. (5) `npm audit fix` (`--force` YOK): 20 açık → 8; `package.json` değişmedi. **Kalite kapısı:** test-uzmani düzeltmeleri geçici olarak bozup testlerin gerçekten kırıldığını kanıtladı, kod-inceleyici ONAY verdi (SQL enjeksiyon/IDOR temiz, lockfile'da sürüm düşüşü yok). 179 birim + 36 entegrasyon + 1 smoke geçti | `src/storage.js`, `src/server.js` (yalnız borç notu), `src/routes/preferences.js`, `public/app.js`, `public/index.html`, `public/styles.css`, 4 test dosyası (1 yeni), `package-lock.json` |
 | 2026-08-06 | ana asistan + test-uzmani + kod-inceleyici | **CEO revizyon turu (`7732e4f`):** 6 iş — (1) KPI ızgarasındaki gri bant (eski `gap:1rem !important` hairline'ı eziyordu) → `gap:1px !important`; (2) kenar çubuğu bulanıklığı kaldırıldı, panel opak; (3) Tahminler'de sürükle-bırak TAMAMEN kaldırıldı, tek sabit düzen + 128 ölü CSS kuralı (~27 KB) silindi; (4) "En Çok" başlığı kısaldı + yıl/ay filtresi (backend `month` parametresi, filtre iki döngüde de); (5) tek ölçü sistemi (`--control-height:38px` vb.) 8 sayfaya uygulandı, Ayarlar da `.cockpit-page` oldu; (6) cari "Bakiye" → "Fatura Toplamı" (araştırma: rakam ödenmemiş bakiye değil, fatura toplamı) + hep 0 dönen `lastTransactionAmount` düzeltildi. **Kalite kapısı 2 tur döndü:** test-uzmani mobilde flex-basis'in yükseklik olarak okunduğunu (butonlar 140px, başlıklar 280px) yakaladı; kod-inceleyici RET verdi (dokunmatik 44px ezilmesi, sabit cari rengi, eksik kalıcı test) — hepsi düzeltildi. 174 birim + 34 entegrasyon + smoke geçti, CI yeşil | `public/index.html`, `public/app.js`, `public/styles.css`, `src/server.js`, `src/storage.js`, 2 test dosyası |
 | 2026-08-06 | araştırma ajanı | **Cari bakiye araştırması:** "Bakiye" kolonunun gerçekte ödenmemiş bakiye DEĞİL, kesilen faturaların toplamı olduğu kanıtlandı (sistemde tahsilat/ödeme kavramı yok, şema `invoice_type IN ('sales','purchase')` ile kilitli). Eski analizlerin cari ekranına hiç girmediği ve satır bazlı veri saklanmadığı için backfill'in imkânsız olduğu doğrulandı. Ayrıca `lastTransactionAmount`'ın SQL'de hiç seçilmediği (hep 0 döndüğü) ve silinen analizlerin cari hareketlerinin listede kaldığı tespit edildi | (okuma + izole test DB) |
 | 2026-08-06 | ana asistan | **Kokpit dili dört sayfaya yayıldı (adım 3):** ortak `.cockpit-page/.cockpit-body/.cockpit-main/.cockpit-rail` temeli kuruldu; Yıl Karşılaştırma (`afccd3f`), Gider (`22be1cf`), Cari — Müşteriler/Tedarikçiler/detay (`95b73a6`) ve Tahminler (`77af643`) iki şeritli düzene geçti. Her sayfaya veriden üretilen karar paneli eklendi (satır içi onclick yok). Tahminler'in sürükle-bırak kart düzeni, cari mobil kart görünümü ve tüm element ID'leri korundu. Doğrulama: `npm run verify` yeşil (171 birim + 33 entegrasyon + smoke), 6 sekme 1440/390 + koyu/açık tema, 0 console hatası | `public/index.html`, `public/app.js`, `public/styles.css`, `tests/unit/ui-structure.test.js` |
