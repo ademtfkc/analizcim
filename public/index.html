@@ -1110,7 +1110,7 @@
                                     <th>İşlem Hacmi</th>
                                     <th>İşlem</th>
                                     <th>Son İşlem</th>
-                                    <th>Fatura Toplamı</th>
+                                    <th>Ortalama İşlem</th>
                                 </tr>
                             </thead>
                             <tbody id="customerPartyTableBody"></tbody>
@@ -1177,7 +1177,7 @@
                                     <th>İşlem Hacmi</th>
                                     <th>İşlem</th>
                                     <th>Son İşlem</th>
-                                    <th>Fatura Toplamı</th>
+                                    <th>Ortalama İşlem</th>
                                 </tr>
                             </thead>
                             <tbody id="supplierPartyTableBody"></tbody>
@@ -1220,7 +1220,7 @@
                 </div>
                 <div class="party-metrics-grid">
                     <div class="party-metric-card"><span>Toplam Hacim</span><strong id="partyTotalVolume">₺0</strong></div>
-                    <div class="party-metric-card"><span>Net Fatura Tutarı</span><strong id="partyBalance">₺0</strong></div>
+                    <div class="party-metric-card"><span>Son 12 Ay Hacmi</span><strong id="partyLast12Volume">₺0</strong></div>
                     <div class="party-metric-card"><span>Son İşlem</span><strong id="partyLastTransaction">-</strong></div>
                     <div class="party-metric-card"><span>Ortalama Tutar</span><strong id="partyAverageAmount">₺0</strong></div>
                 </div>
@@ -1311,15 +1311,7 @@
                         <strong id="expensePeriodLabel">-</strong>
                     </div>
                     <div>
-                        <span class="period-summary-label">Sabit</span>
-                        <strong id="expensePeriodFixedTotal">₺0</strong>
-                    </div>
-                    <div>
-                        <span class="period-summary-label">Değişken</span>
-                        <strong id="expensePeriodVariableTotal">₺0</strong>
-                    </div>
-                    <div>
-                        <span class="period-summary-label">Toplam</span>
+                        <span class="period-summary-label">Toplam Gider</span>
                         <strong id="expensePeriodCombinedTotal">₺0</strong>
                     </div>
                 </div>
@@ -1746,7 +1738,7 @@
 
                                 <div class="prediction-chart-container pred-card pred-chart"
                                     data-card-id="chart">
-                                    <span class="prediction-section-label">B) Trend</span>
+                                    <span class="prediction-section-label">A) Trend</span>
                                     <h3>Satış ve Kâr Eğilimi</h3>
                                     <div class="pred-chart-canvas-wrap">
                                         <canvas id="predictionChart"></canvas>
@@ -1761,7 +1753,7 @@
                                 </div>
                                 <div class="prediction-table-container pred-card pred-table"
                                     data-card-id="table">
-                                    <span class="prediction-section-label">A) Tahmin</span>
+                                    <span class="prediction-section-label">B) Tahmin</span>
                                     <h3>3 Aylık Satış Tahmini</h3>
                                     <table class="prediction-table">
                                         <thead>
@@ -1802,28 +1794,28 @@
 
                                 <div class="growth-metrics-card pred-card" id="growthMetricsCard"
                                     data-card-id="growth-metrics" style="display: none;">
-                                    <span class="prediction-section-label">E) Finansal Göstergeler</span>
+                                    <span class="prediction-section-label">F) Büyüme</span>
                                     <h3>Büyüme & Momentum</h3>
                                     <div class="growth-grid" id="growthMetricsGrid"></div>
                                 </div>
 
                                 <div class="decision-impact-card pred-card" id="decisionImpactCard"
                                     data-card-id="decision-impact" style="display: none;">
-                                    <span class="prediction-section-label">F) Karar Etkisi</span>
+                                    <span class="prediction-section-label">G) Karar Etkisi</span>
                                     <h3>Karar Etkisi</h3>
                                     <div class="decision-impact-grid" id="decisionImpactGrid"></div>
                                 </div>
 
                                 <div class="ceo-actions pred-card" id="ceoActions"
                                     data-card-id="actions">
-                                    <span class="prediction-section-label">G) Aksiyon</span>
+                                    <span class="prediction-section-label">H) Aksiyon</span>
                                     <h3>Aksiyon Planı</h3>
                                     <div class="action-items prediction-grid" id="actionItemsList"></div>
                                 </div>
 
                                 <div class="cfo-missing-areas pred-card" id="cfoMissingAreas"
                                     data-card-id="cfo-missing" style="display: none;">
-                                    <span class="prediction-section-label">G) Aksiyon</span>
+                                    <span class="prediction-section-label">I) CFO Analizi</span>
                                     <h3>CFO Analizi - İyileştirme Alanları</h3>
                                     <div class="missing-areas-list prediction-grid" id="missingAreasList"></div>
                                 </div>
@@ -1839,19 +1831,19 @@
                                 </summary>
                                 <div class="prediction-details-grid">
                                     <div class="data-quality-card pred-card" id="dataQualityCard" style="display: none;">
-                                        <span class="prediction-section-label">H) Model Güvenilirliği</span>
+                                        <span class="prediction-section-label">J) Model Güvenilirliği</span>
                                         <h3>Veri Kalitesi</h3>
                                         <div class="data-quality-grid" id="dataQualityGrid"></div>
                                     </div>
 
                                     <div class="model-explain-card pred-card" id="modelExplainCard" style="display: none;">
-                                        <span class="prediction-section-label">H) Model Güvenilirliği</span>
+                                        <span class="prediction-section-label">K) Model Açıklaması</span>
                                         <h3>Model Açıklaması</h3>
                                         <div class="model-explain-list" id="modelExplainList"></div>
                                     </div>
 
                                     <div class="business-stats-card pred-card prediction-technical-card" id="businessStatsCard" style="display: none;">
-                                        <span class="prediction-section-label">I) Teknik Detaylar</span>
+                                        <span class="prediction-section-label">L) Teknik Detaylar</span>
                                         <h3>İstatistiksel Analiz</h3>
                                         <div class="bstat-subtabs">
                                             <button type="button" class="bstat-subtab active" data-bstat="sales">Satış</button>
@@ -1866,7 +1858,7 @@
                                     </div>
 
                                     <div class="regression-quality-card pred-card" id="regressionQualityCard" style="display: none;">
-                                        <span class="prediction-section-label">I) Teknik Detaylar</span>
+                                        <span class="prediction-section-label">M) Model Kalitesi</span>
                                         <h3>Model Kalitesi</h3>
                                         <div class="regq-grid" id="regressionQualityGrid"></div>
                                         <p class="regq-interpretation" id="regressionInterpretation"></p>

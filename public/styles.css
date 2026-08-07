@@ -51,6 +51,10 @@
     --sidebar-hover: color-mix(in srgb, var(--sidebar-accent, #f5f5f5) 78%, transparent);
     --sidebar-active: color-mix(in srgb, var(--sidebar-primary, #171717) 12%, transparent);
     --sidebar-border-color: var(--sidebar-border, #e5e5e5);
+    /* Sıralama madalyaları — açık temada kontrast için koyulaştırılmış tonlar */
+    --rank-gold: #a1730a;
+    --rank-silver: #6f7378;
+    --rank-bronze: #96562a;
     --sidebar-brand-bg: color-mix(in srgb, var(--sidebar-primary, #171717) 12%, transparent);
     --sidebar-brand-text: var(--sidebar-primary, #171717);
     --sidebar-surface: var(--card, #ffffff);
@@ -137,7 +141,11 @@ button, a, select, input[type="checkbox"], input[type="radio"] {
     --sidebar-text: var(--sidebar-foreground, #fafafa);
     --sidebar-hover: color-mix(in srgb, var(--sidebar-accent, #262626) 82%, transparent);
     --sidebar-active: color-mix(in srgb, var(--sidebar-primary, #fafafa) 14%, transparent);
-    --sidebar-border-color: var(--sidebar-border, #ffffff);
+    --sidebar-border-color: var(--sidebar-border, #2e2e2e);
+    /* Sıralama madalyaları — koyu temada okunur açık tonlar */
+    --rank-gold: #e2b34a;
+    --rank-silver: #b9bec4;
+    --rank-bronze: #cd8b5c;
     --sidebar-brand-bg: color-mix(in srgb, var(--sidebar-primary, #fafafa) 12%, transparent);
     --sidebar-brand-text: var(--sidebar-primary, #fafafa);
     --sidebar-surface: var(--card, #191919);
@@ -169,7 +177,11 @@ button, a, select, input[type="checkbox"], input[type="radio"] {
         --sidebar-text: var(--sidebar-foreground, #fafafa);
         --sidebar-hover: color-mix(in srgb, var(--sidebar-accent, #262626) 82%, transparent);
         --sidebar-active: color-mix(in srgb, var(--sidebar-primary, #fafafa) 14%, transparent);
-        --sidebar-border-color: var(--sidebar-border, #ffffff);
+        --sidebar-border-color: var(--sidebar-border, #2e2e2e);
+        /* Sıralama madalyaları — koyu temada okunur açık tonlar */
+        --rank-gold: #e2b34a;
+        --rank-silver: #b9bec4;
+        --rank-bronze: #cd8b5c;
         --sidebar-brand-bg: color-mix(in srgb, var(--sidebar-primary, #fafafa) 12%, transparent);
         --sidebar-brand-text: var(--sidebar-primary, #fafafa);
         --sidebar-surface: var(--card, #191919);
@@ -6896,19 +6908,21 @@ body {
     font-weight: 600;
     text-align: right;
     font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
 }
 
+/* Madalya renkleri tema tokenlarından gelir; koyu ve açık temada ayrı ton kullanılır */
 .topn-table tbody tr:nth-child(1) .rank-cell {
-    color: #FFD700;
+    color: var(--rank-gold);
     font-size: 1rem;
 }
 
 .topn-table tbody tr:nth-child(2) .rank-cell {
-    color: #C0C0C0;
+    color: var(--rank-silver);
 }
 
 .topn-table tbody tr:nth-child(3) .rank-cell {
-    color: #CD7F32;
+    color: var(--rank-bronze);
 }
 
 .topn-section .no-data {
@@ -9157,9 +9171,6 @@ textarea,
     font-family: 'IBM Plex Sans', sans-serif;
 }
 
-.topn-table .amount-cell {
-    font-variant-numeric: tabular-nums;
-}
 
 .modal-overlay {
     backdrop-filter: blur(8px);
@@ -9622,7 +9633,7 @@ textarea,
     --destructive: #ff6467;
     --sidebar-ring: #525252;
     --sidebar-accent: #262626;
-    --sidebar-border: #ffffff;
+    --sidebar-border: #2e2e2e;
     --card-foreground: #fafafa;
     --sidebar-primary: #fafafa;
     --muted-foreground: #a1a1a1;
@@ -9707,7 +9718,7 @@ textarea,
         --destructive: #ff6467;
         --sidebar-ring: #525252;
         --sidebar-accent: #262626;
-        --sidebar-border: #ffffff;
+        --sidebar-border: #2e2e2e;
         --card-foreground: #fafafa;
         --sidebar-primary: #fafafa;
         --muted-foreground: #a1a1a1;

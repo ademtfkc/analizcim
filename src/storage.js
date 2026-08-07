@@ -1899,6 +1899,33 @@ async function getBusinessParties(userId, options = {}) {
     };
 }
 
+// "Son 12 Ay" trendi TAKVİMDEN üretilir, kayıt listesinden değil.
+// Eski davranış (`monthly.slice(-12)`) son 12 KAYDI alıyordu; arada boş ay varsa
+// (ör. Ocak-Mart 2026 hareketsiz) etiket "Son 12 Ay" derken grafik 14 takvim ayına
+// yayılıyordu. Artık son hareketli aydan geriye 12 ardışık ay üretilir, hareketsiz
+// aylar 0 ile doldurulur. Tarihsiz satırlar takvim penceresine giremez.
+function buildLastTwelveMonthsTrend(monthly) {
+    const dated = monthly.filter((row) => /^\d{4}-\d{2}$/.test(String(row.month)));
+    if (dated.length === 0) return [];
+
+    const amounts = new Map(dated.map((row) => [row.month, row.amount]));
+    const last = dated[dated.length - 1].month;
+    let year = Number(last.slice(0, 4));
+    let month = Number(last.slice(5, 7));
+
+    const window = [];
+    for (let i = 0; i < 12; i += 1) {
+        const key = String(year) + '-' + String(month).padStart(2, '0');
+        window.unshift({ month: key, amount: amounts.get(key) || 0 });
+        month -= 1;
+        if (month === 0) {
+            month = 12;
+            year -= 1;
+        }
+    }
+    return window;
+}
+
 async function getBusinessPartyDetail(userId, type, id) {
     const partyType = type === 'supplier' ? 'supplier' : 'customer';
     const transactions = await dbAll(`SELECT *
@@ -1929,7 +1956,7 @@ async function getBusinessPartyDetail(userId, type, id) {
     const monthly = Array.from(monthlyMap.entries())
         .map(([month, amount]) => ({ month, amount }))
         .sort((a, b) => String(a.month).localeCompare(String(b.month)));
-    const trend = monthly.slice(-12);
+    const trend = buildLastTwelveMonthsTrend(monthly);
     const latest = mappedTransactions[0];
 
     return {
@@ -2735,6 +2762,7 @@ module.exports = {
     getBusinessParties,
     getBusinessPartyDetail,
     getBusinessPartyDashboardSummary,
+    buildLastTwelveMonthsTrend,
     // Top N functions
     getTopCustomers,
     getTopProducts,

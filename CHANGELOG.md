@@ -5,6 +5,63 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-08-07 — Denetim raporu düzeltmeleri (9 madde)
+
+Depo + ekran görüntüsü denetiminde bulunan bulgular CEO onayıyla sırayla kapatıldı.
+
+1. **Kenar çubuğundaki beyaz çerçeve.** Koyu temada `--sidebar-border` değeri `#ffffff` idi; kullanıcı
+   kartının etrafında bembeyaz bir kutu çiziyordu. Dört yerde (iki token tanımı + iki yedek değer)
+   `#2e2e2e` yapıldı. 8 ekran görüntüsünün hepsinde görünen kusurdu.
+2. **Renk disiplini geri kazandırıldı.** `NUMERIC_COLOR_SELECTOR` 25 seçiciden 9'a indi. Artık yalnız
+   finansal **sonuç** taşıyan değerler renklenir (kâr/zarar, fark, marj, KDV sonucu, büyüme, trend).
+   Hacim, ciro, alış tutarı, gider tutarı ve sayaçlar nötr kalır — alış tutarının yeşil görünmesi
+   "iyi haber" yanılsaması üretiyordu. `.sales`/`.purchase`/`.expense` modifikatörleri `:not()` ile
+   dışarıda bırakıldı. Ölü seçiciler (`.compare-table td`, `.scenarios-table td`) da temizlendi;
+   tahmin tablosunun anlamlı renkleri kendi `text-success`/`text-danger` sınıflarından gelmeye devam eder.
+3. **Tahmin kartı harfleri düzeltildi.** `B) Trend` karttan önce `A) Tahmin` geliyordu ve E/G/H/I
+   harfleri ikişer kez kullanılmıştı. 13 kart HTML sırasına göre **A–M** olarak yeniden harflendi.
+4. **Gider sayfasındaki tekrar kaldırıldı.** Dönem şeridi ile özet kartları aynı Sabit/Değişken
+   rakamlarını gösteriyordu. Şerit artık yalnız dönem kimliği + Toplam Gider taşır.
+5. **"Son 12 Ay" gerçekten 12 takvim ayı.** `monthly.slice(-12)` son 12 **kaydı** alıyordu; boş aylar
+   varsa pencere 14 takvim ayına yayılıyordu. Yeni `storage.buildLastTwelveMonthsTrend()` son hareketli
+   aydan geriye 12 ardışık ay üretir, hareketsiz ayları 0 ile doldurur, tarihsiz satırları dışarıda
+   bırakır. 4 yeni birim testi (`tests/unit/storage-party-trend.test.js`).
+6. **Cari ekranlarındaki çift gösterim kaldırıldı.** "Fatura Toplamı" kolonu ile "İşlem Hacmi",
+   "Net Fatura Tutarı" kutusu ile "Toplam Hacim" birebir aynı sayıydı (bakiye = hacim, çünkü bir cari
+   ya hep satış ya hep alış hareketi taşır). Yerlerine bilgi taşıyan **Ortalama İşlem** kolonu ve
+   **Son 12 Ay Hacmi** kutusu geldi.
+7. **Tek yüzde biçimi.** `%12,34` ile `12,3%` yan yana kullanılıyordu. Yeni `formatPercentSigned()`
+   ile altı çağrı yeri Türkçe yazıma çekildi (`+%12,3`).
+8. **Madalya renkleri temaya bağlandı.** Sabit `#FFD700/#C0C0C0/#CD7F32` yerine `--rank-gold`,
+   `--rank-silver`, `--rank-bronze` tokenları (koyu ve açık tema için ayrı ton). Çift tanımlı
+   `.topn-table .amount-cell` kuralı tek kurala birleştirildi.
+9. **Belge tutarlılığı.** `package.json` jsPDF aralığı `^4.1.0` → `^4.2.1` (kurulu sürüm zaten 4.2.1'di;
+   kilit dosyası yalnız bu satır için güncellendi, paket sürümü değişmedi). README'deki müşteri görseli
+   hangi katmanı gösterdiğini söyleyen bir alt yazıyla netleştirildi.
+
+**Kalite kapısında eklenen üç düzeltme:**
+
+- Test uzmanı iki yüzde kaçağı yakaladı: Finansal Sağlık kartları (`'%' + val.toFixed(1)`) ve
+  Kâr/Zarar tablosunun marj hücresi (`value + '%'`) hâlâ eski yazımdaydı. İkisi de `formatPercent()`
+  kullanıyor; "tek yüzde biçimi" kuralı artık istisnasız.
+- Kod inceleyici RET verdi: yeni test dosyası veritabanı bağlantısını kapatmadan geçici dosyayı
+  siliyordu. Kapatmayı eklemek tek başına yetmedi — `src/database` require anında şema + migration
+  zincirini **asenkron** başlatıyor, saf fonksiyon testleri o zincirden önce bitiyor ve handle
+  zincirin ortasında kapanıyordu (`SQLITE_MISUSE`). Çözüm: `after()` önce `migrations` tablosundaki
+  kayıt sayısı `scripts/migrations` altındaki dosya sayısına ulaşana kadar bekler, sonra kapatır ve
+  siler. **`npm run verify` bu düzeltmeden önce hiç bitmiyordu, artık sonuna kadar çalışıyor.**
+- `.dashboard-pl-value:not(...)` seçicisi bilinçli olarak korundu: `index.html` bu sınıfı çıplak
+  taşıyor, sınıf modifikatörünü ancak veri geldiğinde JavaScript yazıyor.
+
+**Doğrulama:** `npm run verify` yeşil — **183 birim + 37 entegrasyon + 1 smoke**, lint temiz.
+İzole tarayıcı QA'sında 9 maddenin tamamı koyu/açık temada ve 1440/390 viewport'ta doğrulandı,
+0 console hatası.
+
+**Dokunulmayanlar:** backend finansal formüller, API şeması, route/auth, tahmin motoru, cari import
+akışı, manuel müşteri CRUD ve `customers.balance` alanı, sabit tahmin kart düzeni.
+
+---
+
 ## 2026-08-07 — Sahipsiz cari hareketi süzgeci (CEO "A" kararı)
 
 - **Sorun:** bir analiz çöpten *kalıcı* silindiğinde `party_transactions` satırları geride kalıyordu.

@@ -72,12 +72,16 @@ Beklenen ekranlar:
 Beklenen detay metrikleri:
 
 - toplam işlem hacmi
-- net bakiye
+- son 12 ay hacmi (takvimden üretilir; boş aylar 0 sayılır)
 - son işlem tarihi ve tutarı
 - ortalama işlem tutarı
 - aylık hacim grafiği
 - son 12 ay trendi
 - tam hareket dökümü
+
+Cari liste ve detayında **"bakiye" adı taşıyan bir kutu bulunmaz.** Gerekçe: `balance` alanı
+matematiksel olarak hacme eşittir (bkz. "Cari bakiye gerçeği"), yani ikinci bir kutu aynı sayıyı
+iki kez gösterirdi. Liste kolonları: Ad · Toplam Hacim · **Ortalama İşlem** · İşlem Sayısı · Son İşlem.
 
 ## Excel Otomatik Eşleme Notları
 
@@ -229,11 +233,16 @@ Kurallar:
 - Risk, senaryo, aksiyon planı, CFO analizi ve model detayları korunmalı.
 - Tahmin sayfasındaki model seçimi `auto`, `linear`, `exponentialSmoothing`, `holtWinters`, `arima` değerlerini desteklemeli.
 - `period` filtresi `6`, `12`, `all` değerlerini desteklemeli.
-- A Tahmin tablosu mümkün olduğunca tek ekrana sığmalı; gereksiz `overflow-x` veya kalıcı yatay scroll üretmemeli.
+- B Tahmin tablosu mümkün olduğunca tek ekrana sığmalı; gereksiz `overflow-x` veya kalıcı yatay scroll üretmemeli.
 - C Risk ve D Senaryo kartları masaüstünde aynı satırda, eşit yükseklik/genişlik hissiyle hizalanmalıdır.
 - **Kart düzeni SABİTTİR (2026-08-06 CEO kararı).** Sürükle-bırak ve kullanıcıya özel sıralama
   kaldırılmıştır, geri eklenmemelidir. Sıra HTML'deki sıradır; yeni kart eklenirse hem HTML sırasına
   hem `data-card-id` genişlik kuralına eklenmelidir.
+- **Bölüm harfleri HTML sırasını izler (2026-08-07'de düzeltildi).** Sabit düzene geçilirken harfler
+  eski sürükle-bırak sırasında kalmış, aynı harf iki kartta görünür olmuştu. Yürürlükteki sıra:
+  A) Trend · B) Tahmin · C) Risk · D) Senaryo · E) Finansal Göstergeler · F) Büyüme · G) Karar Etkisi ·
+  H) Aksiyon · I) CFO Analizi · J) Model Güvenilirliği · K) Model Açıklaması · L) Teknik Detaylar ·
+  M) Model Kalitesi. Kart eklenir/taşınırsa harfler yeniden dizilir.
 
 ## Tahmin Motoru Standartları
 
@@ -357,7 +366,7 @@ Son güvenli QA ve hata düzeltme turunda aşağıdaki davranışlar doğruland�
 - Tahmin Özeti widget'ı Tahminler sayfasına yönlendirmelidir.
 - Tahminler sayfasında otomatik model seçimi, manuel model seçimi ve ARIMA seçimi çalışmalıdır.
 - Tahmin grafiği `390px`, `768px`, `1440px` viewport'larda boş veya aşırı yüksek canvas üretmemelidir.
-- Tahminler sayfasında A tablosu gereksiz yatay scroll üretmemeli; C Risk ve D Senaryo kartları hizalı kalmalıdır.
+- Tahminler sayfasında B tablosu gereksiz yatay scroll üretmemeli; C Risk ve D Senaryo kartları hizalı kalmalıdır.
 - Yıl Karşılaştırma sayfasında YoY delta kartları, grouped bar chart ve Toplam satırlı aylık tablo bulunmalıdır.
 - Model karşılaştırma tablosu seçilen modeli vurgulamalıdır.
 - Koyu/açık tema geçişinde tahmin kartları ve finansal pozitif/negatif renk semantiği korunmalıdır.
@@ -616,6 +625,46 @@ Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hi
   imkânsız — CEO dosyaları verecek.
 - _(kapandı 2026-08-07)_ ~~Silinen analizin cari hareketleri listede kalıyor~~ · ~~öksüz tercih
   anahtarları~~ — ikisi de yukarıdaki sağlamlaştırma turunda düzeltildi.
+
+### 2026-08-07 güncellemesi (depo denetim raporunun 9 maddesi)
+
+Depo baştan sona (kod + ekran görüntüleri + belgeler) denetlendi, rapor CEO onayından geçti ve
+9 madde uygulandı. Yürürlükteki kurallar:
+
+1. **Kenar çubuğu kenarlığı** koyu temada `#2e2e2e`'dir. `--sidebar-border` / `--sidebar-border-color`
+   yedek değerleri dahil hiçbir yerde `#ffffff` bırakılmamalıdır (dört yerde birden tanımlıdır).
+2. **Tahminler bölüm harfleri** HTML sırasını izler — bkz. "Tahminler Sayfası Standartları".
+3. **Gider dönem şeridi iki kutudur:** dönem etiketi + "Toplam Gider". Sabit/Değişken ayrımı için
+   veri kaynağı yok; yazıcısı olmayan kutu eklenmemelidir.
+4. **Cari listesinde "Fatura Toplamı" kolonu yoktur**, yerine **"Ortalama İşlem"** (hacim ÷ adet)
+   vardır; cari detayındaki kutu **"Son 12 Ay Hacmi"**dir (`#partyLast12Volume`). Gerekçe: eski
+   kolon hacim kolonuyla birebir aynı sayıyı gösteriyordu.
+5. **"Son 12 ay" takvimden üretilir**, kayıt listesinden değil: `storage.buildLastTwelveMonthsTrend()`
+   son tarihli aydan geriye tam 12 takvim ayı kurar, hareketsiz ayları 0 yazar. `monthly.slice(-12)`
+   kullanılmamalıdır — hareketsiz aylar atlandığı için pencere 3 yıla yayılabiliyordu.
+6. **Tek yüzde biçimi:** `formatPercent(deger, ondalik)` → `%12,30`; işaretli değerlerde
+   `formatPercentSigned` → `+%12,3`. Şablon içinde elle `%` veya `.toFixed(1) + '%'` yazılmaz.
+7. **Renk disiplini artık kodda da uygulanıyor:** `NUMERIC_COLOR_SELECTOR` yalnızca finansal sonuç
+   taşıyan 9 seçiciyi kapsar. Ciro, alış tutarı, gider tutarı ve sayaçlar nötr kalır; yeni bir
+   seçici eklenmeden önce "bu sayının artması iyi haber mi?" sorusu sorulur.
+8. **Sıralama madalyaları** `--rank-gold` / `--rank-silver` / `--rank-bronze` token'larından gelir;
+   açık temada koyulaştırılmış tonlar kullanılır. Sabit renk yazılmaz.
+9. **`package.json` aralıkları kurulu sürümle çelişmemelidir.** `jspdf` `^4.1.0` iken lockfile 4.2.1
+   idi; temiz kurulumda kritik açık geri gelebilirdi → `^4.2.1`.
+
+Doğrulama: `npm run verify` yeşil — **183 birim + 37 entegrasyon + 1 smoke**, lint temiz. Yeni test
+dosyası: `tests/unit/storage-party-trend.test.js`.
+
+**Birim testi yazarken tuzak (bu turda bir kez yaşandı):** `src/storage` require anında `src/database`'i
+açar ve şema + migration zincirini **asenkron** başlatır. Saf fonksiyon testi bu zincirden önce biter;
+`after()` içinde bağlantıyı kapatmak `SQLITE_MISUSE`, hiç kapatmamak ise açık handle yüzünden
+`npm run test:unit` / `npm run verify` komutlarının **hiç bitmemesine** yol açar (bu iki script
+`--test-force-exit` taşımaz, hatayı gizlemez). Doğru kalıp: `after()` önce `migrations` tablosundaki
+kayıt sayısı `scripts/migrations` altındaki dosya sayısına ulaşana kadar bekler, sonra `db.close()`
+ve geçici dosyaları (`-journal`/`-wal`/`-shm` dahil) siler.
+
+**Not:** `docs/screenshots/` görselleri bu turdan öncesine aittir; kenar çubuğu kenarlığı, madalya
+renkleri, gider şeridi ve cari kolonları değiştiği için yenilenmeleri gerekir (CEO kararına bırakıldı).
 
 ## En Çok Sayfası Standartları
 

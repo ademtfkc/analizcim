@@ -1307,38 +1307,34 @@ function setKpiValue(elementId, amount, trend) {
     el.setAttribute('aria-label', fullValue + (trend ? ' ' + trendLabel(trend) + ' trend' : ''));
 }
 
-function formatPercent(value) {
+// Tek yüzde biçimi: Türkçe yazım — yüzde işareti önde, ondalık ayırıcı virgül.
+// İşaretli değerlerde sıra `+%12,3` şeklindedir (kokpit değişim rozetiyle aynı).
+function formatPercent(value, decimals = 2) {
     const num = Number(value) || 0;
-    const formatted = num.toFixed(2).replace('.', ',');
-    return '%' + formatted;
+    return '%' + num.toFixed(decimals).replace('.', ',');
 }
 
+function formatPercentSigned(value, decimals = 1) {
+    if (value == null || !Number.isFinite(Number(value))) return '-';
+    const num = Number(value);
+    const sign = num > 0 ? '+' : (num < 0 ? '-' : '');
+    return sign + formatPercent(Math.abs(num), decimals);
+}
+
+// Renk disiplini: yeşil/kırmızı YALNIZCA finansal sonuç taşıyan değerlerde kullanılır
+// (kâr/zarar, fark, marj, KDV sonucu, büyüme, trend). Hacim, ciro, alış tutarı, gider
+// tutarı ve sayaçlar nötr kalır — pozitif olmaları "iyi haber" anlamına gelmez.
+// `.sales` / `.purchase` / `.expense` modifikatörleri bu yüzden dışarıda bırakılır.
 const NUMERIC_COLOR_SELECTOR = [
-    '.dashboard-card-value',
     '.dashboard-kdv-value',
-    '.dashboard-subtotal-value',
-    '.dashboard-pl-value',
-    '.expenses-card-value',
-    '.expenses-subtotal-value',
-    '.history-stat-value',
+    '.dashboard-subtotal-value:not(.sales):not(.purchase)',
+    '.dashboard-pl-value:not(.sales):not(.purchase):not(.expense)',
     '.kdv-mini-value',
-    '.stat-amount .value',
-    '.stat-details .value',
-    '.summary-stat .stat-value',
     '.pl-value',
     '.pl-percentage',
     '.kdv-value',
-    '.pred-stat-value',
     '.growth-value',
-    '.prediction-trend',
-    '.prediction-table td',
-    '.compare-table td',
-    '.scenarios-table td',
-    '.topn-table .amount-cell',
-    '.product-amount',
-    '.admin-stat-value',
-    '.admin-data-count',
-    '.backup-item-meta span'
+    '.prediction-trend'
 ].join(',');
 
 function parseDisplayedNumber(text) {
@@ -2088,6 +2084,16 @@ async function loadBusinessParties(type = 'customer') {
     }
 }
 
+// Ortalama işlem tutarı = hacim / işlem sayısı. Eski "Fatura Toplamı" kolonu
+// hacim kolonuyla matematiksel olarak AYNI sayıyı gösteriyordu (bir cari ya hep
+// satış ya hep alış hareketi taşır, bakiye = hacim). Tekrar yerine bilgi taşıyan
+// bir kolon konuldu (2026-08-07 denetim bulgusu #6).
+function partyAverageAmount(party) {
+    const adet = Number(party.transactionCount || 0);
+    if (adet <= 0) return 0;
+    return (Number(party.totalVolume || 0)) / adet;
+}
+
 function renderBusinessPartyRows(type, parties) {
     const tableBody = document.getElementById(type === 'customer' ? 'customerPartyTableBody' : 'supplierPartyTableBody');
     const empty = document.getElementById(type === 'customer' ? 'customerPartyEmpty' : 'supplierPartyEmpty');
@@ -2103,7 +2109,7 @@ function renderBusinessPartyRows(type, parties) {
             <td data-label="İşlem Hacmi">${escapeHtml(formatCurrency(party.totalVolume || 0))}</td>
             <td data-label="İşlem">${escapeHtml(String(party.transactionCount || 0))}</td>
             <td data-label="Son İşlem">${escapeHtml(formatDisplayDate(party.lastTransactionDate))}</td>
-            <td data-label="Fatura Toplamı"><strong>${escapeHtml(formatCurrency(Math.abs(party.balance || 0)))}</strong></td>
+            <td data-label="Ortalama İşlem"><strong>${escapeHtml(formatCurrency(partyAverageAmount(party)))}</strong></td>
         </tr>`).join('');
 }
 
@@ -2231,12 +2237,15 @@ function renderBusinessPartyDetail(detail) {
     document.getElementById('partyDetailTitle').textContent = party.name || 'Cari Detay';
     document.getElementById('partyDetailSubtitle').textContent = `${metrics.transactionCount || 0} hareket, son işlem ${formatDisplayDate(metrics.lastTransactionDate)}`;
     document.getElementById('partyTotalVolume').textContent = formatCurrency(metrics.totalVolume || 0);
-    const balanceEl = document.getElementById('partyBalance');
-    balanceEl.textContent = formatCurrency(metrics.balance || 0);
-    // Renk YOK: balance = satış hacmi - alış hacmi, bir cari ya hep satış ya hep alış hareketi
-    // taşıdığı için işaret carinin türüne göre sabittir (müşteri +, tedarikçi -). Renk bilgi
-    // taşımaz, "borç/alacak" yanılsaması üretirdi. Gerçek bakiye takibi ayrı kapsamdır.
-    balanceEl.className = '';
+    // Eski "Net Fatura Tutarı" kutusu kaldırıldı: balance = satış hacmi - alış hacmi olduğu
+    // ve bir cari ya hep satış ya hep alış hareketi taşıdığı için bu rakam yanındaki
+    // "Toplam Hacim" kutusuyla BİREBİR aynıydı. Yerine son 12 takvim ayının hacmi konuldu;
+    // bu, carinin hâlâ aktif olup olmadığını gösterir. Gerçek bakiye takibi ayrı kapsamdır.
+    const last12El = document.getElementById('partyLast12Volume');
+    if (last12El) {
+        const son12 = (detail.trend || []).reduce((toplam, satir) => toplam + (Number(satir.amount) || 0), 0);
+        last12El.textContent = formatCurrency(son12);
+    }
     document.getElementById('partyLastTransaction').textContent = `${formatDisplayDate(metrics.lastTransactionDate)} · ${formatCurrency(metrics.lastTransactionAmount || 0)}`;
     document.getElementById('partyAverageAmount').textContent = formatCurrency(metrics.averageAmount || 0);
 
@@ -3835,14 +3844,12 @@ function getExpenseMonthLabel(month) {
 }
 
 function updateExpensePeriodSummary(year, month, fixedTotal, variableTotal) {
+    // Sabit/Değişken kırılımı hemen altındaki özet kartlarında zaten var;
+    // şerit yalnızca dönem kimliğini ve toplam gideri taşır.
     const labelEl = document.getElementById('expensePeriodLabel');
-    const fixedEl = document.getElementById('expensePeriodFixedTotal');
-    const variableEl = document.getElementById('expensePeriodVariableTotal');
     const combinedEl = document.getElementById('expensePeriodCombinedTotal');
 
     if (labelEl) labelEl.textContent = (year || '-') + ' · ' + getExpenseMonthLabel(month);
-    if (fixedEl) fixedEl.textContent = formatCurrency(fixedTotal);
-    if (variableEl) variableEl.textContent = formatCurrency(variableTotal);
     if (combinedEl) combinedEl.textContent = formatCurrency(fixedTotal + variableTotal);
 }
 
@@ -4813,7 +4820,7 @@ function renderMarginBar(margin) {
     const fill = marginBarFill(value);
     return '<span class="pl-margin">' +
         '<span class="pl-margin-track"><span class="pl-margin-fill" style="width:' + fill + '%"></span></span>' +
-        '<span class="pl-margin-value">' + value + '%</span>' +
+        '<span class="pl-margin-value">' + formatPercent(value, 1) + '</span>' +
     '</span>';
 }
 
@@ -5117,7 +5124,7 @@ function renderDashboardForYear(yearStr) {
             const el = document.getElementById(id);
             const meta = ratioMeta[id] || { label: 'Nötr', tone: 'neutral' };
             if (el) {
-                el.textContent = '%' + val.toFixed(1);
+                el.textContent = formatPercent(val, 1);
                 el.className = 'ratio-value ' + meta.tone;
             }
             const d = document.getElementById(descId);
@@ -6324,7 +6331,7 @@ async function loadPredictions() {
             // Ort. Aylık Büyüme — backend'deki gerçek formül (bileşik aylık büyüme CMGR); yoksa son 3 aya göre değişim
             const growthEl = document.getElementById('predGrowth');
             if (growthEl) {
-                growthEl.textContent = (growthPct > 0 ? '+' : '') + Number(growthPct).toFixed(1) + '%';
+                growthEl.textContent = formatPercentSigned(growthPct);
                 growthEl.style.color = growthPct >= 0 ? 'var(--success)' : 'var(--danger)';
             }
             setText('predGrowthHint', growthPct > 0 ? 'Satış ivmesi pozitif' : growthPct < 0 ? 'Satış ivmesi zayıflıyor' : 'Satış ritmi yatay');
@@ -6559,7 +6566,7 @@ function renderAccountantFeedback(predData) {
 
     const comparison = feedback.samePeriodLastYearComparison;
     if (comparison && comparison.changePct != null) {
-        setText('accountantFeedbackComparison', `${comparison.changePct > 0 ? '+' : ''}${Number(comparison.changePct).toFixed(1)}%`);
+        setText('accountantFeedbackComparison', formatPercentSigned(comparison.changePct));
     } else {
         setText('accountantFeedbackComparison', 'Yeterli veri yok');
     }
@@ -6634,7 +6641,7 @@ function getPredictionGrowthPct(predData, data, firstPred) {
 
 function updatePredictionExecutiveSummary({ predData, ceoAnalysis, risk, forecastTotal, growthPct, confidenceScore, monthlyData }) {
     setText('execTotalExpectation', formatCurrency(forecastTotal));
-    setText('execGrowth', `${growthPct > 0 ? '+' : ''}${Number(growthPct).toFixed(1)}%`);
+    setText('execGrowth', formatPercentSigned(growthPct));
     setText('execRisk', getRiskLevelLabel(risk?.level));
     setText('execConfidence', getConfidenceLabel(confidenceScore));
     setText('execDataQuality', getDataQualityLabel(getDataQualityScore(monthlyData, predData)));
@@ -7416,9 +7423,7 @@ function renderPlaceholderMetricMarkup(baseClass, item) {
 }
 
 function fmtPct(v) {
-    if (v == null || !Number.isFinite(v)) return '-';
-    const sign = v > 0 ? '+' : '';
-    return `${sign}${Number(v).toFixed(1)}%`;
+    return formatPercentSigned(v);
 }
 
 let predictionChartInstance = null;
@@ -8130,7 +8135,7 @@ window.loadCompare = async function () {
                 const growthPct = s1 ? ((s2 - s1) / s1 * 100) : null;
                 const diffClass = diff > 0 ? 'value-positive' : (diff < 0 ? 'value-negative' : 'value-neutral');
                 const growthClass = growthPct != null ? (growthPct > 0 ? 'value-positive' : (growthPct < 0 ? 'value-negative' : 'value-neutral')) : '';
-                const growthText = growthPct != null ? ((growthPct >= 0 ? '+' : '') + growthPct.toFixed(1) + '%') : '-';
+                const growthText = growthPct != null ? formatPercentSigned(growthPct) : '-';
 
                 return `<tr>
                     <td>${m1.monthName || ''}</td>
@@ -8144,7 +8149,7 @@ window.loadCompare = async function () {
             const totalGrowth = a.sales ? ((b.sales - a.sales) / a.sales * 100) : null;
             const totalDiffClass = totalDiff > 0 ? 'value-positive' : (totalDiff < 0 ? 'value-negative' : 'value-neutral');
             const totalGrowthClass = totalGrowth != null ? (totalGrowth > 0 ? 'value-positive' : (totalGrowth < 0 ? 'value-negative' : 'value-neutral')) : '';
-            const totalGrowthText = totalGrowth != null ? ((totalGrowth >= 0 ? '+' : '') + totalGrowth.toFixed(1) + '%') : '-';
+            const totalGrowthText = totalGrowth != null ? formatPercentSigned(totalGrowth) : '-';
             monthlyRows.push(`<tr class="compare-total-row">
                 <td>Toplam</td>
                 <td>${formatCurrency(a.sales)}</td>

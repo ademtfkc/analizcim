@@ -109,7 +109,10 @@ CFO); yan yana duran kartlar aynı yükseklikte hizalanır.
 
 ### Müşteriler ve Tedarikçiler
 
-![Müşteriler (demo veri)](docs/screenshots/03-musteriler.png)
+![Müşteri Yönetimi — manuel müşteri kartları (demo veri)](docs/screenshots/03-musteriler.png)
+
+*Görselde **manuel müşteri yönetimi** katmanı görünüyor. Aynı sekmedeki cari listesi, Excel'den
+otomatik çıkarılan karşı tarafları hacim, işlem sayısı ve ortalama işlem tutarıyla listeler.*
 
 İki katmanlı bir yapı vardır:
 

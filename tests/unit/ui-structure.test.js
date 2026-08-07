@@ -259,9 +259,13 @@ describe('UI structure rules', () => {
         const css = readPublicFile('styles.css');
 
         assert.match(html, /id="expensesPeriodSummary"/);
-        assert.match(html, /id="expensePeriodFixedTotal"/);
-        assert.match(html, /id="expensePeriodVariableTotal"/);
         assert.match(html, /id="expensePeriodCombinedTotal"/);
+        // Sabit/Değişken kırılımı yalnızca özet kartlarında olmalı; dönem şeridi
+        // aynı sayıları tekrarlamamalı (2026-08-07 denetim bulgusu #4).
+        assert.doesNotMatch(html, /id="expensePeriodFixedTotal"/);
+        assert.doesNotMatch(html, /id="expensePeriodVariableTotal"/);
+        assert.match(html, /id="expenseSummaryFixed"/);
+        assert.match(html, /id="expenseSummaryVariable"/);
         assert.match(js, /function updateExpensePeriodSummary/);
         assert.match(js, /updateExpensePeriodSummary\(year, month, fixedTotal, variableTotal\)/);
         assert.match(css, /\.expenses-period-summary\s*\{/);
@@ -320,7 +324,7 @@ describe('UI structure rules', () => {
 
         // Render adds per-cell labels so mobile cards can show "etiket: değer"
         assert.match(js, /data-label="İşlem Hacmi"/);
-        assert.match(js, /data-label="Fatura Toplamı"/);
+        assert.match(js, /data-label="Ortalama İşlem"/);
         assert.match(js, /class="bp-cell-name"/);
 
         // Mobile media query turns rows into cards and drops the min-width scroll
@@ -589,15 +593,22 @@ describe('UI structure rules', () => {
         const js = readPublicFile('app.js');
 
         // "Bakiye" yanıltıcıydı: sistemde tahsilat/ödeme kaydı yok, rakam fatura toplamı
-        assert.match(html, /<th>Fatura Toplamı<\/th>/);
-        assert.match(html, /Net Fatura Tutarı/);
-        assert.match(js, /data-label="Fatura Toplamı"/);
         assert.doesNotMatch(js, /caride açık bakiye var/);
         assert.doesNotMatch(js, /Tahsilat takibi gereken kayıtlar olabilir/);
         assert.match(js, /kesilen faturaların toplamıdır/);
 
-        // Renk sinyali kaldırıldı: bu tutar müşteride hep artı, tedarikçide hep eksi
-        // çıkıyor; sabit yeşil/kırmızı veriye göre değişmeyen yanlış bir sinyaldi.
+        // 2026-08-07 denetim bulgusu #6: "Fatura Toplamı" kolonu ve "Net Fatura Tutarı"
+        // kutusu hacimle BİREBİR aynı sayıyı gösteriyordu (bakiye = hacim). Tekrar eden
+        // gösterim kaldırıldı; yerine bilgi taşıyan ortalama işlem ve son 12 ay hacmi geldi.
+        assert.doesNotMatch(html, /<th>Fatura Toplamı<\/th>/);
+        assert.doesNotMatch(html, /Net Fatura Tutarı/);
+        assert.doesNotMatch(js, /data-label="Fatura Toplamı"/);
+        assert.match(html, /<th>Ortalama İşlem<\/th>/);
+        assert.match(html, /id="partyLast12Volume"/);
+        assert.match(js, /function partyAverageAmount\(/);
+
+        // Renk sinyali yok: bu tutarlar müşteride hep artı, tedarikçide hep eksi çıkar;
+        // sabit yeşil/kırmızı veriye göre değişmeyen yanlış bir sinyaldi.
         assert.doesNotMatch(js, /data-label="Fatura Toplamı"><strong class="\$\{customerBalanceClass/);
     });
 
