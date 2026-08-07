@@ -235,7 +235,8 @@ sonra ikisi de ONAY. Ayrıntı Bölüm 10 ve `CLAUDE.md`'deki "tarayıcı görse
 **GİRİŞ HESAPLARI (2026-08-07):** iki yönetici hesabı var — **`admin`** (gerçek veri için, boş) ve
 **`test`** (18 dönemlik demo veri: 657 fatura satırı, 12 müşteri, 8 tedarikçi, 108 gider kalemi).
 Verileri birbirinden tamamen ayrıdır; tüm veri tabloları `user_id` taşır, doğrulandı. **Parola
-değerleri bu dosyaya yazılmaz** (anayasa kuralı); asistanın yerel hafızasında tutulur ve geçicidir —
+değerleri bu dosyaya yazılmaz** (anayasa kuralı); proje kökündeki `GIRIS_BILGILERI.md` dosyasındadır
+(o dosya `.gitignore`'dadır, git'e girmez) ve geçicidir —
 CEO Ayarlar → Hesap → Şifre Değiştir'den değiştirmelidir.
 
 ⚠️ **Ekran görüntüleri bayat:** `docs/screenshots/` içindeki 8 görsel `f2768d4` öncesine ait

@@ -5,6 +5,9 @@ node_modules/
 .env
 .env.*.local
 
+# Giriş bilgileri (parola içerir — asla git'e girmez)
+GIRIS_BILGILERI.md
+
 # Veritabanı (lokal veri)
 data/*.db
 data/*.sqlite
