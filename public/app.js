@@ -131,6 +131,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadHistoryCount();
     loadTrashCount();
     updateSidebarUser();
+    // Alt bilgideki telif yılı sabit "2024" yazıyordu; içinde bulunulan yıl kullanılır.
+    const footerYear = document.getElementById('footerYear');
+    if (footerYear) footerYear.textContent = String(new Date().getFullYear());
     switchTab(currentTab);
 });
 
@@ -1077,7 +1080,7 @@ function displayResults(result) {
         const percentageEl = document.getElementById('profitLossPercentage');
         const pct = parseFloat(result.profitLoss.percentage);
         if (!isNaN(pct) && isFinite(pct)) {
-            percentageEl.textContent = `${isProfit ? '+' : '-'}%${Math.abs(pct).toFixed(1)}`;
+            percentageEl.textContent = `${isProfit ? '+' : '-'}${formatPercent(Math.abs(pct), 1)}`;
             percentageEl.style.display = '';
         } else {
             percentageEl.style.display = 'none';
@@ -1132,7 +1135,7 @@ function renderOutlierWarning(result) {
             <td>${fieldLabel}</td>
             <td class="outlier-value">${formatCurrency(flag.value)}</td>
             <td class="outlier-expected">~${formatCurrency(flag.median)}</td>
-            <td class="outlier-deviation">%${absDev.toFixed(1)} ${direction}</td>
+            <td class="outlier-deviation">${formatPercent(absDev, 1)} ${direction}</td>
             <td><span class="outlier-method-badge method-${flag.method}">${methodLabel}</span></td>
         </tr>`;
     }).join('');
@@ -1657,6 +1660,9 @@ function setupAdminVisibility() {
 function switchTab(tab) {
     currentTab = tab;
     closeSidebarAccountMenu();
+    // Sekme değişince sayfa başa döner. Eskiden önceki sekmenin kaydırma konumu korunuyordu;
+    // uzun bir sayfadan geçince yeni sekme ortasından açılıyor, başlık ve filtreler görünmüyordu.
+    window.scrollTo({ top: 0, behavior: 'auto' });
 
     // Update tab styles
     document.querySelectorAll('.nav-tab').forEach(btn => {
@@ -2061,7 +2067,7 @@ async function loadCustomerDashboardSummary() {
             const recent = summary.recentCustomers || [];
             recentList.innerHTML = recent.length ? recent.map((customer) => `
                 <li>
-                    <span class="recent-link-btn">${escapeHtml(customer.fullName || '-')}</span>
+                    <span class="recent-plain-name">${escapeHtml(customer.fullName || '-')}</span>
                     <span class="recent-metrics"><span>${escapeHtml(customer.email || 'E-posta yok')}</span></span>
                 </li>`).join('') : '<li class="recent-empty">Henüz müşteri eklenmemiş</li>';
         }
@@ -2216,14 +2222,14 @@ function renderBusinessPartyRail(type, parties) {
             items.push({
                 tone: 'warning',
                 title: 'Hacim az sayıda caride toplanmış',
-                body: `İlk 3 ${kelime} toplam hacmin %${ilkUcPay.toFixed(0)}'ını oluşturuyor. ` +
+                body: `İlk 3 ${kelime} toplam hacmin ${formatPercent(ilkUcPay, 0)}'ını oluşturuyor. ` +
                     (musteriMi ? 'Bu yoğunlaşma satış riski demektir.' : 'Tek tedarikçiye bağımlılık pazarlık gücünü düşürür.')
             });
         } else {
             items.push({
                 tone: 'positive',
                 title: 'Hacim dengeli dağılmış',
-                body: `İlk 3 ${kelime} toplam hacmin %${ilkUcPay.toFixed(0)}'ını oluşturuyor.`
+                body: `İlk 3 ${kelime} toplam hacmin ${formatPercent(ilkUcPay, 0)}'ını oluşturuyor.`
             });
         }
 
@@ -2512,14 +2518,16 @@ function renderHistory(history, sortOrder) {
         if (exportHistoryBtn) exportHistoryBtn.style.display = 'none';
         const exportHistoryJsonBtn = document.getElementById('exportHistoryJsonBtn');
         if (exportHistoryJsonBtn) exportHistoryJsonBtn.style.display = 'none';
-        if (filtersEl) filtersEl.style.display = 'none';
+        if (filtersEl) filtersEl.classList.add('is-hidden');
         const countEl = document.getElementById('historyTotalCount');
         if (countEl) countEl.textContent = '';
         return;
     }
 
     historyEmpty.style.display = 'none';
-    if (filtersEl) filtersEl.style.display = 'flex';
+    // Satır içi `style.display` YAZILMAZ: satır içi stil hiçbir @media kuralından ezilemediği
+    // için mobil tek-kolon düzeni hiç devreye giremiyordu (kutular 35px'e sıkışıyordu).
+    if (filtersEl) filtersEl.classList.remove('is-hidden');
     clearHistoryBtn.style.display = 'flex';
     const exportHistoryBtn = document.getElementById('exportHistoryBtn');
     if (exportHistoryBtn) exportHistoryBtn.style.display = 'inline-flex';
@@ -3430,7 +3438,7 @@ async function loadTopNData() {
             const topnAnalysisContainer = document.getElementById('topnAnalysisContainer');
             
             if (paretoSummary && paretoProgressBar && topnAnalysisContainer) {
-                paretoSummary.textContent = `İlk 5 firma toplam cironun %${top5Percentage.toFixed(1)}'ini oluşturuyor`;
+                paretoSummary.textContent = `İlk 5 firma toplam cironun ${formatPercent(top5Percentage, 1)}'ini oluşturuyor`;
                 paretoProgressBar.style.width = `${Math.min(top5Percentage, 100)}%`;
                 topnAnalysisContainer.style.display = 'grid';
                 
@@ -3598,7 +3606,7 @@ borderColor: '#7c3aed',
                     callbacks: {
                         label: function(context) {
                             if (context.datasetIndex === 0) {
-                                return `Kümülatif: %${context.raw.toFixed(1)}`;
+                                return `Kümülatif: ${formatPercent(context.raw, 1)}`;
                             }
                             return `Tutar: ${formatCurrencyTRY(context.raw)}`;
                         }
@@ -3990,14 +3998,14 @@ function renderExpensesRail(view) {
     } else if (giderOrani > 60) {
         items.push({
             tone: 'warning',
-            title: `Giderler brüt kârın %${giderOrani.toFixed(0)}'ı`,
+            title: `Giderler brüt kârın ${formatPercent(giderOrani, 0)}'ı`,
             body: 'Kâr marjı gider baskısı altında. En büyük kalemlerden başlayarak azaltma imkânı aranmalı.'
         });
     } else {
         items.push({
             tone: 'positive',
             title: 'Gider yükü kontrollü',
-            body: `Giderler brüt kârın %${giderOrani.toFixed(0)}'ı; net sonuç ${formatCurrency(view.net)}.`
+            body: `Giderler brüt kârın ${formatPercent(giderOrani, 0)}'ı; net sonuç ${formatCurrency(view.net)}.`
         });
     }
 
@@ -4007,7 +4015,7 @@ function renderExpensesRail(view) {
         items.push({
             tone: pay >= 40 ? 'warning' : 'neutral',
             title: `En büyük kalem: ${enBuyuk.ad}`,
-            body: `${formatCurrency(enBuyuk.tutar)} ile toplam giderin %${pay.toFixed(0)}'ını oluşturuyor.`
+            body: `${formatCurrency(enBuyuk.tutar)} ile toplam giderin ${formatPercent(pay, 0)}'ını oluşturuyor.`
         });
     }
 
@@ -4015,7 +4023,7 @@ function renderExpensesRail(view) {
         items.push({
             tone: 'warning',
             title: 'Giderler ağırlıkla sabit',
-            body: `Toplamın %${sabitPayi.toFixed(0)}'ı sabit gider. Satış düştüğünde bu kalemler azalmaz; nakit planında dikkat gerektirir.`
+            body: `Toplamın ${formatPercent(sabitPayi, 0)}'ı sabit gider. Satış düştüğünde bu kalemler azalmaz; nakit planında dikkat gerektirir.`
         });
     }
 
@@ -8505,6 +8513,27 @@ async function deleteSelectedArchive() {
     }
 }
 
+// Ayarlar > "Veritabanı Boyutu" kutusunun tek yazıcısı. Yazıcısı olmadığı için kutu
+// hep "–" gösteriyordu (2026-08-07 denetimi).
+async function loadAdminDbSize() {
+    const el = document.getElementById('adminDbSize');
+    if (!el) return;
+    try {
+        const response = await fetch('/api/admin/db-size');
+        const data = await response.json();
+        if (!response.ok || !data.success || data.bytes == null) {
+            el.textContent = '-';
+            return;
+        }
+        const mb = data.bytes / (1024 * 1024);
+        el.textContent = mb >= 1
+            ? mb.toFixed(1).replace('.', ',') + ' MB'
+            : Math.max(1, Math.round(data.bytes / 1024)) + ' KB';
+    } catch (_) {
+        el.textContent = '-';
+    }
+}
+
 async function loadAdminData() {
     if (!isCurrentUserAdmin()) return;
     try {
@@ -8516,6 +8545,7 @@ async function loadAdminData() {
         
         document.getElementById('adminTotalUsers').textContent = usersData.success ? usersData.users.length : '-';
         document.getElementById('adminTotalAnalyses').textContent = historyData.total || '-';
+        loadAdminDbSize();
 
         renderAdminUsers(usersData.success ? usersData.users : []);
         loadAdminDataCounts();

@@ -15,6 +15,17 @@ function getRuleBody(css, selector) {
     return match ? match[1] : '';
 }
 
+// Aynı seçici dosyada birden çok kez tanımlı olabilir (tema/override katmanları).
+// Bu yardımcı tüm gövdeleri döndürür; test "hangisi olursa olsun bir tanesinde var mı" diye bakar.
+function getRuleBodies(css, selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return [...css.matchAll(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'g'))].map((m) => m[1]);
+}
+
+function someRuleMatches(css, selector, pattern) {
+    return getRuleBodies(css, selector).some((body) => pattern.test(body));
+}
+
 describe('UI structure rules', () => {
     test('account actions and theme controls live in settings instead of the top header', () => {
         const html = readPublicFile('index.html');
@@ -554,9 +565,10 @@ describe('UI structure rules', () => {
         const js = readPublicFile('app.js');
         const server = fs.readFileSync(path.join(rootDir, 'src', 'server.js'), 'utf8');
 
-        assert.match(server, /comparable:\s*\{/);
-        assert.match(server, /sharedMonths:\s*ortakAylar/);
-        assert.match(server, /sharedMonthCount:\s*ortakAylar\.length/);
+        // Hesabın kendisi saf modülde ve gerçek sayılarla test ediliyor
+        // (tests/unit/compare-metrics.test.js). Burada yalnız uçtan uca bağlantı kilitlenir.
+        assert.match(server, /require\('\.\/compare-metrics'\)/);
+        assert.match(server, /comparable: buildComparableSummary\(y1, y2\)/);
         assert.match(js, /const kismiKiyas =/);
         assert.match(js, /ortak \$\{kiyas\.sharedMonthCount\} ay/);
     });
@@ -596,9 +608,13 @@ describe('UI structure rules', () => {
         assert.match(js, /plProfitMargin'\)\.textContent = formatPercent\(totals\.avgProfitMargin \|\| 0, 1\)/);
         assert.match(js, /model\.mape == null \? '-' : formatPercent\(Number\(model\.mape\), 1\)/);
         assert.match(js, /const changeText = formatPercentSigned\(Number\(changePct\), 1\)/);
+        // Pareto cümlesi de yardımcıdan geçer (denetimde "%72.4" olarak kaçmıştı)
+        assert.match(js, /toplam cironun \$\{formatPercent\(top5Percentage, 1\)\}/);
         // Sona "%" ekleyen elle biçimlendirme kalmamalı
         assert.doesNotMatch(js, /toFixed\(1\)\.replace\('\.', ','\) \+ '%'/);
         assert.doesNotMatch(js, /\+ '%';/);
+        // Şablon içinde elle `%${...toFixed(n)}` yazımı kalmamalı
+        assert.doesNotMatch(js, /%\$\{[^}]*toFixed\(/);
     });
 
     // 2026-08-07: hiç gider girilmemişken karar paneli yeşil "Gider yükü kontrollü" diyordu.
@@ -757,6 +773,68 @@ describe('UI structure rules', () => {
         // Cari yüzeylerinde sabit renk sinyali yok
         assert.doesNotMatch(js, /balanceEl\.className = customerBalanceClass/);
         assert.doesNotMatch(css, /#partyBalance\.(positive|negative)/);
+    });
+
+    test('severity and category badges never break mid-word', () => {
+        const css = readPublicFile('styles.css');
+
+        // "Yüksek" rozeti dar flex kolonunda "Yükse / k" diye ikiye bölünüyordu
+        assert.ok(someRuleMatches(css, '.risk-factor-severity', /white-space: nowrap/));
+        assert.ok(someRuleMatches(css, '.risk-factor-severity', /flex-shrink: 0/));
+        assert.match(css, /\.action-priority,\s*\n\.missing-area-severity\s*\{[^}]*white-space: nowrap/);
+        assert.ok(someRuleMatches(css, '.action-category', /white-space: nowrap/));
+    });
+
+    test('long texts are not silently clipped away', () => {
+        const css = readPublicFile('styles.css');
+
+        // Yönetici özeti iki satıra kırpılınca tahmin tutarı ve brüt kâr cümlesi kayboluyordu
+        const ozet = getRuleBody(css, '.prediction-executive-main .ceo-summary-text');
+        assert.doesNotMatch(ozet, /-webkit-line-clamp/);
+
+        // Firma unvanları "..." ile kesilmek yerine satıra bölünür
+        const isim = getRuleBody(css, '.topn-table .name-cell');
+        assert.match(isim, /white-space: normal/);
+        assert.doesNotMatch(isim, /text-overflow: ellipsis/);
+    });
+
+    test('year comparison controls share one measurement system', () => {
+        const css = readPublicFile('styles.css');
+
+        // Yıl kartında çerçeve yok: iç boşluk olmadığı için etiket kenarlığa yapışıyordu
+        assert.ok(someRuleMatches(css, '.compare-year-card', /border: none/));
+
+        // Seçici, VS rozeti ve buton aynı --control-height değerini kullanır
+        assert.match(css, /\.cockpit-page \.year-select-large,/);
+        assert.match(getRuleBody(css, '.cockpit-page .compare-vs-badge'), /height: var\(--control-height\)/);
+    });
+
+    test('dashboard separates invoice-derived parties from manual customers', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        // İki liste aynı ada sahipti; kaynakları farklı olduğu için etiketler ayrıştırıldı
+        assert.match(html, /Faturalardan Gelen Son 5 Cari/);
+        assert.match(html, /Elle Eklenen Son 5 Müşteri/);
+        assert.doesNotMatch(html, /Son Eklenen 5 Cari/);
+
+        // Tıklanamayan isim bağlantı rengini kullanmaz (koyu temada okunmuyordu)
+        assert.match(js, /<span class="recent-plain-name">/);
+        assert.match(getRuleBody(css, '.dashboard-recent-list .recent-plain-name'), /color: var\(--text-primary\)/);
+    });
+
+    // 2026-08-07: `filtersEl.style.display = 'flex'` satır içi stili hiçbir @media kuralından
+    // ezilemediği için mobil tek-kolon düzeni hiç devreye giremiyordu; 390px'te arama ve
+    // seçici kutuları 35 piksele sıkışıyordu.
+    test('history filter row is shown/hidden with a class, never an inline display style', () => {
+        const js = readPublicFile('app.js');
+        const css = readPublicFile('styles.css');
+
+        assert.match(js, /filtersEl\.classList\.add\('is-hidden'\)/);
+        assert.match(js, /filtersEl\.classList\.remove\('is-hidden'\)/);
+        assert.doesNotMatch(js, /filtersEl\.style\.display/);
+        assert.match(getRuleBody(css, '.history-filters.is-hidden'), /display: none/);
     });
 
     test('system tab exposes recent audit operations list', () => {

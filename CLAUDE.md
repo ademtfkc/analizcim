@@ -666,6 +666,45 @@ ve geçici dosyaları (`-journal`/`-wal`/`-shm` dahil) siler.
 **Not:** `docs/screenshots/` görselleri bu turdan öncesine aittir; kenar çubuğu kenarlığı, madalya
 renkleri, gider şeridi ve cari kolonları değiştiği için yenilenmeleri gerekir (CEO kararına bırakıldı).
 
+### 2026-08-07 güncellemesi (tarayıcı görsel denetim turu — 18 bulgu)
+
+Uygulama gerçek verinin kopyası üzerinde izole tarayıcıda gezildi. Aşağıdakiler **yürürlükteki
+kurallardır**, tur özeti değil (detaylı geçmiş: `CHANGELOG.md`).
+
+1. **Görünürlük satır içi `style.display` ile yönetilmez.** Satır içi stil hiçbir `@media` kuralından
+   ezilemez; bu yüzden `renderHistory()`'deki `filtersEl.style.display = 'flex'` mobil tek-kolon
+   düzeninin **hiç devreye girmemesine** yol açıyordu (390px'te sekiz filtre kutusu ~35 piksele
+   sıkışıyordu). Doğru kalıp: `classList.add/remove('is-hidden')` + CSS'te
+   `.history-filters.is-hidden { display: none; }`. Özgüllük (0,2,0) medya kurallarını (0,1,0)
+   yendiği için `!important` gerekmez. Regresyon testi `filtersEl.style.display` ifadesinin kaynakta
+   bulunmamasını kilitler.
+2. **Tek yüzde biçimi artık üç katmanda birden geçerli.** Ön yüzde `formatPercent` /
+   `formatPercentSigned`, tahmin motorunun ürettiği CÜMLELERDE `predictor.formatPercentText`.
+   Şablon içinde `%${...toFixed(n)}` yazılmaz — bir regresyon testi bu deseni tarar. **Sayısal API
+   alanları Number kalmaya devam eder**; biçimlendirme yalnız metin üretimindedir.
+3. **Rozetler ve etiketler kelime ortasından bölünmez.** Dar flex kolonundaki rozetler
+   (`.risk-factor-severity`, `.action-priority`, `.missing-area-severity`, `.action-category`)
+   `white-space: nowrap` + `flex-shrink: 0` taşır.
+4. **Metin kırpma yalnız bilgi kaybettirmiyorsa kullanılır.** Tahminler yönetici özetinde
+   `-webkit-line-clamp` YASAK (asıl tahmin tutarını gizliyordu). "En Çok" listesinde firma unvanları
+   `text-overflow: ellipsis` ile kesilmez, satıra bölünür.
+5. **Yıl Karşılaştırma filtre satırı ölçü sistemine bağlıdır.** `.compare-year-card` çerçevesizdir
+   (Tahminler filtre alanlarıyla aynı kalıp: etiket + seçici); `.year-select-large` ve
+   `.compare-vs-badge` `--control-height` kullanır ve dokunmatik 44px listesinde yer alır.
+6. **Panelde fatura kaynaklı ve manuel listeler ayrı adlandırılır:** "Faturalardan Gelen Son 5 Cari"
+   (cari import) ve "Elle Eklenen Son 5 Müşteri" (manuel CRUD). Tıklanamayan isimler bağlantı sınıfı
+   (`recent-link-btn`) kullanmaz — koyu temada okunmuyordu; `recent-plain-name` kullanılır.
+7. **Yıl karşılaştırmasının "ortak ay" hesabı `src/compare-metrics.js` içindedir**
+   (`buildComparableSummary(y1, y2)`), veritabanı gerektirmeyen saf fonksiyondur ve gerçek sayı
+   testleriyle kilitlidir. Emsali `public/js/dashboard-metrics.js`. Yeni bir finansal hesap yazan
+   herkes aynı deseni izlemelidir: hesabı uçtan ayır, gerçek sayılarla test et. Kaynak metninde
+   anahtar kelime arayan regex testi **kanıt sayılmaz**.
+8. **`GET /api/admin/db-size`** (`requireAdmin`) yalnız `bytes` döner; dosya yolu yanıta yazılmaz.
+
+**Denetim ajanı disiplini:** Bu turda kalite kapısı iki tur döndü. Her iki ajan da düzeltmeleri
+geçici olarak bozup testlerin gerçekten kırıldığını bağımsız kanıtladı — yeni bir regresyon testi
+yazıldığında bu adım atlanmaz.
+
 ## En Çok Sayfası Standartları
 
 - Başlık kısadır: **"En Çok"** (eski "En Çok Satılan Firmalar ve Ürünler" kullanılmaz).

@@ -51,4 +51,36 @@ describe('Integration Tests - Admin Endpoints', () => {
         assert.equal(auditEntry.actorUsername, admin.username);
         assert.equal(auditEntry.details.username, pendingUser.username);
     });
+
+    test('database size endpoint is admin-only and returns a numeric size', async (t) => {
+        const client = await createTestClient(t);
+        if (!client) return;
+
+        // 1) Oturumsuz istek: giriş kapısına takılmalı
+        const anonim = await client.request('/api/admin/db-size');
+        assert.equal(anonim.status, 401);
+
+        // 2) Admin olmayan kullanıcı: yetki kapısına takılmalı
+        const uye = await seedUser({ username: uniqueUsername('member'), password: 'Test1234!' });
+        await client.login(uye.username, uye.password);
+        const uyeYaniti = await client.request('/api/admin/db-size');
+        assert.equal(uyeYaniti.status, 403);
+
+        // 3) Admin: sayısal boyut döner
+        const admin = await seedUser({
+            username: uniqueUsername('admin'),
+            password: 'Test1234!',
+            isAdmin: 1
+        });
+        await client.login(admin.username, admin.password);
+        const adminYaniti = await client.request('/api/admin/db-size');
+        assert.equal(adminYaniti.status, 200);
+        assert.equal(adminYaniti.body.success, true);
+        assert.equal(typeof adminYaniti.body.bytes, 'number');
+        assert.ok(adminYaniti.body.bytes > 0);
+
+        // Bilgi sızıntısı olmamalı: dosya yolu yanıta yazılmaz
+        assert.equal(adminYaniti.body.path, undefined);
+        assert.doesNotMatch(JSON.stringify(adminYaniti.body), /\.db|\//);
+    });
 });

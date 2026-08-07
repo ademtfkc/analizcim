@@ -4055,6 +4055,8 @@ body {
     border-radius: 4px;
     font-weight: 600;
     text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .action-item-desc,
@@ -4425,6 +4427,7 @@ body {
     font-size: 0.92rem;
     font-weight: 600;
     color: var(--text-primary);
+    min-width: 0;
 }
 
 .risk-factor-severity {
@@ -4434,6 +4437,9 @@ body {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    /* Rozet kelimesi ("Yüksek") satır ortasından bölünmemeli. */
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .risk-factor-severity.high {
@@ -5193,6 +5199,16 @@ body {
 
 .dashboard-recent-list .recent-link-btn:hover {
     text-decoration: underline;
+}
+
+/* Tıklanamayan isimler bağlantı rengini kullanmaz; koyu temada okunmuyordu. */
+.dashboard-recent-list .recent-plain-name {
+    color: var(--text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .history-flat-list {
@@ -6229,20 +6245,43 @@ body {
         gap: 1rem;
     }
 
+    /* "space-between" mobilde düğmeleri satırın iki ucuna savuruyordu (Excel solda, JSON
+       sağda, aralarında kocaman boşluk). Eşit genişlikte ızgara daha derli toplu. */
     .history-header-actions {
         width: 100%;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
     }
 
+    .history-header-actions > button {
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    /* Taban düzen GRID olduğu için "flex-direction: column" hiçbir işe yaramıyordu:
+       kutular mobilde de ızgara hücrelerinde kalıp sağa yaslanıyor, "Maks. tutar"
+       kartın kenarından taşıyordu (2026-08-07 denetimi). Mobilde tek kolon. */
     .history-filters {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.5rem;
+    }
+
+    .history-date-range {
+        grid-column: auto;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .history-search-input,
     .history-filter-select {
         width: 100%;
         min-width: auto;
+    }
+
+    .history-total-count {
+        justify-self: start;
     }
 
     .history-card {
@@ -6435,6 +6474,7 @@ body {
     .cockpit-page .dashboard-action-btn,
     .cockpit-page .compare-btn,
     .cockpit-page .year-select,
+    .cockpit-page .year-select-large,
     .cockpit-page .month-select,
     .cockpit-page .form-input,
     .cockpit-page .admin-tab,
@@ -6907,11 +6947,14 @@ body {
     text-align: center;
 }
 
+/* Firma unvanları uzundur; tek satıra sıkıştırıp "..." ile kesmek yerine
+   satıra bölünür — kullanıcı hangi firma olduğunu görebilmelidir. */
 .topn-table .name-cell {
     font-weight: 500;
     text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
 }
 
 .topn-table .amount-cell {
@@ -10712,6 +10755,12 @@ body,
     background: rgba(255, 255, 255, 0.05);
 }
 
+/* Geçmiş boşken filtre satırı gizlenir. Sınıfla yapılır; JS satır içi `style.display`
+   yazarsa medya sorguları ezilir ve mobil tek-kolon düzeni hiç devreye giremez. */
+.history-filters.is-hidden {
+    display: none;
+}
+
 .history-filters {
     display: grid;
     grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(150px, 0.78fr)) minmax(120px, 0.62fr) minmax(120px, 0.62fr);
@@ -10733,6 +10782,19 @@ body,
     background: var(--surface-raised);
     color: var(--text-primary);
     font: inherit;
+}
+
+/* Tek ölçü (2026-08-07 denetimi): bu satırdaki kutular 53 / 46 / 38 / 26 / 19 piksel
+   yükseklikte, farklı hizalarda duruyordu. "Tüm tipler" seçicisi 19 pikselle dokunma
+   hedefinin çok altındaydı. Hepsi aynı yüksekliğe ve aynı taban çizgisine getirildi. */
+.history-filters .history-search-input,
+.history-filters .history-filter-select,
+.history-filters .history-date-input {
+    box-sizing: border-box;
+    min-height: 46px;
+    height: 46px;
+    width: 100%;
+    min-width: 0;
 }
 
 [data-theme="dark"] .history-search-input {
@@ -11559,12 +11621,10 @@ body,
     font-size: 1.28rem !important;
 }
 
+/* Yönetici özeti kırpılmaz: iki satırlık kırpma, tahmin tutarı ve brüt kâr
+   cümlelerini gizliyordu (yalnız yasal uyarı görünüyordu). */
 .prediction-executive-main .ceo-summary-text {
-    display: -webkit-box;
     margin: 0 !important;
-    overflow: hidden;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
     font-size: 0.92rem !important;
     line-height: 1.48 !important;
 }
@@ -14136,6 +14196,8 @@ textarea.form-input { font-family: inherit; }
     color: var(--text-secondary);
     background: var(--bg-card);
     border: 1px solid var(--border-color);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .action-title {
@@ -14676,6 +14738,15 @@ textarea.form-input { font-family: inherit; }
 .compare-btn,
 .compare-vs-badge {
     border-radius: 8px !important;
+}
+
+/* VS rozeti de ölçü sistemine uyar; 56px iken seçici/butonla aynı hizada durmuyordu. */
+.cockpit-page .compare-vs-badge {
+    width: var(--control-height);
+    height: var(--control-height);
+    min-width: var(--control-height);
+    min-height: var(--control-height);
+    font-size: 0.8rem;
 }
 
 .compare-delta-grid {
@@ -16014,11 +16085,17 @@ body:not(.admin-user) .nav-tab#tabAdmin {
 .admin-tabs,
 .admin-tab-content,
 .compare-controls-main,
-.compare-year-card,
 .topn-filters select,
 .year-select-large,
 .modal-content .form-input {
     border: 1px solid var(--border-color) !important;
+}
+
+/* Yıl kartı çerçevesizdir: etiket + seçici, Tahminler filtre alanlarıyla aynı kalıp.
+   Çerçeve varken iç boşluk olmadığı için "Birinci Yıl" yazısı kenarlığa yapışıyordu. */
+.compare-year-card {
+    border: none !important;
+    background: transparent !important;
 }
 
 .prediction-info,
@@ -17442,6 +17519,7 @@ body:not(.admin-user) .nav-tab#tabAdmin {
 .cockpit-page .dashboard-action-btn,
 .cockpit-page .compare-btn,
 .cockpit-page .year-select,
+.cockpit-page .year-select-large,
 .cockpit-page .month-select,
 .cockpit-page .dashboard-control-group,
 .cockpit-page .expenses-period-selector select,

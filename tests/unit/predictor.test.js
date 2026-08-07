@@ -493,6 +493,28 @@ describe('predictor.js - predictNextMonths', () => {
         assert.ok(dusen.criticalWarning, 'sert düşüşte uyarı üretilmeli');
         assert.match(dusen.criticalWarning, /düşüş/);
     });
+
+    test('sentences use the Turkish percent format (%12,3) not the English one', () => {
+        const yukselen = [];
+        for (let i = 0; i < 14; i += 1) {
+            yukselen.push({ month: `2024-${String((i % 12) + 1).padStart(2, '0')}`, amount: 40000 + i * 3500 });
+        }
+        const sonuc = predictNextMonths(yukselen, 3, { expenses: { total: 90000 } });
+        const ozet = sonuc.ceoAnalysis.executiveSummary;
+
+        // "%33.1" gibi noktalı yazım kalmamalı; ondalık ayırıcı virgül olmalı
+        assert.doesNotMatch(ozet, /%\d+\.\d/);
+        if (/%/.test(ozet)) {
+            assert.match(ozet, /%\d{1,3}(\.\d{3})*,\d/);
+        }
+
+        const metinler = []
+            .concat(sonuc.ceoAnalysis.observations || [])
+            .concat((sonuc.ceoAnalysis.missingAreas || []).map((m) => m.description || ''));
+        metinler.forEach((metin) => {
+            assert.doesNotMatch(metin, /%\d+\.\d/, `noktalı yüzde kaldı: ${metin}`);
+        });
+    });
 });
 
 describe('predictor.js - financial health diagnostics', () => {

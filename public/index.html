@@ -522,8 +522,8 @@
                         <option value="sales">Sadece satış</option>
                         <option value="purchase">Sadece alış</option>
                     </select>
-                    <input type="number" id="historyAmountMin" class="history-search-input" placeholder="Min. tutar" min="0" step="0.01" aria-label="Minimum tutar" style="width:120px">
-                    <input type="number" id="historyAmountMax" class="history-search-input" placeholder="Maks. tutar" min="0" step="0.01" aria-label="Maximum tutar" style="width:120px">
+                    <input type="number" id="historyAmountMin" class="history-search-input" placeholder="Min. tutar" min="0" step="0.01" aria-label="Minimum tutar">
+                    <input type="number" id="historyAmountMax" class="history-search-input" placeholder="Maks. tutar" min="0" step="0.01" aria-label="Maksimum tutar">
                     <div class="history-date-range" aria-label="Tarih aralığı">
                         <div class="history-filter-field history-date-field">
                             <label class="history-filter-label" for="historyDateFrom">Başlangıç Tarihi</label>
@@ -1025,13 +1025,13 @@
                                 </ul>
                             </div>
                             <div class="dashboard-customer-panel">
-                                <span class="dashboard-customer-label">Son Eklenen 5 Cari</span>
+                                <span class="dashboard-customer-label">Faturalardan Gelen Son 5 Cari</span>
                                 <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentPartiesList">
                                     <li class="recent-empty">Henüz cari hareketi yok</li>
                                 </ul>
                             </div>
                             <div class="dashboard-customer-panel">
-                                <span class="dashboard-customer-label">Son Eklenen 5 Müşteri</span>
+                                <span class="dashboard-customer-label">Elle Eklenen Son 5 Müşteri</span>
                                 <ul class="dashboard-recent-list dashboard-customer-list" id="dashboardRecentCustomersList">
                                     <li class="recent-empty">Henüz müşteri eklenmemiş</li>
                                 </ul>
@@ -2331,7 +2331,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Analizcim © 2024 - Lokal Excel Analiz Uygulaması</p>
+            <p>Analizcim © <span id="footerYear">2026</span> - Lokal Excel Analiz Uygulaması</p>
         </footer>
 
         <!-- Analiz Detay Modal (Son eklenen / detay görüntüleme) -->

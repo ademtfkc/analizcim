@@ -7,6 +7,7 @@ const fs = require('fs');
 const { analyzeFiles, mergeAnalyzeFiles } = require('./analyzer');
 const storage = require('./storage');
 const backupManager = require('./backup-manager');
+const { buildComparableSummary } = require('./compare-metrics');
 const logger = require('./logger');
 
 const app = express();
@@ -371,6 +372,21 @@ app.get('/api/break-even', async (req, res) => {
     } catch (err) {
         logger.error({ err }, 'Başabaş analizi yapılırken hata oluştu');
         res.status(500).json({ error: 'Başabaş analizi yapılırken hata oluştu.' });
+    }
+});
+
+// Ayarlar sayfasındaki "Veritabanı Boyutu" kutusu hiçbir yerden beslenmiyordu, hep "–"
+// gösteriyordu (2026-08-07 denetimi). Yalnız dosya boyutunu döner; içerik sızdırmaz.
+app.get('/api/admin/db-size', requireAdmin, (req, res) => {
+    try {
+        const dbPath = db.filename;
+        if (!dbPath || !fs.existsSync(dbPath)) {
+            return res.json({ success: true, bytes: null });
+        }
+        res.json({ success: true, bytes: fs.statSync(dbPath).size });
+    } catch (error) {
+        logger.error({ err: error }, 'DB size error:');
+        res.status(500).json({ error: 'Veritabanı boyutu okunamadı.' });
     }
 });
 
@@ -1545,55 +1561,15 @@ app.get('/api/compare', async (req, res) => {
         const profitGrowth = y1.profit !== 0 ? ((y2.profit - y1.profit) / Math.abs(y1.profit) * 100).toFixed(1) : null;
         const netProfitGrowth = (y1.net_profit !== 0) ? ((y2.net_profit - y1.net_profit) / Math.abs(y1.net_profit) * 100).toFixed(1) : null;
 
-        // ORTAK AY KIYASI (2026-08-07): Yıllardan biri eksikse (örn. 2025 tam, 2026 altı aylık)
-        // yıl toplamlarını kıyaslamak "satış %40 düştü" gibi YANLIŞ bir sonuç üretir; eksik aylar
-        // sıfır sayılır. Panel tarafındaki computeYoyDelta aynı kuralı zaten uyguluyordu.
-        // Ek alandır: mevcut year1/year2/growth alanları birebir korunmuştur.
-        const ayHareketliMi = (yil, m) => {
-            const satir = yil.monthly[m - 1];
-            return (satir.sales || 0) !== 0 || (satir.purchase || 0) !== 0;
-        };
-        const ortakAylar = [];
-        for (let m = 1; m <= 12; m++) {
-            if (ayHareketliMi(y1, m) && ayHareketliMi(y2, m)) ortakAylar.push(m);
-        }
-        const ortakToplam = (yil) => ortakAylar.reduce((acc, m) => {
-            const satir = yil.monthly[m - 1];
-            acc.sales += satir.sales || 0;
-            acc.purchase += satir.purchase || 0;
-            acc.salesTax += satir.salesTax || 0;
-            acc.purchaseTax += satir.purchaseTax || 0;
-            return acc;
-        }, { sales: 0, purchase: 0, salesTax: 0, purchaseTax: 0 });
-        const o1 = ortakToplam(y1);
-        const o2 = ortakToplam(y2);
-        // Kâr KDV hariç: (satış - satış KDV) - (alış - alış KDV). Gider yıllık olduğu için
-        // ortak-ay kıyasına dahil edilmez; bu yüzden alan adı brüt kârdır, net kâr değil.
-        o1.profit = (o1.sales - o1.salesTax) - (o1.purchase - o1.purchaseTax);
-        o2.profit = (o2.sales - o2.salesTax) - (o2.purchase - o2.purchaseTax);
-        const oran = (onceki, sonraki) => (onceki !== 0
-            ? ((sonraki - onceki) / Math.abs(onceki) * 100).toFixed(1)
-            : null);
-        const aylariSay = (yil) => yil.monthly.filter((_, i) => ayHareketliMi(yil, i + 1)).length;
-
+        // ORTAK AY KIYASI (2026-08-07): hesap `src/compare-metrics.js` içinde saf fonksiyondur
+        // (veritabanı gerektirmez, birim testi ile kilitlidir). Ek alandır: mevcut
+        // year1/year2/growth alanları birebir korunmuştur.
         res.json({
             success: true,
             year1: y1,
             year2: y2,
             growth: { sales: salesGrowth, purchase: purchaseGrowth, profit: profitGrowth, net_profit: netProfitGrowth },
-            comparable: {
-                sharedMonths: ortakAylar,
-                sharedMonthCount: ortakAylar.length,
-                year1MonthCount: aylariSay(y1),
-                year2MonthCount: aylariSay(y2),
-                year1: o1,
-                year2: o2,
-                growth: {
-                    sales: oran(o1.sales, o2.sales),
-                    purchase: oran(o1.purchase, o2.purchase),
-                    profit: oran(o1.profit, o2.profit)
-                }
-            }
+            comparable: buildComparableSummary(y1, y2)
         });
     } catch (error) {
         logger.error({ err: error }, 'Compare error:');

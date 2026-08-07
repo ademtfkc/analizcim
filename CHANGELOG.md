@@ -5,6 +5,70 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-08-07 — Tarayıcı görsel denetim turu (18 bulgu, A/B/C grupları)
+
+Uygulama gerçek verinin bir kopyası üzerinde izole tarayıcıda baştan sona gezildi; 18 bulgu çıktı ve
+üç grup halinde kapatıldı. Grup A ve B ayrı commit'lerde (`406400b`, `af9fb51`); aşağıdaki C grubu ve
+denetim ajanlarının bulguları bu turun son commit'indedir.
+
+### C grubu — hizalama ve mobil
+
+1. **Geçmiş filtre satırı mobilde kullanılamıyordu (KRİTİK).** `renderHistory()` içindeki
+   `filtersEl.style.display = 'flex'` satır içi stili hiçbir `@media` kuralından ezilemediği için
+   mobil tek-kolon düzeni **hiç devreye giremiyordu**; 390px'te sekiz kutu ~35 piksele sıkışıyordu.
+   Görünürlük artık `is-hidden` sınıfıyla yönetilir (`.history-filters.is-hidden { display: none }`,
+   özgüllük 0,2,0 — `!important` gerekmedi). Yeni bir görünürlük kodu yazan herkes satır içi
+   `style.display` yerine sınıf kullanmalıdır; regresyon testi bunu kilitler.
+2. **Kontrol yükseklikleri.** Geçmiş filtre satırındaki kutular 53/46/38/26/19 piksel arasında
+   değişiyordu; hepsi 46 piksele ve aynı taban çizgisine getirildi, satır içi `width:120px` kaldırıldı,
+   `.history-header-actions` mobilde 2 kolon × 44 piksele geçti.
+3. **Rozetler kelime ortasından bölünüyordu** ("Yükse / k"). `.risk-factor-severity`,
+   `.action-priority`, `.missing-area-severity`, `.action-category` → `white-space: nowrap` +
+   `flex-shrink: 0`.
+4. **Kırpılan metinler.** Tahminler yönetici özeti `-webkit-line-clamp: 2` yüzünden yalnız yasal
+   uyarıyı gösteriyor, asıl tahmin tutarını ve brüt kârı gizliyordu → kırpma kaldırıldı. "En Çok"
+   sayfasında firma unvanları 253 pikselde `...` ile kesiliyordu → satıra bölünüyor.
+5. **Yıl Karşılaştırma filtre alanı.** `.compare-year-card` çerçevesi kaldırıldı (iç boşluk olmadığı
+   için "Birinci Yıl" etiketi kenarlığa yapışıktı); `.year-select-large` ve `.compare-vs-badge` kokpit
+   ölçü sistemine (`--control-height`) bağlandı — seçici 56px iken buton 38px'ti, artık üçü de aynı.
+   Dokunmatik 44 piksel listesine de eklendi.
+6. **Panelde iki liste aynı adı taşıyordu.** "Faturalardan Gelen Son 5 Cari" (fatura kaynaklı) ve
+   "Elle Eklenen Son 5 Müşteri" (manuel CRUD) olarak ayrıştırıldı. Tıklanamayan isimler `recent-link-btn`
+   bağlantı sınıfını kullandığı için koyu temada `#737373` ile okunmuyordu → `recent-plain-name`.
+7. **Ayarlar'daki "Veritabanı Boyutu" kutusu hep boştu.** Yeni `GET /api/admin/db-size`
+   (`requireAdmin`; yalnız bayt döner, dosya yolu dönmez) + `loadAdminDbSize()`. Footer yılı elle
+   yazılmıştı → `#footerYear`.
+8. **Sekme değişiminde sayfa başa kaydırılıyor.**
+
+### Yüzde biçimi kaçakları
+
+2026-08-07'de kurulan "tek Türkçe yüzde biçimi" kuralı iki katmana uygulanmamıştı:
+
+- **Tahmin motoru (`src/predictor.js`).** Cümle içine gömülen yüzdeler `%33.1` yazıyordu → yeni
+  `formatPercentText(deger, ondalik)` yardımcısı. **Sayısal API alanları Number kalmaya devam eder**;
+  yalnız metin üretimi değişti, şema kırılmadı.
+- **Ön yüz (`public/app.js`).** `%${...toFixed(n)}` deseninden 10 kaçak vardı (Pareto özeti ve grafik
+  ipucu, kâr/zarar yüzdesi, aykırı değer sapması, cari karar panelindeki "İlk 3", gider karar
+  panelindeki dört cümle). Hepsi `formatPercent`'e bağlandı; kodda o desenden sıfır tane kaldı.
+
+### Test edilebilirlik
+
+- **Yıl karşılaştırmasının "ortak ay" hesabı saf modüle taşındı:** `src/compare-metrics.js` →
+  `buildComparableSummary(y1, y2)`. Veritabanı ve oturum gerektirmez, 5 gerçek sayı senaryosuyla
+  test edilir (`tests/unit/compare-metrics.test.js`). Emsali `public/js/dashboard-metrics.js`.
+  Davranış korundu: canlı uçtan ölçüldü — ortak 6 ay, satış +%32,5, kâr +%130,8.
+- `GET /api/admin/db-size` için 401 / 403 / 200 entegrasyon testi.
+
+**Kalite kapısı iki tur döndü.** kod-inceleyici ilk turda RET verdi (yeni admin ucu testsiz, ortak-ay
+hesabı yalnız regex ile doğrulanıyor); test-uzmani ilk turda RET verdi (yukarıdaki 1 numaralı kritik
+hata ve Pareto yüzdesi). Hepsi kapatıldıktan sonra ikisi de ONAY verdi; her iki ajan da düzeltmeleri
+geçici olarak bozup testlerin gerçekten kırıldığını bağımsız kanıtladı.
+
+**Doğrulama:** lint temiz, **207 birim + 38 entegrasyon + 1 smoke**. Dokuz sekme × (1440 + 768 + 390) ×
+(koyu + açık): 0 konsol hatası, sayfa düzeyinde 0 yatay kaydırma.
+
+---
+
 ## 2026-08-07 — Denetim raporu düzeltmeleri (9 madde)
 
 Depo + ekran görüntüsü denetiminde bulunan bulgular CEO onayıyla sırayla kapatıldı.

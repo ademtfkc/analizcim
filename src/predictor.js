@@ -901,7 +901,7 @@ function generateCEOInsights(data, predictions, trend, seasonality, risk, purcha
     let executiveSummary = DISCLAIMER + ' ';
 
     if (trend === 'up') {
-        executiveSummary += `Geçmiş verilere dayanarak yükseliş eğilimi gözlemlenmektedir. Önümüzdeki ay için projeksiyon ${formatCurrency(predictedNext)} olup, bu mevcut seviyenin %${Math.abs(growthPct)} üzerindedir.`;
+        executiveSummary += `Geçmiş verilere dayanarak yükseliş eğilimi gözlemlenmektedir. Önümüzdeki ay için projeksiyon ${formatCurrency(predictedNext)} olup, bu mevcut seviyenin ${formatPercentText(Math.abs(Number(growthPct)), 1)} üzerindedir.`;
 
         if (nextProfit > 0) {
             executiveSummary += ` Tahmini brüt kâr: ${formatCurrency(nextProfit)}.`;
@@ -928,7 +928,7 @@ function generateCEOInsights(data, predictions, trend, seasonality, risk, purcha
     // Expense-based insight
     if (avgMonthlyExpense > 0 && nextProfit > 0) {
         const expenseRatio = (avgMonthlyExpense / nextProfit * 100).toFixed(1);
-        observations.push(`Aylık ortalama gider (${formatCurrency(avgMonthlyExpense)}), tahmini brüt kârın %${expenseRatio}'unu oluşturmaktadır.`);
+        observations.push(`Aylık ortalama gider (${formatCurrency(avgMonthlyExpense)}), tahmini brüt kârın ${formatPercentText(expenseRatio, 1)}'unu oluşturmaktadır.`);
 
         if (nextNetProfit < 0) {
             noteItems.push({ priority: 'urgent', action: 'Giderler brüt kârı aşıyor — gider optimizasyonu değerlendirilebilir', deadline: 'Acil' });
@@ -1031,7 +1031,7 @@ function generateCEOInsights(data, predictions, trend, seasonality, risk, purcha
         missingAreas.push({
             area: 'Gelir İstikrarı',
             severity: 'medium',
-            description: `%${volatility.toFixed(0)} gelir volatilitesi gözlemlenmiştir.`,
+            description: `${formatPercentText(volatility, 0)} gelir volatilitesi gözlemlenmiştir.`,
             action: 'Bilgilendirme amaçlı: gelir dağılımı detaylı incelenebilir.'
         });
     }
@@ -1040,7 +1040,7 @@ function generateCEOInsights(data, predictions, trend, seasonality, risk, purcha
         missingAreas.push({
             area: 'Mevsimsel Bağımlılık',
             severity: 'medium',
-            description: `%${seasonality.variance} sezonsal varyans gözlemlenmiştir.`,
+            description: `${formatPercentText(seasonality.variance, 0)} sezonsal varyans gözlemlenmiştir.`,
             action: `Bilgilendirme amaçlı: ${seasonality.lowPeriod} dönemi ayrıca incelenebilir.`
         });
     }
@@ -1086,6 +1086,19 @@ function generateCEOInsights(data, predictions, trend, seasonality, risk, purcha
 
 function formatCurrency(amount) {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(amount);
+}
+
+/**
+ * Cümle içine gömülen yüzdeler tek biçimde yazılır: %12,3 (Türkçe ondalık virgül).
+ * Sayısal alanlar Number olarak dönmeye devam eder; bu yalnızca metin içindir.
+ */
+function formatPercentText(value, decimals = 1) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '%0';
+    return '%' + new Intl.NumberFormat('tr-TR', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    }).format(num);
 }
 
 // ============================================
