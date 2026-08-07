@@ -447,6 +447,52 @@ describe('predictor.js - predictNextMonths', () => {
         assert.ok(typeof feedback.summary === 'string' && feedback.summary.includes('3 ay'));
         assert.ok(feedback.samePeriodLastYearComparison == null || Number.isFinite(feedback.samePeriodLastYearComparison.changePct));
     });
+
+    // 2026-08-07 tarayıcı denetimi: aynı kartta yeşil "hafif yükseliş sinyali var" ile kırmızı
+    // "güçlü düşüş ... taşıyor" yan yana çıkıyordu. Uyarı metni gerçek sebebi söylemeli.
+    test('critical warning matches the real reason instead of claiming a decline', () => {
+        // Yükselen ama çok dalgalı seri: risk yüksek çıkar, trend yukarı yönlüdür.
+        const dalgaliYukselen = [
+            { month: '2024-01', amount: 10000 },
+            { month: '2024-02', amount: 45000 },
+            { month: '2024-03', amount: 12000 },
+            { month: '2024-04', amount: 52000 },
+            { month: '2024-05', amount: 15000 },
+            { month: '2024-06', amount: 60000 },
+            { month: '2024-07', amount: 18000 },
+            { month: '2024-08', amount: 68000 },
+            { month: '2024-09', amount: 20000 },
+            { month: '2024-10', amount: 75000 },
+            { month: '2024-11', amount: 24000 },
+            { month: '2024-12', amount: 82000 }
+        ];
+        const yukselen = predictNextMonths(dalgaliYukselen).accountantFeedback;
+        if (yukselen.criticalWarning && yukselen.trend.direction !== 'down') {
+            assert.doesNotMatch(yukselen.criticalWarning, /güçlü düşüş/,
+                'trend düşüş değilken uyarı "güçlü düşüş" dememeli');
+            assert.match(yukselen.criticalWarning, /belirsizlik|dalgalanma/);
+        }
+
+        // Sert düşen seri: uyarı düşüşü açıkça söylemeli.
+        const sertDusen = [
+            { month: '2024-01', amount: 90000 },
+            { month: '2024-02', amount: 84000 },
+            { month: '2024-03', amount: 76000 },
+            { month: '2024-04', amount: 65000 },
+            { month: '2024-05', amount: 54000 },
+            { month: '2024-06', amount: 43000 },
+            { month: '2024-07', amount: 33000 },
+            { month: '2024-08', amount: 24000 },
+            { month: '2024-09', amount: 17000 },
+            { month: '2024-10', amount: 11000 },
+            { month: '2024-11', amount: 7000 },
+            { month: '2024-12', amount: 4000 }
+        ];
+        const dusen = predictNextMonths(sertDusen).accountantFeedback;
+        assert.equal(dusen.trend.direction, 'down');
+        assert.ok(dusen.criticalWarning, 'sert düşüşte uyarı üretilmeli');
+        assert.match(dusen.criticalWarning, /düşüş/);
+    });
 });
 
 describe('predictor.js - financial health diagnostics', () => {

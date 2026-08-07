@@ -1336,7 +1336,10 @@ const NUMERIC_COLOR_SELECTOR = [
     '.pl-value',
     '.pl-percentage',
     '.kdv-value',
-    '.growth-value',
+    // '.growth-value' BİLEREK YOK (2026-08-07): büyüme kartlarının iyi/kötü sınıfını zaten
+    // growthRow() veriyor. Genel boyayıcı burada sayının işaretine bakıyordu ve
+    // "Ardışık Düşüş · 2 ay" gibi KÖTÜ bir sinyali yeşile çeviriyordu; hareketli
+    // ortalama gibi nötr tutarları da yeşil gösteriyordu.
     '.prediction-trend'
 ].join(',');
 
@@ -2192,7 +2195,7 @@ function renderBusinessPartyRail(type, parties) {
         // (bir cari kaydı ya tamamen satış ya tamamen alış hareketinden oluşur), yani renk
         // veriye göre değişmiyor — sabit kırmızı/yeşil yanlış sinyal verirdi.
         { label: 'Net fatura tutarı', value: formatCurrency(Math.abs(acikBakiye)) },
-        { label: 'İlk 3 cari payı', value: toplamHacim > 0 ? '%' + ilkUcPay.toFixed(1).replace('.', ',') : '—',
+        { label: 'İlk 3 cari payı', value: toplamHacim > 0 ? formatPercent(ilkUcPay, 1) : '—',
           tone: ilkUcPay >= 60 ? 'negative' : '' }
     ]);
 
@@ -3952,9 +3955,9 @@ function renderExpensesRail(view) {
         { label: 'Brüt kâr', value: formatCurrency(view.gross) },
         { label: 'Toplam gider', value: formatCurrency(toplam) },
         { label: 'Net sonuç', value: formatCurrency(view.net), tone: view.net >= 0 ? 'positive' : 'negative' },
-        { label: 'Gider / brüt kâr', value: view.gross > 0 ? '%' + giderOrani.toFixed(1).replace('.', ',') : '—',
+        { label: 'Gider / brüt kâr', value: view.gross > 0 ? formatPercent(giderOrani, 1) : '—',
           tone: giderOrani > 100 ? 'negative' : '' },
-        { label: 'Sabit gider payı', value: toplam > 0 ? '%' + sabitPayi.toFixed(1).replace('.', ',') : '—' }
+        { label: 'Sabit gider payı', value: toplam > 0 ? formatPercent(sabitPayi, 1) : '—' }
     ]);
 
     // En büyük 5 gider kalemi (sabit + değişken birlikte)
@@ -4821,16 +4824,21 @@ function renderProfitLoss(data, periodLabel) {
     document.getElementById('plGrossProfit').textContent = formatCurrency(totals.grossProfit || 0);
     document.getElementById('plTotalExpenses').textContent = formatCurrency(totals.expenses || 0);
     document.getElementById('plNetProfit').textContent = formatCurrency(totals.netProfit || 0);
-    document.getElementById('plProfitMargin').textContent = (totals.avgProfitMargin || 0) + '%';
+    // Tek yüzde biçimi: "%25,6". Eskiden burada "25.6%" yazılıyordu (nokta + sona işaret),
+    // aynı ekranda üç farklı yüzde dili görünüyordu (2026-08-07 denetimi).
+    document.getElementById('plProfitMargin').textContent = formatPercent(totals.avgProfitMargin || 0, 1);
 
-    // Style totals based on values
+    // Brüt kâr, net kâr ve marj SONUÇ değerleridir: renklerini genel sayı boyayıcı verir
+    // (.dashboard-pl-value:not(.sales):not(.purchase):not(.expense)). Buraya 'sales'/'expense'
+    // sınıfı yazmak ciro/gider dilini kâr alanına taşıyordu.
     const grossProfitEl = document.getElementById('plGrossProfit');
     const netProfitEl = document.getElementById('plNetProfit');
     const profitMarginEl = document.getElementById('plProfitMargin');
-    
-    grossProfitEl.className = 'dashboard-pl-value ' + ((totals.grossProfit || 0) >= 0 ? 'sales' : 'expense');
-    netProfitEl.className = 'dashboard-pl-value ' + ((totals.netProfit || 0) >= 0 ? 'sales' : 'expense');
-    profitMarginEl.className = 'dashboard-pl-value ' + ((totals.avgProfitMargin || 0) >= 0 ? 'sales' : 'expense');
+
+    grossProfitEl.className = 'dashboard-pl-value';
+    netProfitEl.className = 'dashboard-pl-value';
+    profitMarginEl.className = 'dashboard-pl-value';
+    colorizeNumericValues(grossProfitEl.closest('.dashboard-pl-totals') || document);
 
     // Render monthly table
     const tbody = document.getElementById('dashboardPLTableBody');
@@ -5305,9 +5313,10 @@ function renderSparkline(elementId, values, tone) {
         'stroke-linejoin="round" stroke-linecap="round" points="' + points + '"></polyline></svg>';
 }
 
+// KPI rozetleri de uygulamanın tek yüzde biçimini kullanır: "+%32,5" (eskiden "+32,5%").
 function formatDeltaText(pct) {
     if (pct === null || !Number.isFinite(pct)) return '';
-    return (pct > 0 ? '+' : '') + pct.toFixed(1).replace('.', ',') + '%';
+    return formatPercentSigned(pct, 1);
 }
 
 function setTileDelta(elementId, pct, inverse) {
@@ -5395,7 +5404,7 @@ function renderCockpitSurfaces(view) {
         heroDelta.textContent = deltaText ? deltaText + ' · geçen yıl aynı dönem' : '';
         heroDelta.className = 'hero-stat-delta ' + (deltaText ? signalToneClass(netDelta) : 'neutral');
     }
-    if (heroMargin) heroMargin.textContent = '%' + view.grossMargin.toFixed(1).replace('.', ',');
+    if (heroMargin) heroMargin.textContent = formatPercent(view.grossMargin, 1);
     // "En zayıf ay" mutlak olarak zarar demek değildir; kırmızı yalnızca marj gerçekten negatifse
     if (heroBest) {
         heroBest.textContent = formatMarginPoint(extremes.best);
@@ -6416,9 +6425,10 @@ async function loadPredictions() {
                         changeBase = predData.predictions[i - 1].amount;
                     }
                     const changePct = changeBase > 0 ? ((p.amount - changeBase) / changeBase * 100).toFixed(1) : 0;
-                    const changeSign = changePct > 0 ? '+' : '';
                     const changeClass = changePct >= 0 ? 'text-success' : 'text-danger';
                     const changeIcon = changePct >= 0 ? '▲' : '▼';
+                    // Tek yüzde biçimi: "+%1,6" (eskiden "+1.6%" yazıyordu)
+                    const changeText = formatPercentSigned(Number(changePct), 1);
 
                     return `
                         <tr>
@@ -6426,7 +6436,7 @@ async function loadPredictions() {
                             <td>${formatCurrency(p.amount)}</td>
                             <td>${formatCurrency(purchaseAmt)}</td>
                             <td class="${isProfitPositive ? 'text-success' : 'text-danger'}">${formatCurrency(profitAmt)}</td>
-                            <td><span class="${changeClass}">${changeIcon} ${changeSign}${changePct}%</span></td>
+                            <td><span class="${changeClass}">${changeIcon} ${changeText}</span></td>
                         </tr>
                     `;
                 }).join('');
@@ -6671,7 +6681,7 @@ function renderModelComparison(predData) {
                 <td>${escapeHtml(model.label || model.key)}</td>
                 <td>${model.mae == null ? '-' : formatCurrency(model.mae)}</td>
                 <td>${model.rmse == null ? '-' : formatCurrency(model.rmse)}</td>
-                <td>${model.mape == null ? '-' : `%${Number(model.mape).toFixed(1)}`}</td>
+                <td>${model.mape == null ? '-' : formatPercent(Number(model.mape), 1)}</td>
                 <td><span class="model-status-pill ${model.selected ? 'selected' : model.available ? 'available' : 'disabled'}">${escapeHtml(status)}</span></td>
             </tr>
         `;
@@ -7323,7 +7333,7 @@ function renderBusinessAnalytics(predData) {
                 ? { label: 'RMSE', value: formatCurrency(diagnostics.rmse), hint: 'Büyük hatalara duyarlılık' }
                 : { label: 'Eğim', value: `${q.slope >= 0 ? '+' : ''}${formatCurrency(q.slope)}`, hint: 'Aylık trend etkisi', cls: q.slope >= 0 ? 'good' : 'bad' },
             diagnostics.mape != null
-                ? { label: 'MAPE', value: `%${Number(diagnostics.mape).toFixed(1)}`, hint: 'Yüzdesel hata' }
+                ? { label: 'MAPE', value: formatPercent(Number(diagnostics.mape), 1), hint: 'Yüzdesel hata' }
                 : { label: 'Eğim Std. Hata', value: formatCurrency(q.seSlope), hint: 'Trend belirsizliği' }
         ];
         rqGrid.innerHTML = modelMetrics.map(metric => `
@@ -7957,9 +7967,10 @@ function renderRailActionItems(containerId, items) {
 function pctText(value) {
     if (value == null || !Number.isFinite(Number(value))) return '—';
     const n = Number(value);
-    // Yuvarlamadan sonra sıfıra düşen değerler "-0,0%" gibi görünmesin
+    // Yuvarlamadan sonra sıfıra düşen değerler "-%0,0" gibi görünmesin
     const rounded = Math.abs(n) < 0.05 ? 0 : n;
-    return (rounded > 0 ? '+' : (rounded < 0 ? '' : '')) + rounded.toFixed(1).replace('.', ',') + '%';
+    // Uygulamanın tek yüzde biçimi: "+%32,5" (eskiden "+32,5%")
+    return rounded === 0 ? formatPercent(0, 1) : formatPercentSigned(rounded, 1);
 }
 
 // Marj farkı yüzde değil YÜZDE PUAN'dır; birim ayrı yazılır

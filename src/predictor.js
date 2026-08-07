@@ -710,9 +710,21 @@ function buildAccountantFeedback(dataArray, forecastResult, seasonality, riskAss
         actionSentence = 'Satış beklentisi düşüyor. Maliyetleri gözden geçirmeniz, tahsilat takibini sıkılaştırmanız ve kampanya planlamanız önerilir.';
     }
 
+    // Uyarı metni GERÇEK sebebi söyler. Eskiden tek bir "güçlü düşüş veya yüksek risk"
+    // cümlesi vardı; trend yukarı yönlüyken bile "güçlü düşüş" yazdığı için aynı kartta
+    // yeşil "hafif yükseliş" ile kırmızı "güçlü düşüş" yan yana görünüyordu (2026-08-07).
     let criticalWarning = null;
-    if (riskAssessment?.level === 'high' || changePct <= -20) {
-        criticalWarning = 'Kritik uyarı: Tahmin dönemi güçlü düşüş veya yüksek risk sinyali taşıyor; nakit akışı ve gider kararları yakından izlenmeli.';
+    const dususVar = changePct <= -20;
+    const riskYuksek = riskAssessment?.level === 'high';
+    if (dususVar && riskYuksek) {
+        criticalWarning = 'Kritik uyarı: Tahmin dönemi hem güçlü düşüş hem yüksek belirsizlik taşıyor; '
+            + 'nakit akışı ve gider kararları yakından izlenmeli.';
+    } else if (dususVar) {
+        criticalWarning = 'Kritik uyarı: Tahmin dönemi güçlü düşüş sinyali taşıyor; '
+            + 'nakit akışı ve gider kararları yakından izlenmeli.';
+    } else if (riskYuksek) {
+        criticalWarning = 'Dikkat: Yön ' + directionLabel + ' görünüyor, ancak geçmiş satış dalgalanması yüksek '
+            + 'olduğu için tahmin bandı geniş. Tek bir rakama göre değil, kötümser senaryoya göre plan yapın.';
     }
 
     const seasonalityWarning = seasonality?.detected

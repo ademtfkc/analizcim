@@ -2123,16 +2123,13 @@ body {
     display: block;
 }
 
-.dashboard-pl-value.sales {
-    color: var(--success);
-}
-
-.dashboard-pl-value.purchase {
-    color: var(--warning);
-}
-
+/* Renk disiplini (2026-08-07): ciro, alış tutarı ve gider tutarı SONUÇ değildir —
+   artmaları tek başına iyi ya da kötü haber demek değildir. Bu üçü nötr kalır; yeşil/kırmızı
+   yalnız brüt kâr, net kâr ve kâr marjı gibi sonuç değerlerinde kullanılır. */
+.dashboard-pl-value.sales,
+.dashboard-pl-value.purchase,
 .dashboard-pl-value.expense {
-    color: var(--danger);
+    color: var(--text-primary);
 }
 
 .dashboard-pl-table-container {
@@ -10026,7 +10023,7 @@ body,
 .profit,
 .positive,
 .growth-value.positive,
-.dashboard-pl-value.sales,
+/* .dashboard-pl-value.sales BİLEREK YOK: ciro sonuç değil, nötr kalır (renk disiplini). */
 .dashboard-card-value.profit,
 .history-stat-value.profit,
 .pl-value.profit,

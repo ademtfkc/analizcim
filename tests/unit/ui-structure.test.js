@@ -561,6 +561,46 @@ describe('UI structure rules', () => {
         assert.match(js, /ortak \$\{kiyas\.sharedMonthCount\} ay/);
     });
 
+    // 2026-08-07: "Ardışık Düşüş · 2 ay" kutusu kötü sinyal olmasına rağmen YEŞİL görünüyordu;
+    // genel sayı boyayıcı sayının işaretine bakıp growthRow'un verdiği "bad" sınıfını eziyordu.
+    test('growth cards keep their own good/bad signal instead of sign-based coloring', () => {
+        const js = readPublicFile('app.js');
+        const selectorBlock = js.slice(js.indexOf('const NUMERIC_COLOR_SELECTOR'), js.indexOf("].join(',')"));
+
+        assert.doesNotMatch(selectorBlock, /^\s*'\.growth-value',/m);
+        assert.match(selectorBlock, /'\.dashboard-kdv-value'/);
+    });
+
+    // 2026-08-07: ciro/alış/gider tutarları yeşil-turuncu-kırmızı boyanıyordu. Bunlar sonuç
+    // değildir; renk yalnız kâr, marj ve KDV sonucu gibi değerlerde kalır.
+    test('revenue, purchase and expense totals stay neutral in the profit-loss summary', () => {
+        const css = readPublicFile('styles.css');
+        const js = readPublicFile('app.js');
+
+        assert.match(css, /\.dashboard-pl-value\.sales,\s*\n\.dashboard-pl-value\.purchase,\s*\n\.dashboard-pl-value\.expense\s*\{\s*\n\s*color: var\(--text-primary\)/);
+        // Eski `!important` yeşil listesinde ciro artık yok (yerinde gerekçe notu duruyor).
+        const blokBasi = css.indexOf('.growth-value.positive,');
+        const onemliYesilBlok = css.slice(blokBasi, css.indexOf('color: var(--success) !important', blokBasi));
+        assert.doesNotMatch(onemliYesilBlok, /^\.dashboard-pl-value\.sales,$/m);
+        assert.match(onemliYesilBlok, /BİLEREK YOK: ciro sonuç değil/);
+        // Kâr/marj kutularına ciro sınıfı yazılmaz; rengi sayı boyayıcı verir.
+        assert.match(js, /grossProfitEl\.className = 'dashboard-pl-value';/);
+        assert.match(js, /netProfitEl\.className = 'dashboard-pl-value';/);
+        assert.match(js, /profitMarginEl\.className = 'dashboard-pl-value';/);
+    });
+
+    // 2026-08-07: aynı ekranda "%25,6", "25.6%" ve "%50.8" birlikte görünüyordu.
+    test('percentages use the single Turkish format helper everywhere', () => {
+        const js = readPublicFile('app.js');
+
+        assert.match(js, /plProfitMargin'\)\.textContent = formatPercent\(totals\.avgProfitMargin \|\| 0, 1\)/);
+        assert.match(js, /model\.mape == null \? '-' : formatPercent\(Number\(model\.mape\), 1\)/);
+        assert.match(js, /const changeText = formatPercentSigned\(Number\(changePct\), 1\)/);
+        // Sona "%" ekleyen elle biçimlendirme kalmamalı
+        assert.doesNotMatch(js, /toFixed\(1\)\.replace\('\.', ','\) \+ '%'/);
+        assert.doesNotMatch(js, /\+ '%';/);
+    });
+
     // 2026-08-07: hiç gider girilmemişken karar paneli yeşil "Gider yükü kontrollü" diyordu.
     test('expense rail reports missing data instead of claiming costs are under control', () => {
         const js = readPublicFile('app.js');
