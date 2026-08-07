@@ -5,6 +5,28 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-08-07 — CI bakımı + cari kapsam denetimi (kod dosyasına dokunulmadı)
+
+- **GitHub Actions sürümleri yükseltildi:** `actions/checkout@v4` → `@v7`, `actions/setup-node@v4` →
+  `@v7`. Eski sürümler Node.js 20 tabanlıydı ve her koşuda emeklilik uyarısı basıyordu. Yükseltme
+  yalnız koşucu runtime'ını değiştirir; kullanılan girdiler (`node-version: 22.x`, `cache: npm`) aynı
+  kaldı. Sonuç: koşu 25 saniyede yeşil, uyarı (annotation) sayısı 0.
+- **Önceki turun "CI çalışmıyor, muhtemelen Actions kotası bitti" tespiti yanlış çıktı.** Bugünkü iki
+  push'ta koşu anında kuyruğa girdi ve yeşil döndü. Kota/faturalandırma sorunu yok; ilgili uyarı
+  `PROJE_DURUMU.md`'den kaldırıldı.
+- **Eski dönem Excel'leri işi bloke.** Gerçek veritabanı salt okunur incelendi: 15 dönemin
+  (Ocak–Aralık 2025 ve Ocak–Mart 2026) cari hareketi yok; Nisan/Mayıs/Haziran 2026 dolu. Kaynak
+  `.xlsx` dosyaları bu bilgisayarda bulunmuyor ve `analyses.sales_json` satır bazlı karşı taraf/tarih
+  saklamadığı için veritabanı üzerinden geri doldurma teknik olarak imkânsız. CEO dosyaları verene
+  kadar bekliyor.
+- **Yeni hata tespit edildi (henüz düzeltilmedi):** çöpten *kalıcı* silinen bir analizin
+  `party_transactions` satırları sahipsiz kalıyor ve cari listesinde sayılmaya devam ediyor.
+  `livePartyTransactionCondition()` yalnız "kaynağı var ama soft-delete edilmiş" satırları eler.
+  Gerçek veritabanında 118 sahipsiz satır ölçüldü (Haziran 2026). Detay ve önerilen koşul:
+  `PROJE_DURUMU.md` Bölüm 10.
+
+---
+
 ## 2026-08-07 — README vitrin turu (yalnızca doküman + görsel)
 
 CEO isteği: "GitHub'daki README daha görsel ve albenili olsun." Hiçbir kod dosyasına dokunulmadı.

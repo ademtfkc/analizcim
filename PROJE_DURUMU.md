@@ -169,6 +169,7 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | Excel/CSV dışa aktarımında formül enjeksiyonu (`=`,`+`,`-`,`@` nötrlenmiyor) | Orta→Düşük | ✅ DÜZELTİLDİ (`validators.neutralizeSpreadsheetCell` + `buildHistoryExcelBuffer`, 3 test) |
 | DEPS: `npm audit` = **8 açık (1 kritik / 5 yüksek / 2 düşük)** — 2026-08-07'de 20'den indi | Yüksek | KISMEN KAPATILDI (2026-08-07, `f4730b7`). `npm audit fix` (`--force` YOK) 12 açığı kapattı; `package.json` değişmedi, yalnız lockfile minor/patch aldı. **Kalan 1 kritik yeni değil:** `tar` ← `node-gyp` ← `sqlite3` derleme zinciri; yalnız `npm install` sırasında native binding derlerken çalışır, çalışan sunucu tetiklemez. `sqlite3@6` kırıcı olduğu için ertelendi. `xlsx` npm'de hâlâ yamasız (lokal tek kullanıcı + 10MB limit mitigasyon) |
 | **Silinen (soft-delete) analizin cari hareketleri listede/detayda/panel özetinde kalıyordu** → rakamlar şişik | Yüksek | ✅ DÜZELTİLDİ (2026-08-07). `storage.livePartyTransactionCondition()` + 6 sorgu. `NOT EXISTS` kullanıldı ki `source_history_id IS NULL` eski satırlar hayatta kalsın; entegrasyon testi bu inceliği kilitliyor |
+| **Çöpten kalıcı silinen analizin cari hareketleri SAHİPSİZ kalıyor ve listede sayılmaya devam ediyor** | Yüksek | AÇIK (2026-08-07 tespiti). `permanentlyDeleteFromTrash` / `permanentlyDeleteTrashBatch` yalnız `analyses` satırını siler, `party_transactions` satırlarına dokunmaz. `livePartyTransactionCondition()` ise sadece "kaynağı var AMA soft-delete edilmiş" satırları eler; kaynağı hiç kalmayan satır elemeye takılmaz, canlı sayılır. **Gerçek DB'de ölçüldü:** `source_history_id 1783122568183` altında 118 sahipsiz satır (2026-06-01..28) duruyor, aynı ay için canlı 62 satır var — Haziran 2026 cari hacmi ~3 katı görünüyor. Doğru koşul: `source_history_id IS NULL` **VEYA** eşleşen `analyses` satırı var ve `deleted_at IS NULL`. Düzeltme kod değişikliğidir (kalite kapısı), 118 satırın silinmesi ayrıca CEO onay kapısıdır |
 | Panelde "En Yüksek Bakiyeli Müşteri" Excel carilerinde hep boştu (manuel `customers.balance`'tan besleniyordu) | Orta | ✅ DÜZELTİLDİ (2026-08-07). Artık fatura hacminden besleniyor, etiket "En Yüksek Fatura Hacimli Müşteri". Ayrıca `dashTotalCustomers` sayacının iki yazıcısı (yarış durumu) teke indi. Manuel müşteri CRUD ve `customers.balance` alanı korundu |
 | `getMonthlyTotals` KDV tuzağı: `sales`/`purchases` KDV DAHİL, `vat` ise satış+alış birleşik → yeni bir tüketici `sales - purchases` yaparsa finansal hata döner | Orta | ✅ AZALTILDI (2026-08-07). Eklemeli `salesVat`/`purchasesVat` dizileri + fonksiyon başına uyarı JSDoc'u; mevcut alanlar birebir aynı. `getMonthlyTotalsInRange` ile ~60 satır kopya kod paylaşılan yardımcılara indi |
 | Öksüz tercih anahtarları (`predictions_layout_id`, `predictions_card_order`) allowlist'te duruyordu | Düşük | ✅ DÜZELTİLDİ (2026-08-07). Allowlist'ten, varsayılan okuma listesinden ve migrate ucundan çıkarıldı. DB satırları bilerek silinmedi (veri silme CEO onay kapısı) |
@@ -202,12 +203,16 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 Doğrulama: lint temiz, **179 birim + 36 entegrasyon + 1 smoke** geçiyor. İki denetim ajanı da ONAY
 verdi; test-uzmani düzeltmeleri geçici olarak bozup testlerin gerçekten kırıldığını kanıtladı.
 
-⚠️ **GitHub CI ÇALIŞMIYOR (2026-08-07 tespiti).** Son yeşil çalıştırma `7732e4f`; ondan sonraki
-`50a109a`, `d4542c2`, `f4730b7`, `9d3e1f3` push'ları için **hiç run oluşmadı**. Elle tetiklenen
-rerun 5+ dakika `queued`'da bekledi ve başlamadı. Depo ayarları temiz (`actions/permissions` →
-`enabled: true`, workflow `active`, repo arşivlenmemiş), yani kod/ayar sorunu değil — büyük
-olasılıkla özel depo için aylık Actions dakikası tükenmiş. Doğrulama şimdilik yerelde yapılıyor.
-CEO'nun GitHub faturalandırma/kullanım limitine bakması gerekiyor.
+✅ **GitHub CI ÇALIŞIYOR — önceki "çalışmıyor" tespiti YANLIŞTI (2026-08-07 akşamı düzeltildi).**
+`101c833` (README turu) ve `4c2079b` (Actions yükseltmesi) push'larında koşu anında kuyruğa girdi ve
+sırasıyla 22 sn / 25 sn'de **yeşil** döndü. Kota/faturalandırma sorunu yok; CEO'nun bakması gereken
+bir şey kalmadı. Muhtemel sebep geçici bir kuyruk gecikmesiydi. `9d3e1f3` koşusu `failure` olarak
+duruyor (o an eski Actions sürümleriyle koştu), sonrasındaki iki koşu başarılı.
+
+**Actions sürümleri (2026-08-07):** `actions/checkout@v7`, `actions/setup-node@v7`. Önceki `@v4`
+sürümleri Node.js 20 tabanlıydı ve GitHub emeklilik uyarısı basıyordu; yükseltme sonrası koşuda
+annotation kalmadı. Yükseltme yalnız runtime değişimidir, kullanılan girdiler (`node-version`,
+`cache`) aynı.
 
 | Commit | İş |
 |---|---|
@@ -228,6 +233,27 @@ ve "2026-08-05/06 güncellemesi (Kokpit dili tüm sayfalara yayıldı + 5 sessiz
 **CEO'ya sorulmuş, cevap bekleyen iki soru (Bölüm 8'de de var):**
 1. Gerçek bakiye takibi (tahsilat/ödeme kaydı) istenir mi? — kapsam genişlemesi.
 2. Eski raporların cari listesine katılması için hangi dönemlerin Excel'i yeniden yüklenecek?
+
+### 🔴 ESKİ DÖNEM EXCEL'LERİ — İŞ BLOKE, CEO'DAN DOSYA BEKLENİYOR (2026-08-07 denetimi)
+
+Gerçek `data/analiz.db` **salt okunur** incelendi. Cari (`party_transactions`) kaydı olan/olmayan
+analizler:
+
+| Durum | Dönemler |
+|---|---|
+| ❌ Cari hareketi YOK (yeniden yükleme gerekiyor) | Ocak–Aralık 2025 (12 dönem) · Ocak, Şubat, Mart 2026 (3 dönem) = **15 dönem** |
+| ✅ Cari hareketi VAR | Nisan 2026 (136 satır) · Mayıs 2026 (101) · Haziran 2026 (62) |
+| ⚠️ Birim test kalıntısı | `2024_03_purchase.xlsx` (satış eşi yok) — gerçek veri değil, dokunulmadı |
+
+**Neden ben yapamıyorum:**
+1. Aranan dosyalar (`satis_raporu_*.xlsx` / `alis_raporu_*.xlsx`) bu bilgisayarın hiçbir yerinde yok
+   (dosya sistemi geneli tarandı). Yükleyecek kaynak dosya elimde değil.
+2. DB üzerinden geri doldurma (backfill) **teknik olarak imkânsız**: `analyses.sales_json` satır bazlı
+   karşı taraf/tarih saklamaz, yalnız analiz başına en büyük 5 karşı tarafın tarihsiz toplamı vardır.
+
+**CEO ne yapmalı:** yukarıdaki 15 dönemin satış+alış Excel dosyalarını (hangileri isteniyorsa)
+verirse yüklenir. Mükerrer koruması çalışıyor; zaten yüklü bir dosya ikinci kez 0 satır ekler,
+finansal toplamlar bozulmaz.
 
 **2026-08-07 turunda KAPATILAN dört madde:** silinen analizin cari hareketleri, panel müşteri
 widget'ı, `getMonthlyTotals` KDV tuzağı ve öksüz tercih anahtarları (detay: Bölüm 10).
@@ -336,6 +362,7 @@ tablolarına en az 4-5'er satır tohumla, yoksa liste boş görünür.
 ## 12. İşlem Günlüğü 📓 (Tamamlanan İşler)
 | Tarih | Ajan | Ne yapıldı | Dokunulan dosyalar |
 |---|---|---|---|
+| 2026-08-07 | ana asistan | **CI bakımı + cari kapsam denetimi (kod dosyasına dokunulmadı).** (1) `actions/checkout` ve `actions/setup-node` `@v4` → `@v7`; eski sürümler Node.js 20 tabanlıydı ve her koşuda emeklilik uyarısı basıyordu. Yükseltme yalnız runtime değiştirir, girdiler (`node-version: 22.x`, `cache: npm`) aynı. Koşu `31156660663` 25 sn'de yeşil, annotation 0. (2) **Önceki turun "GitHub CI çalışmıyor / Actions kotası bitti" tespiti YANLIŞ çıktı** — bugünkü iki push'ta koşu anında kuyruğa girdi ve yeşil döndü; CEO'nun faturalandırmaya bakmasına gerek yok, o uyarı Bölüm 11'den kaldırıldı. (3) Eski dönem Excel'leri işi denetlendi: gerçek DB salt okunur incelendi, **15 dönemin (Ocak–Aralık 2025, Ocak–Mart 2026) cari hareketi yok**; kaynak `.xlsx` dosyaları bu bilgisayarda hiç bulunmuyor ve `sales_json` satır bazlı veri saklamadığı için backfill imkânsız — iş CEO dosya verene kadar **bloke**. (4) Denetim sırasında yeni bir hata bulundu: **çöpten kalıcı silinen analizin cari hareketleri sahipsiz kalıp listede sayılmaya devam ediyor** (gerçek DB'de 118 sahipsiz satır, Haziran 2026); Bölüm 10'a açık madde olarak yazıldı, düzeltme CEO kararına bırakıldı | `.github/workflows/ci.yml`, `CHANGELOG.md`, `PROJE_DURUMU.md` |
 | 2026-08-07 | ana asistan | **README vitrin turu (yalnızca doküman + görsel, kod dosyasına dokunulmadı).** Eski 3 ekran görüntüsü 7 Temmuz tarihliydi (Kokpit öncesi arayüz) ve tam sayfa çekildikleri için GitHub'da okunmuyordu (`01-dashboard.png` 2880×8318 piksel). İzole QA sunucusu + geçici DB (`/private/tmp/analizcim-readme-shots.db`, iş sonunda silindi) üzerinde uydurma firma adlarıyla 24 aylık demo veri üretildi; 7 görsel 1440×900 koyu temada, üstlerinde kırmızı "DEMO VERİ" bandıyla çekildi (3'ü üzerine yazıldı, 4'ü yeni: yıl karşılaştırma, gider, en çok, cari detay). Toplam görsel boyutu 2,7 MB → 1,2 MB. README vitrin düzenine geçti: hero başlık + rozet satırı (CI korundu, statik "testler" rozeti eklendi), `mermaid` 3 adımlı akış, ikonlu özellik tablosu, katlanır `<details>` yerine doğrudan görünen görseller. **Bayat bölüm düzeltildi:** README'nin anlattığı iki satırlı KPI düzeni koddaki 4 ana kutu + ikincil şerit düzeniyle değiştirildi (anayasa: dosya ile kod çelişirse koda güvenilir). Gerçek `data/analiz.db` ve gerçek `.env` kullanılmadı. Doğrulama: lint temiz, 179 birim + 36 entegrasyon + 1 smoke geçti, çapa ve görsel yolları tarandı, 0 console hatası | `README.md`, `docs/screenshots/` (8 dosya), `CHANGELOG.md`, `PROJE_DURUMU.md` |
 | 2026-08-07 | ana asistan + test-uzmani + kod-inceleyici | **Sağlamlaştırma turu (`d4542c2` + `f4730b7`).** CEO odak kararı: görünür yeni özellik yok, sessiz hataları kapat. (1) Silinen analizin cari hareketleri listede/detayda/panel özetinde kalıyordu → `livePartyTransactionCondition()` yardımcısı + `party_transactions`'a dokunan 6 sorgu. `NOT EXISTS` seçildi ki `source_history_id IS NULL` eski satırlar hayatta kalsın. (2) Panelin "En Yüksek Bakiyeli Müşteri" kutusu manuel `customers.balance`'tan besleniyordu, Excel carilerinde hep 0'dı → fatura hacmine bağlandı, etiket "En Yüksek Fatura Hacimli Müşteri"; ayrıca `dashTotalCustomers` sayacının iki yazıcısı (yarış durumu) teke indi ve cari detayındaki bilgi taşımayan sabit renk kaldırıldı. (3) `getMonthlyTotals`/`getMonthlyTotalsInRange` eklemeli `salesVat`/`purchasesVat` döndürüyor + uyarı JSDoc'u; ~60 satır kopya kod paylaşılan yardımcılara indi. (4) Ölü tercih anahtarları (`predictions_layout_id`, `predictions_card_order`) allowlist'ten çıkarıldı, DB satırları bilerek silinmedi. (5) `npm audit fix` (`--force` YOK): 20 açık → 8; `package.json` değişmedi. **Kalite kapısı:** test-uzmani düzeltmeleri geçici olarak bozup testlerin gerçekten kırıldığını kanıtladı, kod-inceleyici ONAY verdi (SQL enjeksiyon/IDOR temiz, lockfile'da sürüm düşüşü yok). 179 birim + 36 entegrasyon + 1 smoke geçti. **Not:** push edildi ama GitHub CI hiç tetiklenmedi (bkz. Bölüm 11 uyarısı) | `src/storage.js`, `src/server.js` (yalnız borç notu), `src/routes/preferences.js`, `public/app.js`, `public/index.html`, `public/styles.css`, 4 test dosyası (1 yeni), `package-lock.json` |
 | 2026-08-06 | ana asistan + test-uzmani + kod-inceleyici | **CEO revizyon turu (`7732e4f`):** 6 iş — (1) KPI ızgarasındaki gri bant (eski `gap:1rem !important` hairline'ı eziyordu) → `gap:1px !important`; (2) kenar çubuğu bulanıklığı kaldırıldı, panel opak; (3) Tahminler'de sürükle-bırak TAMAMEN kaldırıldı, tek sabit düzen + 128 ölü CSS kuralı (~27 KB) silindi; (4) "En Çok" başlığı kısaldı + yıl/ay filtresi (backend `month` parametresi, filtre iki döngüde de); (5) tek ölçü sistemi (`--control-height:38px` vb.) 8 sayfaya uygulandı, Ayarlar da `.cockpit-page` oldu; (6) cari "Bakiye" → "Fatura Toplamı" (araştırma: rakam ödenmemiş bakiye değil, fatura toplamı) + hep 0 dönen `lastTransactionAmount` düzeltildi. **Kalite kapısı 2 tur döndü:** test-uzmani mobilde flex-basis'in yükseklik olarak okunduğunu (butonlar 140px, başlıklar 280px) yakaladı; kod-inceleyici RET verdi (dokunmatik 44px ezilmesi, sabit cari rengi, eksik kalıcı test) — hepsi düzeltildi. 174 birim + 34 entegrasyon + smoke geçti, CI yeşil | `public/index.html`, `public/app.js`, `public/styles.css`, `src/server.js`, `src/storage.js`, 2 test dosyası |
