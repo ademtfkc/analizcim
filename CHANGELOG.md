@@ -5,6 +5,24 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-08-07 — Sahipsiz cari hareketi süzgeci (CEO "A" kararı)
+
+- **Sorun:** bir analiz çöpten *kalıcı* silindiğinde `party_transactions` satırları geride kalıyordu.
+  Süzgeç yalnız "kaynağı var ama çöpe atılmış" satırları eliyordu; kaynağı hiç kalmayan satır canlı
+  sayılıyor, cari listesini ve panel sayaçlarını şişiriyordu (gerçek veritabanında 118 satır,
+  Haziran 2026 hacmi yaklaşık üç katı görünüyordu).
+- **Düzeltme:** `storage.livePartyTransactionCondition()` yeniden yazıldı. Bir satır artık ancak
+  `source_history_id IS NULL` ise (cari import öncesi yazılmış eski satırlar) **veya** bağlı olduğu
+  `analyses` satırı duruyor ve soft-delete edilmemişse canlı sayılır. Süzgeci kullanan altı sorgunun
+  tamamı otomatik faydalanır.
+- **Hiçbir satır silinmedi.** Sahipsiz satırlar diskte duruyor, yalnız hiçbir ekranda görünmüyor
+  (veri silme CEO onay kapısıdır).
+- Yeni entegrasyon testi: "permanently deleted analysis leaves no orphan party rows in list or
+  summary". Düzeltme geçici olarak geri alınıp testin gerçekten kırıldığı kanıtlandı.
+- Doğrulama: lint temiz, 179 birim + 37 entegrasyon + 1 smoke testi geçti. kod-inceleyici onayladı.
+
+---
+
 ## 2026-08-07 — CI bakımı + cari kapsam denetimi (kod dosyasına dokunulmadı)
 
 - **GitHub Actions sürümleri yükseltildi:** `actions/checkout@v4` → `@v7`, `actions/setup-node@v4` →

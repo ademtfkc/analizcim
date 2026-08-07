@@ -1818,20 +1818,26 @@ function sortBusinessParties(parties, sort) {
     return sorted;
 }
 
-// Silinen (soft-delete edilmiş) analizden gelen cari hareketlerini hariç tutan SQL parçası.
+// Kaynağı artık canlı olmayan cari hareketlerini hariç tutan SQL parçası.
 // party_transactions'a dokunan HER toplulaştırma sorgusu bunu kullanmalıdır; süzgeci elle
 // tekrarlamak yerine buradan çağırmak, yeni bir sorgu eklendiğinde unutulmasını engeller.
 //
-// Neden NOT EXISTS, neden JOIN değil:
-//  - `source_history_id` NULL olabilir (cari import'tan önce yazılmış eski satırlar). INNER JOIN
-//    bu satırları sessizce yok ederdi — kullanıcı gözünde veri kaybı olurdu.
-//  - Analiz kaydı tamamen silinmişse (dangling id) satır yine korunur.
-//  - Yalnız GERÇEKTEN soft-delete edilmiş bir analize bağlı satırlar süzülür.
+// Bir satır ancak şu iki durumdan birinde canlı sayılır:
+//  1. `source_history_id` NULL — cari import'tan önce yazılmış eski satırlar. Bunların bağlanacağı
+//     bir analiz kaydı hiç olmadı; süzülürlerse kullanıcı gözünde veri kaybı olur.
+//  2. Bağlı olduğu `analyses` satırı DURUYOR ve soft-delete edilmemiş (`deleted_at IS NULL`).
+//
+// Böylece iki ayrı sızıntı birden kapanır:
+//  - çöpe atılmış (soft-delete) analizin hareketleri,
+//  - çöpten KALICI silinmiş analizin geride bıraktığı sahipsiz (dangling id) hareketler.
+//    Kalıcı silme yalnız `analyses` satırını kaldırır; eski "NOT EXISTS + deleted_at IS NOT NULL"
+//    süzgeci bu satırları canlı sayıyordu (gerçek veritabanında 118 satır, Haziran 2026).
 // `alias` yalnız kod içinden sabit değerlerle çağrılır, kullanıcı girdisi değildir.
 function livePartyTransactionCondition(alias = 'party_transactions') {
-    return `NOT EXISTS (SELECT 1 FROM analyses deleted_src
-        WHERE deleted_src.id = ${alias}.source_history_id
-          AND deleted_src.deleted_at IS NOT NULL)`;
+    return `(${alias}.source_history_id IS NULL OR EXISTS (
+        SELECT 1 FROM analyses live_src
+        WHERE live_src.id = ${alias}.source_history_id
+          AND live_src.deleted_at IS NULL))`;
 }
 
 async function getBusinessParties(userId, options = {}) {

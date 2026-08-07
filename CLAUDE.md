@@ -604,13 +604,11 @@ Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hi
 - `src/server.js`'in iki ucundaki KDV yeniden-türetmesini storage'ın dizilerine indirgemek
   (yukarıdaki "bilinçli borç"), `limit: 1000` tavanı dahil.
 - Büyük veri setlerinde cari liste/detay performansını ve ARIMA sonuçlarını gözlemlemek.
-- **AÇIK HATA (2026-08-07 tespiti):** çöpten **kalıcı** silinen analizin `party_transactions`
-  satırları sahipsiz kalıyor ve cari listesinde sayılmaya devam ediyor. `permanentlyDeleteFromTrash`
-  / `permanentlyDeleteTrashBatch` yalnız `analyses` satırını siler; `livePartyTransactionCondition()`
-  ise sadece "kaynağı var ama soft-delete edilmiş" satırları eler, kaynağı hiç kalmayan satır elemeye
-  takılmaz. Doğru koşul: `source_history_id IS NULL` **VEYA** eşleşen `analyses` satırı var ve
-  `deleted_at IS NULL` (eski NULL satırlar yaşamaya devam etmeli — entegrasyon testi bunu kilitler).
-  Gerçek veritabanında ölçülen etki: 118 sahipsiz satır, Haziran 2026.
+- _(kapandı 2026-08-07)_ ~~Çöpten kalıcı silinen analizin cari hareketleri sahipsiz kalıp listede
+  sayılıyor~~ — `livePartyTransactionCondition()` artık şu koşulu üretir: `source_history_id IS NULL`
+  **VEYA** eşleşen `analyses` satırı var ve `deleted_at IS NULL`. Eski NULL satırlar yaşamaya devam
+  eder; entegrasyon testi hem bu inceliği hem kalıcı silme senaryosunu kilitler. Sahipsiz satırlar
+  silinmedi, yalnız süzülüyor (veri silme CEO onay kapısı).
 - **CEO kararı bekleyen:** gerçek bakiye takibi (tahsilat/ödeme kaydı) — yukarıdaki "cari bakiye
   gerçeği" bölümüne bakın. Ayrıca eski raporların cari listesine katılması için ilgili Excel'lerin
   yeniden yüklenmesi gerekiyor: **15 dönemin cari hareketi yok** (Ocak–Aralık 2025, Ocak–Mart 2026);
