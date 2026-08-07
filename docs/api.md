@@ -51,7 +51,7 @@ Kullanıcı girişi yapar.
 ```json
 {
   "username": "admin",
-  "password": "Admin123!"
+  "password": "<parolanız>"
 }
 ```
 
@@ -91,7 +91,7 @@ Yeni kullanıcı kaydı oluşturur.
 ```json
 {
   "username": "yeni_kullanici",
-  "password": "Sifre123!"
+  "password": "<yeni parola>"
 }
 ```
 
@@ -149,8 +149,8 @@ Kullanıcı şifresini değiştirir.
 **Request:**
 ```json
 {
-  "currentPassword": "EskiSifre123!",
-  "newPassword": "YeniSifre123!"
+  "currentPassword": "<mevcut parola>",
+  "newPassword": "<yeni parola>"
 }
 ```
 

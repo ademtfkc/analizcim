@@ -85,7 +85,7 @@
                     "type": "string",
                     "description": "Şifre",
                     "format": "password",
-                    "example": "GucluSifre123!"
+                    "example": "<parolanız>"
                   }
                 }
               }
@@ -200,7 +200,7 @@
                     "type": "string",
                     "description": "Şifre (en az 8 karakter, 1 büyük harf, 1 küçük harf, 1 rakam, 1 özel karakter)",
                     "format": "password",
-                    "example": "Sifre123!"
+                    "example": "<yeni parola>"
                   }
                 }
               }
@@ -310,13 +310,13 @@
                     "type": "string",
                     "description": "Mevcut şifre",
                     "format": "password",
-                    "example": "EskiSifre123!"
+                    "example": "<mevcut parola>"
                   },
                   "newPassword": {
                     "type": "string",
                     "description": "Yeni şifre",
                     "format": "password",
-                    "example": "YeniSifre123!"
+                    "example": "<yeni parola>"
                   }
                 }
               }

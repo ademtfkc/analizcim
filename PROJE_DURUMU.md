@@ -386,8 +386,9 @@ sürükle-bırak dinleyici sızıntısı (`initPredictionsDragDrop` idempotent),
 ### Güvenli test/QA yöntemi (yeni oturumda tekrar kurulabilir)
 Gerçek `data/analiz.db`'ye DOKUNMADAN test için: sunucuyu izole geçici DB ile başlat —
 `ANALIZCIM_DB_PATH=/private/tmp/analizcim-demo.db BOOTSTRAP_ADMIN_USERNAME=demo_admin
-BOOTSTRAP_ADMIN_PASSWORD='Demo12345!' SESSION_SECRET=... PORT=3131 node src/server.js` (repo kökü DIŞINDA bir
-cwd'den çalıştır ki gerçek `.env` yüklenmesin). Demo veri: `analyzer.analyzeFiles(salesBuf, purchaseBuf,
+BOOTSTRAP_ADMIN_PASSWORD='<o an üret, buraya yazma>' SESSION_SECRET=... PORT=3131 node src/server.js`
+(repo kökü DIŞINDA bir cwd'den çalıştır ki gerçek `.env` yüklenmesin). Parola değeri bu dosyaya
+yazılmaz; QA bitince geçici veritabanıyla birlikte silinir. Demo veri: `analyzer.analyzeFiles(salesBuf, purchaseBuf,
 {salesColumnMap:{date:'A',counterparty:'C',net:'I',vat:'K',gross:'L'}, purchaseColumnMap:{date:'A',
 counterparty:'B',net:'H',vat:'J',gross:'K'}})` + `storage.addToHistory` + `storage.importBusinessPartyTransactions`.
 Kullanıcı testi HTTP fetch + cookie jar ile yapıldı (Playwright'sız). Ekran görüntüsü gerekiyorsa: `playwright-core`

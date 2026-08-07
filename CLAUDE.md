@@ -764,7 +764,10 @@ AI agent iş sonunda mümkünse şu formatta rapor vermelidir:
 - Lokal QA sırasında gerçek `.env` değerlerini, gerçek kullanıcı verisini ve gerçek veritabanını kullanma.
 - Güvenli test ortamı için loopback üstünde çalış: `HOST=127.0.0.1`, `PORT=3000`.
 - Geçici veritabanı kullan: `TEST_DATABASE_PATH=/private/tmp/analizcim-playwright.db`.
-- Geçici admin hesabı tercih et: `BOOTSTRAP_ADMIN_USERNAME=qa_admin`, `BOOTSTRAP_ADMIN_PASSWORD='Qa123456!'`.
+- Geçici admin hesabı tercih et: `BOOTSTRAP_ADMIN_USERNAME=qa_admin` ve `BOOTSTRAP_ADMIN_PASSWORD` için
+  **o an üretilen tek kullanımlık bir parola** ver. Parola değeri bu dosyaya, `PROJE_DURUMU.md`'ye veya
+  git'e giren başka hiçbir dosyaya yazılmaz; QA bitince geçici veritabanıyla birlikte silinir.
+  (Gerçek hesapların parolaları proje kökündeki `GIRIS_BILGILERI.md` dosyasındadır — o dosya `.gitignore`'dadır.)
 - Eğer `.env` otomatik yükleniyorsa test server’ı repo kökü yerine `/private/tmp` gibi nötr bir çalışma dizininden başlatıp env override’larının etkin olduğundan emin ol.
 - Playwright tarafında yalnız izole Chromium kullan; aktif Chrome/Arc/Safari profillerine bağlanma.
 - MCP browser binary eksikse önce `npx @playwright/mcp install-browser chrome-for-testing` komutunun izole cache kurulumu yaptığından emin ol; `/Applications` veya symlink gerektiren akışları kullanma.
