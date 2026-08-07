@@ -5,6 +5,28 @@ Bu dosya, Analizcim'in geliştirme turlarını ve önemli değişiklikleri en ye
 
 ---
 
+## 2026-08-07 — README vitrin turu (yalnızca doküman + görsel)
+
+CEO isteği: "GitHub'daki README daha görsel ve albenili olsun." Hiçbir kod dosyasına dokunulmadı.
+
+- **Yedi yeni ekran görüntüsü.** Eski üç görsel 7 Temmuz tarihliydi ve Kokpit öncesi arayüzü
+  gösteriyordu; ayrıca tam sayfa çekildikleri için (ör. 2880×8318 piksel) GitHub'da okunmaz bir
+  şeride dönüşüyorlardı. Hepsi ekran dolusu (1440×900, koyu tema) yeniden çekildi ve dört yeni
+  ekran eklendi: Yıl Karşılaştırma, Gider, En Çok, cari detay. Toplam boyut 2,7 MB'tan 1,2 MB'a indi.
+- **README yeniden düzenlendi:** vitrin başlık + rozet satırı, 3 adımlı `mermaid` akış şeması,
+  ikonlu özellik tablosu ve her ekranın kendi açıklamasıyla **doğrudan görünen** görselleri
+  (katlanır `<details>` bölümleri kaldırıldı, CEO kararı). Bilgi taşıyan hiçbir bölüm silinmedi.
+- **Bayat bölüm düzeltildi:** README hâlâ eski iki satırlı KPI düzenini ("Sıra 1 … Sıra 2 …")
+  anlatıyordu. Koddaki gerçek düzenle değiştirildi: 4 ana kutu (Satış · Alış · Net Kâr · Ödenecek
+  KDV) + ikincil şerit, ve KDV kutusunda neden yıllık değişim rozeti olmadığının gerekçesi.
+- **Görseller demo veriyle üretildi.** Gerçek `data/analiz.db` ve gerçek `.env` kullanılmadı;
+  izole bir QA sunucusu, geçici veritabanı ve uydurma firma adlarıyla 24 aylık veri üretildi.
+  Her görselin üstünde kırmızı "DEMO VERİ" bandı vardır; geçici veritabanı iş sonunda silindi.
+- Doğrulama: lint temiz, 179 birim + 36 entegrasyon + 1 smoke testi geçti (kod değişmediğinin kanıtı),
+  README'deki tüm iç bağlantı çapaları ve görsel yolları tarandı.
+
+---
+
 ## 2026-08-07 — Sağlamlaştırma turu
 
 CEO odak kararı: görünür yeni özellik yok. Belgede yazılı ama hiç kapatılmamış sessiz hatalar

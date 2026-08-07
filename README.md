@@ -1,88 +1,168 @@
+<div align="center">
+
 # Analizcim
 
+**Excel'deki satış ve alış dosyalarınızı, "şimdi ne yapmalıyım?" sorusuna cevap veren bir karar paneline çevirir.**
+
+Tamamen kendi bilgisayarınızda çalışır. Finansal verileriniz hiçbir yere gönderilmez.
+
 [![CI](https://github.com/ademtfkc/analizcim/actions/workflows/ci.yml/badge.svg)](https://github.com/ademtfkc/analizcim/actions/workflows/ci.yml)
+[![Testler](https://img.shields.io/badge/testler-179%20birim%20%7C%2036%20entegrasyon%20%7C%201%20smoke-brightgreen)](#geliştirme-ve-test)
+[![Node](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](#kurulum-ve-çalıştırma)
+[![Yerel](https://img.shields.io/badge/veri-yerel%20makinede-informational)](#kimler-için)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](LICENSE)
 
-Lokal Excel verileriyle çalışan; satış, alış, kâr, KDV, gider ve tahmin analizlerini daha anlaşılır
-hale getiren, karar odaklı bir finansal analiz uygulaması. Finansal veriler kullanıcının kendi
-makinesinde kalır.
+![Analizcim panosu (demo veri)](docs/screenshots/01-dashboard.png)
 
-> Dashboard ve Tahminler sayfaları yalnızca veri sunmaz; "durum ne, risk nerede, şimdi ne yapmalıyım?"
-> sorularına cevap vermeyi hedefler.
+</div>
+
+> ⚠️ **Bu sayfadaki tüm ekran görüntüleri demo veriyle üretilmiştir.** Rakamlar ve firma isimleri
+> uydurmadır, gerçek bir işletmeye ait değildir. Görsellerin üstündeki kırmızı bant bunu belirtir.
 
 ## İçindekiler
 
-- [Kimler İçin?](#kimler-için)
-- [Temel Özellikler](#temel-özellikler)
-- [Ekran Görüntüleri](#ekran-görüntüleri)
-- [Teknolojiler](#teknolojiler)
+- [Nasıl çalışır?](#nasıl-çalışır)
+- [Neler yapar?](#neler-yapar)
+- [Kimler için?](#kimler-için)
+- [Ekranlar](#ekranlar)
+  - [Panel (Dashboard)](#panel-dashboard)
+  - [Tahminler](#tahminler)
+  - [Müşteriler ve Tedarikçiler](#müşteriler-ve-tedarikçiler)
+  - [Cari detay](#cari-detay)
+  - [Yıl Karşılaştırma](#yıl-karşılaştırma)
+  - [Gider Yönetimi](#gider-yönetimi)
+  - [En Çok](#en-çok)
 - [Kurulum ve Çalıştırma](#kurulum-ve-çalıştırma)
+- [Teknolojiler](#teknolojiler)
 - [Proje Yapısı](#proje-yapısı)
-- [Cari Yönetimi (Müşteri / Tedarikçi)](#cari-yönetimi-müşteri--tedarikçi)
-- [Dashboard](#dashboard)
-- [Yıl Karşılaştırma](#yıl-karşılaştırma)
-- [Tahminler](#tahminler)
+- [Tahmin Motoru](#tahmin-motoru)
 - [Geliştirme ve Test](#geliştirme-ve-test)
 - [Lisans](#lisans)
 
-## Kimler İçin?
+## Nasıl çalışır?
+
+```mermaid
+flowchart LR
+    A["<b>1. Excel'i yükle</b><br/>satış + alış dosyaları"] --> B["<b>2. Otomatik analiz</b><br/>KDV, kâr, cari, tahmin"] --> C["<b>3. Karar paneli</b><br/>durum, risk, aksiyon"]
+```
+
+Dosyanın dönemi adından okunur (`satis_raporu_2025-10.xlsx`). Sütun başlıkları esnek eşlenir; aynı
+dosya ikinci kez yüklendiğinde mükerrer kayıt oluşmaz.
+
+## Neler yapar?
+
+| | Özellik | Ne işe yarar |
+|---|---|---|
+| 📊 | **Panel (Dashboard)** | 4 ana KPI, mikro grafikler, Kâr/Zarar tablosu ve veriden üretilen aksiyon maddeleri |
+| 🔮 | **Tahminler** | 4 model (Linear, Exponential Smoothing, Holt-Winters, ARIMA) karşılaştırılır, en düşük hatalı olan seçilir |
+| 🔁 | **Yıl Karşılaştırma** | İki yıl arası satış/maliyet/net kâr farkı, aylık kırılım ve grafik |
+| 👥 | **Cari yönetimi** | Satış dosyasından müşteri, alış dosyasından tedarikçi otomatik çıkarılır; manuel kartlar da tutulur |
+| 💳 | **Gider yönetimi** | Sabit/değişken gider ayrımı, gider dağılımı ve net kâra etkisi |
+| 🏆 | **En Çok** | Yıl ve ay bazında en yüksek hacimli firma ve tedarikçi sıralaması |
+| 🧭 | **Kokpit arayüzü** | Her sayfada solda içerik, sağda "Şimdi ne yapmalıyım" karar paneli |
+| 📤 | **Dışa aktarma** | PDF ve Excel çıktısı; geçmiş analizler, çöp kutusu ve arşiv |
+| 🌓 | **Dark / light tema** | Mobil ve tablette de kullanılabilir; cari listesi telefonda kart görünümüne döner |
+| 🔐 | **Kullanıcı yönetimi** | Giriş, admin onay akışı, rol yönetimi ve tema uyumlu onay pencereleri |
+
+## Kimler için?
 
 - Küçük işletme sahipleri
 - Muhasebe ve finans kullanıcıları
 - Kendi Excel verisini daha anlaşılır analiz etmek isteyenler
 
-## Temel Özellikler
+## Ekranlar
 
-- Excel yükleyip satış/alış/KDV/brüt kâr/net kâr analizi
-- Karar odaklı **Dashboard** (4 ana KPI + mikro grafikler, finansal sağlık, Kâr/Zarar tablosu, trend grafikleri)
-- **Tahminler**: 4 modelli (Linear, Exponential Smoothing, Holt-Winters, ARIMA) otomatik model seçimli tahmin motoru
-- **Yıl Karşılaştırma**: YoY delta kartları + aylık karşılaştırma
-- **En Çok**: yıl ve ay bazlı en yüksek hacimli firma/tedarikçi sıralaması
-- **Cari yönetimi**: Excel'den otomatik müşteri/tedarikçi çıkarımı + manuel müşteri kartları
-- Gider yönetimi, geçmiş analizler, çöp kutusu ve arşivleme
-- PDF ve Excel dışa aktarma
-- **Kokpit arayüzü**: her sayfada solda içerik, sağda veriden üretilen "Şimdi ne yapmalıyım" karar paneli
-- Modern dark/light SaaS arayüz, collapsible sidebar, responsive tasarım (mobilde cari listesi kart görünümüne dönüşür)
-- Tema uyumlu onay pencereleri (silme/onay işlemlerinde tarayıcının kutusu yerine)
-- Kullanıcı girişi, admin onay akışı ve rol yönetimi
+### Panel (Dashboard)
 
-## Ekran Görüntüleri
+![Panel (demo veri)](docs/screenshots/01-dashboard.png)
 
-> ⚠️ Aşağıdaki görsellerdeki tüm rakamlar ve firma isimleri **DEMO / örnek veridir — gerçek değildir.**
-> (Görsellerin üstündeki kırmızı bant bunu belirtir.) Başlıklara tıklayarak açıp kapatabilirsiniz.
+İşletmenin finansal görünümünü hızlı karar alınabilecek biçimde sunar. Üstte **4 ana KPI kutusu** yer alır:
 
-<details>
-<summary><b>📊 Dashboard</b> — görmek için tıklayın</summary>
+- **Toplam Satış · Toplam Alış · Net Kâr · Ödenecek KDV** — her biri yıllık değişim rozeti ve aylık
+  mikro grafikle birlikte. (Ödenecek KDV kutusunda yıllık değişim rozeti bulunmaz: bu rakam devreden
+  KDV mahsuplu bir defterden gelir, önceki yıl için aynı defter kurulmadan yapılacak kıyas yanıltıcı olurdu.)
+- Bunların altındaki ikincil şeritte **Brüt Kâr · Toplam Analiz · Toplam Gider · Toplam Müşteri ·
+  Toplam Tedarikçi** durur. Müşteri ve tedarikçi çipleri ilgili sekmeye gider.
 
-![Dashboard (demo veri)](docs/screenshots/01-dashboard.png)
+Ana sahnede net kâr özeti ve trend grafiği; altında Kâr/Zarar tablosu ve finansal sağlık göstergeleri
+bulunur. Sağdaki karar panelinde "Şimdi ne yapmalıyım" maddeleri, önümüzdeki 3 ay tahmini, KDV özeti
+ve cari özeti yer alır.
 
-</details>
+> **Brüt Kâr KDV hariç hesaplanır** (KDV devlete ödenecek geçiş kalemidir, kâr değildir).
+> "Toplam Satış/Alış" ise fatura toplamı olarak KDV dahil gösterilir.
 
-<details>
-<summary><b>🔮 Tahminler</b> — görmek için tıklayın</summary>
+### Tahminler
 
 ![Tahminler (demo veri)](docs/screenshots/02-tahminler.png)
 
-</details>
+Aylık satış verisi üzerinde birden fazla istatistiksel modeli karşılaştırır ve en düşük hatalı modeli
+otomatik seçer. Sayfada muhasebeci feedback kartı, 1/3/6/12 ay horizonları, güven aralıklı ana grafik,
+model karşılaştırma tablosu, risk/senaryo alanları, aksiyon planı ve CFO analizi bulunur.
 
-<details>
-<summary><b>👥 Müşteriler (Cari)</b> — görmek için tıklayın</summary>
+Kart düzeni sabittir (grafik → tablo → risk+senaryo → finansal sağlık+büyüme → karar etkisi+aksiyon →
+CFO); yan yana duran kartlar aynı yükseklikte hizalanır.
+
+![Tahmin grafiği — Holt-Winters (demo veri)](docs/screenshots/02b-tahmin-grafigi.png)
+
+*Yukarıdaki grafikte model elle **Holt-Winters** seçilmiştir; kesikli çizgi tahmini, gölgeli alan ise
+%80 güven aralığını gösterir.*
+
+### Müşteriler ve Tedarikçiler
 
 ![Müşteriler (demo veri)](docs/screenshots/03-musteriler.png)
 
-</details>
+İki katmanlı bir yapı vardır:
 
-## Teknolojiler
+- **Manuel müşteri yönetimi:** kullanıcı kendi müşteri kartlarını ekler/düzenler/siler.
+- **Excel tabanlı cari analizi:** satış dosyalarından **müşteri**, alış dosyalarından **tedarikçi**
+  isimleri otomatik çıkarılır.
 
-| Katman | Kullanılan |
-|---|---|
-| Sunucu | Node.js, Express 4 |
-| Veritabanı | SQLite (sqlite3) |
-| Oturum / Güvenlik | express-session, bcrypt, express-rate-limit, CSP + güvenlik başlıkları |
-| Excel / Dışa aktarma | xlsx, jsPDF, jspdf-autotable |
-| Tahmin | arima (native ARIMA/SARIMA) |
-| Loglama | pino |
-| Arayüz | Vanilla JS + HTML/CSS (build adımı yok), Chart.js |
+Desteklenen karşı taraf başlıkları (varyasyonlarıyla): `Müşteri Adı`, `Müşteri`, `Cari Adı`,
+`Cari Unvan`, `Cari Hesap`, `Cari Ünvanı`, `Tedarikçi`, `Tedarikçi Adı`, `Firma Ünvanı`, `Açıklama`.
+Cari/müşteri/tedarikçi başlıkları, genel açıklama/ürün kolonlarına göre önceliklidir. Her hareket için
+tarih, tutar, KDV, dosya kaynağı ve fatura yönü saklanır.
+
+Liste masaüstünde tablo, telefon/tablette (≤768px) yatay kaydırma yerine kart görünümüdür.
+
+> **Not (bakiye kavramı):** Listelerdeki **"Fatura Toplamı"** kesilen faturaların toplamıdır —
+> ödenmemiş bakiye DEĞİLDİR. Uygulamada tahsilat/ödeme kaydı kavramı yoktur, dolayısıyla bu rakamdan
+> hiçbir ödeme düşülmez. Gerçek borç/alacak takibi ayrı bir özellik olarak ele alınmalıdır.
+
+> **Not (geçmiş veriler):** Cari listesi yalnızca **yeni yüklenen** Excel dosyalarından otomatik
+> dolar. Bu özellik eklenmeden önce yüklenmiş eski analizler cari listesine **otomatik girmez**.
+> Eski verileri de cari'ye katmak için ilgili Excel dosyalarını **yeniden yükleyin** — aynı dosya
+> tekrar yüklendiğinde mükerrer hareket oluşmaz (benzersiz kaynak anahtarı + `INSERT OR IGNORE`).
+
+### Cari detay
+
+![Cari detay (demo veri)](docs/screenshots/07-cari-detay.png)
+
+Tek bir müşteri veya tedarikçinin künyesi: toplam hacim, net fatura tutarı, son işlem tarihi ve tutarı,
+ortalama işlem tutarı, aylık hacim grafiği, son 12 ay trendi ve tam hareket dökümü (tarih, fatura türü,
+tutar, KDV ve hangi dosyadan geldiği).
+
+### Yıl Karşılaştırma
+
+![Yıl Karşılaştırma (demo veri)](docs/screenshots/04-yil-karsilastirma.png)
+
+İki yıl arasındaki performansı gösterir: Satış/Maliyet/Net Kâr Farkı için 3 YoY delta kartı,
+Ocak-Aralık grouped bar chart ve Toplam satırlı aylık karşılaştırma tablosu. Sağ panel yıl özetini ve
+öne çıkan ayları verir.
+
+### Gider Yönetimi
+
+![Gider Yönetimi (demo veri)](docs/screenshots/05-gider.png)
+
+Sabit giderler (kira, maaş, sigorta gibi her ay düzenli ödemeler) ile değişken giderler (elektrik,
+yakıt, pazarlama) ayrı tutulur. Sayfa seçilen dönemin brüt kârını, toplam giderini ve net kârını aynı
+ekranda gösterir; sağ panel gider yapısını ve en büyük kalemleri sıralar.
+
+### En Çok
+
+![En Çok (demo veri)](docs/screenshots/06-en-cok.png)
+
+Seçilen yıl ve ay için en yüksek hacimli firmalar ve tedarikçiler. Ay filtresi `Tüm yıl` veya 1-12
+değerini alır ve her iki listeye birden uygulanır.
 
 ## Kurulum ve Çalıştırma
 
@@ -104,6 +184,18 @@ Uygulama varsayılan olarak `http://localhost:3000` adresinde çalışır.
 ```bash
 BOOTSTRAP_ADMIN_USERNAME=admin BOOTSTRAP_ADMIN_PASSWORD='kendi-guclu-parolaniz' npm start
 ```
+
+## Teknolojiler
+
+| Katman | Kullanılan |
+|---|---|
+| Sunucu | Node.js, Express 4 |
+| Veritabanı | SQLite (sqlite3) |
+| Oturum / Güvenlik | express-session, bcrypt, express-rate-limit, CSP + güvenlik başlıkları |
+| Excel / Dışa aktarma | xlsx, jsPDF, jspdf-autotable |
+| Tahmin | arima (native ARIMA/SARIMA) |
+| Loglama | pino |
+| Arayüz | Vanilla JS + HTML/CSS (build adımı yok), Chart.js |
 
 ## Proje Yapısı
 
@@ -127,73 +219,19 @@ analizcim/
 │   └── migrations/      # sıralı DB şema değişiklikleri (001..010)
 ├── tests/               # unit, integration, helpers
 ├── data/                # yerel SQLite DB + yedekler (git'e girmez)
-├── docs/                # api.md, openapi.json
+├── docs/                # api.md, openapi.json, screenshots/
 └── package.json
 ```
 
-## Cari Yönetimi (Müşteri / Tedarikçi)
+## Tahmin Motoru
 
-İki katmanlı bir yapı vardır:
-
-- **Manuel müşteri yönetimi:** kullanıcı kendi müşteri kartlarını ekler/düzenler/siler.
-- **Excel tabanlı cari analizi:** satış dosyalarından **müşteri**, alış dosyalarından **tedarikçi**
-  isimleri otomatik çıkarılır.
-
-Desteklenen karşı taraf başlıkları (varyasyonlarıyla): `Müşteri Adı`, `Müşteri`, `Cari Adı`,
-`Cari Unvan`, `Cari Hesap`, `Cari Ünvanı`, `Tedarikçi`, `Tedarikçi Adı`, `Firma Ünvanı`, `Açıklama`.
-Cari/müşteri/tedarikçi başlıkları, genel açıklama/ürün kolonlarına göre önceliklidir. Her hareket için
-tarih, tutar, KDV, dosya kaynağı ve fatura yönü saklanır.
-
-`Müşteriler` ve `Tedarikçiler` sekmelerinde arama, tarih/hacim filtresi ve sıralama; detay ekranında
-toplam hacim, net fatura tutarı, son işlem, ortalama tutar, aylık hacim grafiği, 12 ay trendi ve tam
-hareket dökümü bulunur. Liste masaüstünde tablo, telefon/tablette (≤768px) yatay kaydırma yerine kart
-görünümüdür.
-
-> **Not (bakiye kavramı):** Listelerdeki **"Fatura Toplamı"** kesilen faturaların toplamıdır —
-> ödenmemiş bakiye DEĞİLDİR. Uygulamada tahsilat/ödeme kaydı kavramı yoktur, dolayısıyla bu rakamdan
-> hiçbir ödeme düşülmez. Gerçek borç/alacak takibi ayrı bir özellik olarak ele alınmalıdır.
-
-> **Not (geçmiş veriler):** Cari listesi yalnızca **yeni yüklenen** Excel dosyalarından otomatik
-> dolar. Bu özellik eklenmeden önce yüklenmiş eski analizler cari listesine **otomatik girmez**.
-> Eski verileri de cari'ye katmak için ilgili Excel dosyalarını **yeniden yükleyin** — aynı dosya
-> tekrar yüklendiğinde mükerrer hareket oluşmaz (benzersiz kaynak anahtarı + `INSERT OR IGNORE`).
-
-## Dashboard
-
-İşletmenin finansal görünümünü hızlı karar alınabilecek biçimde sunar. Sol kolonda 4 ana KPI kutusu
-(Toplam Satış, Toplam Alış, Net Kâr, Ödenecek KDV — her biri yıllık değişim rozeti ve aylık mikro
-grafikle), ana sahnede net kâr özeti + trend grafiği, altında Kâr/Zarar tablosu, finansal sağlık
-göstergeleri ve KDV hariç ciro yer alır. Sağdaki karar panelinde "Şimdi ne yapmalıyım" maddeleri,
-önümüzdeki 3 ay tahmini, KDV özeti ve cari özeti bulunur.
-
-Ana KPI kartları iki satırlı 4 kolon düzenindedir (masaüstü 4 / tablet 2 / mobil 1):
-
-- Sıra 1: Toplam Satış, Toplam Alış, Brüt Kâr, Net Kâr
-- Sıra 2: Toplam Analiz, Toplam Gider, Toplam Müşteri, Toplam Tedarikçi
-
-> **Brüt Kâr KDV hariç hesaplanır** (KDV devlete ödenecek geçiş kalemidir, kâr değildir).
-> "Toplam Satış/Alış" ise fatura toplamı olarak KDV dahil gösterilir.
-
-## Yıl Karşılaştırma
-
-İki yıl arasındaki performansı gösterir: Satış/Maliyet/Net Kâr Farkı için 3 YoY delta kartı,
-Ocak-Aralık grouped bar chart ve Toplam satırlı aylık karşılaştırma tablosu.
-
-## Tahminler
-
-Aylık satış verisi üzerinde birden fazla istatistiksel modeli karşılaştırır ve en düşük hatalı modeli
-otomatik seçer. Muhasebeci feedback kartı, 1/3/6/12 ay horizonları, güven aralıklı ana grafik, model
-karşılaştırma tablosu, risk/senaryo, aksiyon planı ve CFO analizi içerir.
-
-Kart düzeni sabittir (grafik → tablo → risk+senaryo → finansal sağlık+büyüme → karar etkisi+aksiyon →
-CFO); yan yana duran kartlar aynı yükseklikte hizalanır.
-
-**Tahmin motoru** (`src/predictor.js`) aylık satış verisini temel alır:
+`src/predictor.js` aylık satış verisini temel alır:
 
 - Modeller: Linear Regresyon, Exponential Smoothing, Holt-Winters, ARIMA (`arima` npm paketi).
 - Her model rolling backtest ile ölçülür; MAE/RMSE (mümkünse MAPE) hesaplanır.
 - Otomatik modda en düşük RMSE'li model seçilir; manuel modda kullanıcı modeli belirler.
 - 24+ aylık veride seasonal ARIMA adayı da değerlendirilir.
+- Veri yetersizse model `available: false` döner ve kullanıcıya anlamlı bir neden gösterilir.
 
 API örnekleri:
 
@@ -217,6 +255,8 @@ npm run test:smoke        # smoke testi
 npm run verify:fast       # lint + unit + smoke
 npm run verify            # lint + unit + integration + smoke
 ```
+
+Son doğrulanan durum: **179 birim + 36 entegrasyon + 1 smoke** testi geçiyor, lint temiz.
 
 - Güvenli lokal QA, sürüm geçmişi ve tur notları için bkz. [CHANGELOG.md](CHANGELOG.md).
 - Soket açma izni gerektiren bazı entegrasyon testleri kısıtlı ortamlarda temiz kapanmayabilir; tekil
