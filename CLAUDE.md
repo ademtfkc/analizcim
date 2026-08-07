@@ -619,10 +619,14 @@ Kalan muhtemel sonraki işler (hedef **lokal, tek kullanıcı** olduğu için hi
   eder; entegrasyon testi hem bu inceliği hem kalıcı silme senaryosunu kilitler. Sahipsiz satırlar
   silinmedi, yalnız süzülüyor (veri silme CEO onay kapısı).
 - **CEO kararı bekleyen:** gerçek bakiye takibi (tahsilat/ödeme kaydı) — yukarıdaki "cari bakiye
-  gerçeği" bölümüne bakın. Ayrıca eski raporların cari listesine katılması için ilgili Excel'lerin
-  yeniden yüklenmesi gerekiyor: **15 dönemin cari hareketi yok** (Ocak–Aralık 2025, Ocak–Mart 2026);
-  Nisan/Mayıs/Haziran 2026 dolu. Kaynak dosyalar bu bilgisayarda bulunmuyor, DB üzerinden backfill
-  imkânsız — CEO dosyaları verecek.
+  gerçeği" bölümüne bakın.
+- _(kapandı 2026-08-07)_ ~~15 dönemin cari hareketi eksik, CEO Excel verecek~~ — **veritabanı CEO
+  onayıyla sıfırlandı**, tüm analizler silindi, konu düştü. Kalıcı ders duruyor: `analyses.sales_json`
+  satır bazlı karşı taraf/tarih saklamaz, bu yüzden cari veriyi DB üzerinden geri doldurmak imkânsızdır;
+  tek yol Excel'i yeniden yüklemektir.
+- **Giriş hesapları (2026-08-07):** iki yönetici hesabı vardır — `admin` (gerçek veri) ve `test`
+  (demo veri). Verileri `user_id` ile tamamen ayrıdır. **Parola değerleri bu dosyaya ve
+  `PROJE_DURUMU.md`'ye asla yazılmaz.**
 - _(kapandı 2026-08-07)_ ~~Silinen analizin cari hareketleri listede kalıyor~~ · ~~öksüz tercih
   anahtarları~~ — ikisi de yukarıdaki sağlamlaştırma turunda düzeltildi.
 

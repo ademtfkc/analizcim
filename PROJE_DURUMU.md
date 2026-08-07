@@ -148,7 +148,8 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
   turundan ÖNCEYE ait; kenar çubuğu kenarlığı, madalya renkleri, gider şeridi ve cari kolonları
   değiştiği için artık uygulamayı tam yansıtmıyorlar. Yenileme yaklaşık yarım saatlik ayrı bir iş
   (izole QA sunucusu + demo veri + 1440×900 koyu tema çekim).
-- _(kapandı)_ `data/pre_restore_1771112753452.db` için CEO 2026-08-06'da "kalsın" dedi.
+- _(kapandı 2026-08-07)_ `data/pre_restore_1771112753452.db` ve `data/backups/` içindeki 3 yedek,
+  CEO'nun sıfırlama onayı kapsamında **silindi**. (2026-08-06'daki "kalsın" kararı bu onayla değişti.)
 - _(Not: `git init` + private GitHub deposu 2026-07-07'de CEO onayıyla TAMAMLANDI; CI kurulu ve yeşil.)_
 
 ## 9. Devam Eden İşler 🔨
@@ -214,9 +215,8 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 
 ### 🔜 SONRAKİ OTURUM — BURADAN BAŞLA
 
-**Önce bunu bil:** 2026-08-07'de **üç tur** yapıldı ve hepsi bitti: sağlamlaştırma turu, sahipsiz
-cari hareketi süzgeci ve **depo denetim raporunun 9 maddesi**. **Hepsi commit + push edildi, CI yeşil.
-Aktif iş yok.**
+**Önce bunu bil (2026-08-07 sonu):** Gün içinde **beş tur** yapıldı, hepsi bitti, hepsi push edildi,
+CI yeşil. **Aktif iş yok.** Ayrıca **veritabanı CEO onayıyla sıfırlandı ve iki hesaplı düzene geçildi.**
 
 | Commit | İş |
 |---|---|
@@ -224,11 +224,19 @@ Aktif iş yok.**
 | `f4730b7` | Güvenli bağımlılık yamaları (20 açık → 8) + KDV alan adı hizalaması |
 | `059d045` | Kalıcı silinen analizin sahipsiz cari hareketleri süzülüyor (CEO "A" kararı) |
 | `f2768d4` | **Denetim raporunun 9 maddesi** (beyaz kenarlık, tahmin harfleri A–M, gider şeridi, cari kolonları, son 12 ay takvim penceresi, tek yüzde biçimi, renk disiplini, madalya token'ları, jsPDF aralığı) |
+| `406400b` · `af9fb51` · `72bf065` | **Tarayıcı görsel denetim turu — 18 bulgu** (A: yanlış bilgi · B: renk ve yazım · C: hizalama ve mobil). Detay `CHANGELOG.md` |
+| `32ab1f0` | Veritabanı sıfırlaması + iki hesaplı düzen işlem günlüğüne işlendi |
 
-Doğrulama: `npm run verify` yeşil — **183 birim + 37 entegrasyon + 1 smoke**, lint temiz.
-İki denetim ajanı ONAY verdi. **Not:** kod-inceleyici ilk turda RET vermişti (yeni test dosyası
-veritabanı bağlantısını kapatmadan geçici dosyayı siliyor, `npm run verify` asılı kalıyordu);
-düzeltildikten sonra ONAY. Ayrıntı Bölüm 10'daki "test altyapısı" satırında.
+Doğrulama: lint temiz, **207 birim + 38 entegrasyon + 1 smoke**. Son turda kalite kapısı **iki tur
+döndü** — kod-inceleyici RET (testsiz admin ucu + regex ile doğrulanan finansal hesap),
+test-uzmani RET (KRİTİK: satır içi `style.display` mobil düzeltmeyi eziyordu). Şartlar kapatıldıktan
+sonra ikisi de ONAY. Ayrıntı Bölüm 10 ve `CLAUDE.md`'deki "tarayıcı görsel denetim turu" bölümü.
+
+**GİRİŞ HESAPLARI (2026-08-07):** iki yönetici hesabı var — **`admin`** (gerçek veri için, boş) ve
+**`test`** (18 dönemlik demo veri: 657 fatura satırı, 12 müşteri, 8 tedarikçi, 108 gider kalemi).
+Verileri birbirinden tamamen ayrıdır; tüm veri tabloları `user_id` taşır, doğrulandı. **Parola
+değerleri bu dosyaya yazılmaz** (anayasa kuralı); asistanın yerel hafızasında tutulur ve geçicidir —
+CEO Ayarlar → Hesap → Şifre Değiştir'den değiştirmelidir.
 
 ⚠️ **Ekran görüntüleri bayat:** `docs/screenshots/` içindeki 8 görsel `f2768d4` öncesine ait
 (kenar çubuğu, madalya renkleri, gider şeridi, cari kolonları değişti). CEO kararı bekliyor (Bölüm 8).
@@ -267,29 +275,24 @@ ve "2026-08-05/06 güncellemesi (Kokpit dili tüm sayfalara yayıldı + 5 sessiz
 
 **CEO'ya sorulmuş, cevap bekleyen üç soru (Bölüm 8'de de var):**
 1. Gerçek bakiye takibi (tahsilat/ödeme kaydı) istenir mi? — kapsam genişlemesi.
-2. Eski raporların cari listesine katılması için hangi dönemlerin Excel'i yeniden yüklenecek?
+2. _(kapandı 2026-08-07)_ Eski dönem Excel'leri — veritabanı sıfırlandığı için konu düştü;
+   CEO `admin` hesabına baştan yükleyecek.
 3. README ekran görüntüleri yenilensin mi? (8 görsel `f2768d4` öncesine ait, ~yarım saatlik iş.)
 
-### 🔴 ESKİ DÖNEM EXCEL'LERİ — İŞ BLOKE, CEO'DAN DOSYA BEKLENİYOR (2026-08-07 denetimi)
+### ✅ ESKİ DÖNEM EXCEL'LERİ — MADDE KAPANDI (2026-08-07, veritabanı sıfırlandı)
 
-Gerçek `data/analiz.db` **salt okunur** incelendi. Cari (`party_transactions`) kaydı olan/olmayan
-analizler:
+Bu madde artık geçersizdir. 2026-08-07'de CEO "bütün uygulama verilerini sıfırlayalım, zaten yeni
+Excel yüklemem gerekiyordu" diyerek sıfırlamayı onayladı; **20 analizin tamamı ve 486 cari hareketi
+kalıcı olarak silindi.** Yani "15 dönemin cari hareketi eksik" tespiti artık anlamsız — hiçbir dönem
+yüklü değil.
 
-| Durum | Dönemler |
-|---|---|
-| ❌ Cari hareketi YOK (yeniden yükleme gerekiyor) | Ocak–Aralık 2025 (12 dönem) · Ocak, Şubat, Mart 2026 (3 dönem) = **15 dönem** |
-| ✅ Cari hareketi VAR | Nisan 2026 (136 satır) · Mayıs 2026 (101) · Haziran 2026 (62) |
-| ⚠️ Birim test kalıntısı | `2024_03_purchase.xlsx` (satış eşi yok) — gerçek veri değil, dokunulmadı |
+CEO `admin` hesabına istediği dönemleri baştan yükleyecek. Cari import yalnız yeni yüklemede
+çalıştığı için, yüklenen her dönem cari listesine de otomatik girer — eski turlardaki eksiklik
+tekrarlanmaz. Mükerrer koruması çalışıyor; aynı dosya ikinci kez 0 satır ekler.
 
-**Neden ben yapamıyorum:**
-1. Aranan dosyalar (`satis_raporu_*.xlsx` / `alis_raporu_*.xlsx`) bu bilgisayarın hiçbir yerinde yok
-   (dosya sistemi geneli tarandı). Yükleyecek kaynak dosya elimde değil.
-2. DB üzerinden geri doldurma (backfill) **teknik olarak imkânsız**: `analyses.sales_json` satır bazlı
-   karşı taraf/tarih saklamaz, yalnız analiz başına en büyük 5 karşı tarafın tarihsiz toplamı vardır.
-
-**CEO ne yapmalı:** yukarıdaki 15 dönemin satış+alış Excel dosyalarını (hangileri isteniyorsa)
-verirse yüklenir. Mükerrer koruması çalışıyor; zaten yüklü bir dosya ikinci kez 0 satır ekler,
-finansal toplamlar bozulmaz.
+**Kalıcı ders (silinmez):** `analyses.sales_json` satır bazlı karşı taraf/tarih saklamaz, yalnız
+analiz başına en büyük 5 karşı tarafın tarihsiz toplamını tutar. Bu yüzden cari veriyi veritabanı
+üzerinden geri doldurmak (backfill) **teknik olarak imkânsızdır**; tek yol Excel'i yeniden yüklemektir.
 
 **2026-08-07 turunda KAPATILAN dört madde:** silinen analizin cari hareketleri, panel müşteri
 widget'ı, `getMonthlyTotals` KDV tuzağı ve öksüz tercih anahtarları (detay: Bölüm 10).
