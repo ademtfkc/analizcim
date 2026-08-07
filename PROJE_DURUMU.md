@@ -141,6 +141,10 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 - **Eski raporlar cari listesine katılsın mı?** Tek yol ilgili Excel dosyalarını yeniden yüklemek
   (backfill teknik olarak imkânsız — satır bazlı veri saklanmıyor). Hangi dönemler isteniyorsa CEO
   belirtecek. Mükerrer koruması çalışıyor, ikinci yükleme veriyi ikiye katlamaz.
+- **Ekran görüntüleri yenilensin mi?** `docs/screenshots/` içindeki 8 görsel 2026-08-07 denetim
+  turundan ÖNCEYE ait; kenar çubuğu kenarlığı, madalya renkleri, gider şeridi ve cari kolonları
+  değiştiği için artık uygulamayı tam yansıtmıyorlar. Yenileme yaklaşık yarım saatlik ayrı bir iş
+  (izole QA sunucusu + demo veri + 1440×900 koyu tema çekim).
 - _(kapandı)_ `data/pre_restore_1771112753452.db` için CEO 2026-08-06'da "kalsın" dedi.
 - _(Not: `git init` + private GitHub deposu 2026-07-07'de CEO onayıyla TAMAMLANDI; CI kurulu ve yeşil.)_
 
@@ -155,6 +159,7 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | Test altyapısı + finansal kök + küçük hata avı | ana asistan | ✅ TAMAM (2026-08-06) |
 | CEO revizyon turu (renk bandı, kenar çubuğu, sabit tahmin düzeni, En Çok ay filtresi, tek ölçü, cari etiket) | ana asistan + 2 denetim ajanı | ✅ TAMAM (2026-08-06), commit `7732e4f`, CI yeşil |
 | Sağlamlaştırma turu (3 sessiz hata + ölü ayar + güvenli bağımlılık yamaları) | ana asistan + test-uzmani + kod-inceleyici | ✅ TAMAM (2026-08-07), commit `d4542c2` + `f4730b7` |
+| Depo denetim raporunun 9 maddesi (beyaz kenarlık, harf sırası, gider şeridi, cari kolonları, son 12 ay penceresi, yüzde biçimi, renk disiplini, madalya renkleri, jsPDF aralığı) | ana asistan + test-uzmani + kod-inceleyici | ✅ TAMAM (2026-08-07), commit `f2768d4`, CI yeşil (22 sn) |
 | _Başka aktif iş yok_ — kalanlar "Sonraki Adımlar" backlog'unda | — | Beklemede |
 
 ## 10. Bilinen Sorunlar 🐞
@@ -184,6 +189,10 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 | FRONTEND: CSP (Content-Security-Policy) başlığı hiç yok | Düşük | ✅ DÜZELTİLDİ (CSP + güvenlik başlıkları `server.js`; `'unsafe-inline'` inline onclick için, kaldırma backlog) |
 | SQL enjeksiyon: **temiz** — kolon/sıralama beyaz liste, değerler parametreli | ✅ | Doğrulandı (ilk şüphe kapandı) |
 | İstemci kimlik: **güvenli** — httpOnly çerez, localStorage'da token/şifre yok | ✅ | Frontend denetimi doğruladı |
+| **Cari detayındaki "son 12 ay" penceresi son 12 KAYDI alıyordu** (`monthly.slice(-12)`) → hareketsiz aylar atlandığı için pencere 3 yıla yayılabiliyordu | Orta | ✅ DÜZELTİLDİ (2026-08-07, `f2768d4`). `storage.buildLastTwelveMonthsTrend()` son tarihli aydan geriye tam 12 takvim ayı kurar, hareketsiz ayları 0 yazar, tarihsiz satırları eler. 4 birim testi (`tests/unit/storage-party-trend.test.js`) |
+| **`npm run verify` / `npm run test:unit` hiç bitmiyordu** (bu iki script `--test-force-exit` taşımaz, açık SQLite handle koşuyu kilitler) | Yüksek (test altyapısı) | ✅ DÜZELTİLDİ (2026-08-07). Sebep yeni test dosyasının teardown'ıydı: `src/database` require anında migration zincirini ASENKRON başlatır; saf fonksiyon testi zincirden önce biter, `after()` handle'ı zincir ortasında kapatınca `SQLITE_MISUSE` çıkar, hiç kapatmayınca koşu asılır. `after()` artık `migrations` tablosu `scripts/migrations` dosya sayısına ulaşana kadar bekler, sonra kapatır ve siler. **Yeni birim testi yazan herkes bu kalıbı kullanmalı** (CLAUDE.md'de de yazılı) |
+| Renk disiplini kodda uygulanmıyordu: alış tutarı, ciro, gider ve sayaçlar yeşile boyanıyordu ("iyi haber" yanılsaması) | Orta | ✅ DÜZELTİLDİ (2026-08-07). `NUMERIC_COLOR_SELECTOR` 25 → 9 seçici; yalnız finansal SONUÇ taşıyan değerler renklenir. `.dashboard-pl-value:not(...)` seçicisi bilinçli KORUNDU (HTML bu sınıfı çıplak taşır, modifikatörü JS veri gelince yazar) |
+| Koyu temada kenar çubuğu kenarlığı `#ffffff` idi (dört yerde), kullanıcı kartının etrafında beyaz kutu | Düşük (görsel) | ✅ DÜZELTİLDİ (2026-08-07). `#2e2e2e`. Yedek değerler dahil hiçbir yerde `#ffffff` bırakılmamalı |
 | Dev dosyalar (`app.js` ~8360, `styles.css` ~16900, `storage.js` ~2700, `server.js` ~2100) bakımı zorlaştırıyor | Orta | Bu tur BÖLÜNMEYECEK; ileride modülerleştirme önerisi |
 | Çift `005` migration adı (kozmetik) | Düşük | Dokunulmaz (bkz. Karar 3) |
 
@@ -191,17 +200,29 @@ _(Modüller `src/routes/` altında; detay denetim sonrası doldurulacak.)_
 
 ### 🔜 SONRAKİ OTURUM — BURADAN BAŞLA
 
-**Önce bunu bil:** 2026-08-07'de bir **sağlamlaştırma turu** yapıldı (CEO odak kararı: görünür yeni
-özellik yok, sessiz hataları kapat). Kokpit tasarım turu ve CEO revizyon turu bundan önce bitmişti.
-**Hepsi commit edildi.** Aktif iş yok.
+**Önce bunu bil:** 2026-08-07'de **üç tur** yapıldı ve hepsi bitti: sağlamlaştırma turu, sahipsiz
+cari hareketi süzgeci ve **depo denetim raporunun 9 maddesi**. **Hepsi commit + push edildi, CI yeşil.
+Aktif iş yok.**
 
 | Commit | İş |
 |---|---|
 | `d4542c2` | Üç sessiz hata (silinen analizin carileri, panel müşteri widget'ı, KDV tuzağı) + ölü tercih anahtarları |
 | `f4730b7` | Güvenli bağımlılık yamaları (20 açık → 8) + KDV alan adı hizalaması |
+| `059d045` | Kalıcı silinen analizin sahipsiz cari hareketleri süzülüyor (CEO "A" kararı) |
+| `f2768d4` | **Denetim raporunun 9 maddesi** (beyaz kenarlık, tahmin harfleri A–M, gider şeridi, cari kolonları, son 12 ay takvim penceresi, tek yüzde biçimi, renk disiplini, madalya token'ları, jsPDF aralığı) |
 
-Doğrulama: lint temiz, **179 birim + 36 entegrasyon + 1 smoke** geçiyor. İki denetim ajanı da ONAY
-verdi; test-uzmani düzeltmeleri geçici olarak bozup testlerin gerçekten kırıldığını kanıtladı.
+Doğrulama: `npm run verify` yeşil — **183 birim + 37 entegrasyon + 1 smoke**, lint temiz.
+İki denetim ajanı ONAY verdi. **Not:** kod-inceleyici ilk turda RET vermişti (yeni test dosyası
+veritabanı bağlantısını kapatmadan geçici dosyayı siliyor, `npm run verify` asılı kalıyordu);
+düzeltildikten sonra ONAY. Ayrıntı Bölüm 10'daki "test altyapısı" satırında.
+
+⚠️ **Ekran görüntüleri bayat:** `docs/screenshots/` içindeki 8 görsel `f2768d4` öncesine ait
+(kenar çubuğu, madalya renkleri, gider şeridi, cari kolonları değişti). CEO kararı bekliyor (Bölüm 8).
+
+ℹ️ **2026-08-07 notu:** kod-inceleyici ajanı denetim sırasında repo kökündeki 7 geçici QA ekran
+görüntüsünü (iz sürülmeyen `.png`) CEO onayı almadan sildi ve bunu kendisi bildirdi. Depoya hiç
+girmemiş, README kullanmıyordu; kalıcı kayıp yok. Ajanların iz sürülmeyen dosyaları temizlememesi
+gerektiği hatırlatması bu satırda duruyor.
 
 ✅ **GitHub CI ÇALIŞIYOR — önceki "çalışmıyor" tespiti YANLIŞTI (2026-08-07 akşamı düzeltildi).**
 `101c833` (README turu) ve `4c2079b` (Actions yükseltmesi) push'larında koşu anında kuyruğa girdi ve
@@ -230,9 +251,10 @@ Detay okuma sırası: CLAUDE.md → "2026-08-07 güncellemesi (sağlamlaştırma
 "2026-08-06 güncellemesi (CEO revizyon turu + cari bakiye gerçeği)"
 ve "2026-08-05/06 güncellemesi (Kokpit dili tüm sayfalara yayıldı + 5 sessiz hata)".
 
-**CEO'ya sorulmuş, cevap bekleyen iki soru (Bölüm 8'de de var):**
+**CEO'ya sorulmuş, cevap bekleyen üç soru (Bölüm 8'de de var):**
 1. Gerçek bakiye takibi (tahsilat/ödeme kaydı) istenir mi? — kapsam genişlemesi.
 2. Eski raporların cari listesine katılması için hangi dönemlerin Excel'i yeniden yüklenecek?
+3. README ekran görüntüleri yenilensin mi? (8 görsel `f2768d4` öncesine ait, ~yarım saatlik iş.)
 
 ### 🔴 ESKİ DÖNEM EXCEL'LERİ — İŞ BLOKE, CEO'DAN DOSYA BEKLENİYOR (2026-08-07 denetimi)
 
