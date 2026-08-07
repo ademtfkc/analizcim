@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const db = require('./database');
-const { validatePassword, validateUsername, validateEmail, validateYear, validateMonth, validateAmount, validateAmountRange, validateDateRange, validateFilterType, validateRequired, sanitizeString, validatePagination, validateSort, validateId, neutralizeSpreadsheetCell } = require('./validators');
+const { validatePassword, validateUsername, validateEmail, validateYear, validateMonth, validateAmount, validateAmountRange, validateDateRange, validateFilterType, validateRequired, sanitizeString, validatePagination, validateSort, validateId, neutralizeSpreadsheetCell, repairUploadFilename } = require('./validators');
 const { createRateLimiters } = require('./middleware/rate-limiters');
 const { createSessionRefreshMiddleware, requireAuth, requireAdmin } = require('./middleware/auth');
 const { registerAuthRoutes } = require('./routes/auth');
@@ -94,6 +94,9 @@ const fileStorage = multer.memoryStorage();
 const upload = multer({
     storage: fileStorage,
     fileFilter: (req, file, cb) => {
+        // Türkçe dosya adları latin1 okunduğu için "satış" → "satÄ±s" oluyordu; burada onarılır.
+        // fileFilter rota gövdesinden ÖNCE çalışır, bu yüzden aşağıdaki tüm okumalar düzeltilmiş adı görür.
+        file.originalname = repairUploadFilename(file.originalname);
         const ext = path.extname(file.originalname).toLowerCase();
         if (ext !== '.xlsx' && ext !== '.xls' && ext !== '.csv') {
             return cb(new Error('Sadece Excel (.xlsx, .xls) veya CSV dosyaları kabul edilmektedir.'));
@@ -1479,27 +1482,34 @@ app.get('/api/compare', async (req, res) => {
             });
             let sales = 0, purchase = 0, salesTax = 0, purchaseTax = 0;
             const byMonth = {};
-            for (let m = 1; m <= 12; m++) byMonth[m] = { sales: 0, purchase: 0, profit: 0 };
+            for (let m = 1; m <= 12; m++) byMonth[m] = { sales: 0, purchase: 0, profit: 0, salesTax: 0, purchaseTax: 0 };
             list.forEach(entry => {
                 // Ay bilgisini de dosya adından al
                 const parsed = storage.parseDateFromFilename(entry.salesFileName) || storage.parseDateFromFilename(entry.purchaseFileName);
                 const month = parsed ? parsed.month : (new Date(entry.date).getMonth() + 1);
                 const s = entry.sales?.totalAmount || 0;
                 const p = entry.purchase?.totalAmount || 0;
+                const sTax = entry.sales?.totalTax || 0;
+                const pTax = entry.purchase?.totalTax || 0;
                 sales += s;
                 purchase += p;
-                salesTax += entry.sales?.totalTax || 0;
-                purchaseTax += entry.purchase?.totalTax || 0;
+                salesTax += sTax;
+                purchaseTax += pTax;
                 byMonth[month].sales += s;
                 byMonth[month].purchase += p;
                 byMonth[month].profit += (s - p);
+                byMonth[month].salesTax += sTax;
+                byMonth[month].purchaseTax += pTax;
             });
+            // salesTax/purchaseTax EKLEME alanlardır; mevcut sales/purchase/profit birebir aynı kaldı.
             const monthly = monthNames.map((name, i) => ({
                 month: i + 1,
                 monthName: name,
                 sales: byMonth[i + 1].sales,
                 purchase: byMonth[i + 1].purchase,
-                profit: byMonth[i + 1].profit
+                profit: byMonth[i + 1].profit,
+                salesTax: byMonth[i + 1].salesTax,
+                purchaseTax: byMonth[i + 1].purchaseTax
             }));
             return {
                 year: y,
@@ -1534,11 +1544,56 @@ app.get('/api/compare', async (req, res) => {
         const purchaseGrowth = y1.purchase ? ((y2.purchase - y1.purchase) / y1.purchase * 100).toFixed(1) : null;
         const profitGrowth = y1.profit !== 0 ? ((y2.profit - y1.profit) / Math.abs(y1.profit) * 100).toFixed(1) : null;
         const netProfitGrowth = (y1.net_profit !== 0) ? ((y2.net_profit - y1.net_profit) / Math.abs(y1.net_profit) * 100).toFixed(1) : null;
+
+        // ORTAK AY KIYASI (2026-08-07): Yıllardan biri eksikse (örn. 2025 tam, 2026 altı aylık)
+        // yıl toplamlarını kıyaslamak "satış %40 düştü" gibi YANLIŞ bir sonuç üretir; eksik aylar
+        // sıfır sayılır. Panel tarafındaki computeYoyDelta aynı kuralı zaten uyguluyordu.
+        // Ek alandır: mevcut year1/year2/growth alanları birebir korunmuştur.
+        const ayHareketliMi = (yil, m) => {
+            const satir = yil.monthly[m - 1];
+            return (satir.sales || 0) !== 0 || (satir.purchase || 0) !== 0;
+        };
+        const ortakAylar = [];
+        for (let m = 1; m <= 12; m++) {
+            if (ayHareketliMi(y1, m) && ayHareketliMi(y2, m)) ortakAylar.push(m);
+        }
+        const ortakToplam = (yil) => ortakAylar.reduce((acc, m) => {
+            const satir = yil.monthly[m - 1];
+            acc.sales += satir.sales || 0;
+            acc.purchase += satir.purchase || 0;
+            acc.salesTax += satir.salesTax || 0;
+            acc.purchaseTax += satir.purchaseTax || 0;
+            return acc;
+        }, { sales: 0, purchase: 0, salesTax: 0, purchaseTax: 0 });
+        const o1 = ortakToplam(y1);
+        const o2 = ortakToplam(y2);
+        // Kâr KDV hariç: (satış - satış KDV) - (alış - alış KDV). Gider yıllık olduğu için
+        // ortak-ay kıyasına dahil edilmez; bu yüzden alan adı brüt kârdır, net kâr değil.
+        o1.profit = (o1.sales - o1.salesTax) - (o1.purchase - o1.purchaseTax);
+        o2.profit = (o2.sales - o2.salesTax) - (o2.purchase - o2.purchaseTax);
+        const oran = (onceki, sonraki) => (onceki !== 0
+            ? ((sonraki - onceki) / Math.abs(onceki) * 100).toFixed(1)
+            : null);
+        const aylariSay = (yil) => yil.monthly.filter((_, i) => ayHareketliMi(yil, i + 1)).length;
+
         res.json({
             success: true,
             year1: y1,
             year2: y2,
-            growth: { sales: salesGrowth, purchase: purchaseGrowth, profit: profitGrowth, net_profit: netProfitGrowth }
+            growth: { sales: salesGrowth, purchase: purchaseGrowth, profit: profitGrowth, net_profit: netProfitGrowth },
+            comparable: {
+                sharedMonths: ortakAylar,
+                sharedMonthCount: ortakAylar.length,
+                year1MonthCount: aylariSay(y1),
+                year2MonthCount: aylariSay(y2),
+                year1: o1,
+                year2: o2,
+                growth: {
+                    sales: oran(o1.sales, o2.sales),
+                    purchase: oran(o1.purchase, o2.purchase),
+                    profit: oran(o1.profit, o2.profit)
+                }
+            }
         });
     } catch (error) {
         logger.error({ err: error }, 'Compare error:');

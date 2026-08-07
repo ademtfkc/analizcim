@@ -80,6 +80,9 @@ let _expensesPieChartInstance = null;
 let _dashboardProfitLossData = null;
 let _customers = [];
 let _customerSearchTimer = null;
+// Manuel müşteri kartlarına fatura hacmi yazabilmek için son yüklenen cari listesi burada tutulur.
+// Anahtar: normalize edilmiş isim (bkz. normalizePartyKey), değer: cari kaydı.
+let _customerPartyIndex = new Map();
 let _businessPartySearchTimer = null;
 let _currentPartyListType = 'customer';
 let _currentPartyDetailType = 'customer';
@@ -1910,13 +1913,14 @@ window.openCustomerDetail = function openCustomerDetail(customerId) {
     const body = document.getElementById('customerDetailBody');
     if (!customer || !modal || !body) return;
 
+    const party = findPartyForCustomer(customer);
     if (title) title.textContent = customer.fullName || 'Müşteri Detayı';
     body.innerHTML = `
         <div class="customer-detail-grid">
             <div><span>Telefon</span><strong>${escapeHtml(customer.phone || '-')}</strong></div>
             <div><span>E-posta</span><strong>${escapeHtml(customer.email || '-')}</strong></div>
             <div><span>Vergi No</span><strong>${escapeHtml(customer.taxNumber || '-')}</strong></div>
-            <div><span>Bakiye</span><strong class="${customerBalanceClass(customer.balance)}">${escapeHtml(formatCurrency(customer.balance || 0))}</strong></div>
+            <div><span>Manuel bakiye</span><strong class="${customerBalanceClass(customer.balance)}">${escapeHtml(formatCurrency(customer.balance || 0))}</strong></div>
         </div>
         <div class="customer-detail-block">
             <span>Adres</span>
@@ -1927,8 +1931,14 @@ window.openCustomerDetail = function openCustomerDetail(customerId) {
             <p>${escapeHtml(customer.notes || 'Not eklenmemiş.')}</p>
         </div>
         <div class="customer-timeline-empty">
-            <strong>İşlem Geçmişi</strong>
-            <p>Henüz işlem geçmişi yok. Fatura veya tahsilat modülü eklendiğinde bu alan kullanılacak.</p>
+            <strong>Fatura Hareketleri</strong>
+            <p>${party
+                ? `Bu müşterinin ${escapeHtml(String(party.transactionCount || 0))} fatura hareketi var ` +
+                  `(${escapeHtml(formatCurrency(party.totalVolume || 0))} hacim). Aylık grafik ve hareket dökümü için cari detayını açın.`
+                : 'Bu kayıt yüklenen faturalarla eşleşmedi. İlgili Excel dosyası yüklendiğinde hareketler burada görünür.'}</p>
+            ${party
+                ? `<button type="button" class="dashboard-action-btn primary" onclick="closeCustomerDetailModal(); openBusinessPartyDetail('customer', '${escapeAttr(String(party.id))}')">Cari detayını aç</button>`
+                : ''}
         </div>`;
     modal.style.display = 'flex';
 };
@@ -1966,13 +1976,47 @@ async function loadCustomers() {
     }
 }
 
+// Manuel müşteri kaydını fatura (cari) kaydıyla eşleştirmek için isim anahtarı.
+// Excel'den otomatik oluşan müşterilerde iki taraftaki isim birebir aynıdır; noktalama,
+// boşluk ve büyük/küçük harf farkları burada eritilir.
+function normalizePartyKey(name) {
+    return String(name || '')
+        .toLocaleUpperCase('tr-TR')
+        .replace(/[^0-9A-ZÇĞİÖŞÜ]+/g, '');
+}
+
+function findPartyForCustomer(customer) {
+    const key = normalizePartyKey(customer && customer.fullName);
+    if (!key) return null;
+    return _customerPartyIndex.get(key) || null;
+}
+
 function renderCustomers(customers) {
     const grid = document.getElementById('customersGrid');
     const empty = document.getElementById('customersEmpty');
     if (!grid || !empty) return;
 
     empty.style.display = customers.length ? 'none' : 'block';
-    grid.innerHTML = customers.map((customer) => `
+    grid.innerHTML = customers.map((customer) => {
+        const party = findPartyForCustomer(customer);
+        // Fatura hacmi tanım gereği hep artıdır; renk sınıfı verilmez (renk disiplini).
+        const hacimSatiri = party
+            ? `<div class="customer-balance-row">
+                <span>Fatura Hacmi</span>
+                <strong>${escapeHtml(formatCurrency(party.totalVolume || 0))}</strong>
+            </div>
+            <div class="customer-meta customer-invoice-meta">
+                <span>${escapeHtml(String(party.transactionCount || 0))} işlem</span>
+                <span>Son ${escapeHtml(formatDisplayDate(party.lastTransactionDate))}</span>
+            </div>`
+            : `<div class="customer-balance-row">
+                <span>Fatura Hacmi</span>
+                <strong class="muted">Fatura kaydı yok</strong>
+            </div>`;
+        const detayTiklamasi = party
+            ? `openBusinessPartyDetail('customer', '${escapeAttr(String(party.id))}')`
+            : `openCustomerDetail(${customer.id})`;
+        return `
         <article class="customer-card">
             <div class="customer-card-main">
                 <div class="customer-avatar">${escapeHtml((customer.firstName || '?').charAt(0).toUpperCase())}</div>
@@ -1985,16 +2029,14 @@ function renderCustomers(customers) {
                 <span>${escapeHtml(customer.phone || 'Telefon yok')}</span>
                 <span>${escapeHtml(customer.taxNumber || 'Vergi no yok')}</span>
             </div>
-            <div class="customer-balance-row">
-                <span>Bakiye</span>
-                <strong class="${customerBalanceClass(customer.balance)}">${escapeHtml(formatCurrency(customer.balance || 0))}</strong>
-            </div>
+            ${hacimSatiri}
             <div class="customer-actions">
-                <button type="button" onclick="openCustomerDetail(${customer.id})">Detay</button>
+                <button type="button" onclick="${detayTiklamasi}">Detay</button>
                 <button type="button" onclick="openCustomerModal(${customer.id})">Düzenle</button>
                 <button type="button" class="danger" onclick="deleteCustomer(${customer.id})">Sil</button>
             </div>
-        </article>`).join('');
+        </article>`;
+    }).join('');
 }
 
 // Bu fonksiyon yalnız ELLE eklenen müşteri listesini besler.
@@ -2076,8 +2118,14 @@ async function loadBusinessParties(type = 'customer') {
             showError(data.error || 'Cari listesi yüklenemedi.');
             return;
         }
-        renderBusinessPartyRows(type, data.parties || []);
-        renderBusinessPartyRail(type, data.parties || []);
+        const parties = data.parties || [];
+        renderBusinessPartyRows(type, parties);
+        renderBusinessPartyRail(type, parties);
+        if (type === 'customer') {
+            // Manuel kartlar fatura hacmini bu dizinden okur; liste tazelendiğinde kartlar da tazelenir.
+            _customerPartyIndex = new Map(parties.map((p) => [normalizePartyKey(p.name), p]));
+            if (_customers.length) renderCustomers(_customers);
+        }
     } catch (error) {
         console.error('Business parties load error:', error);
         showError('Cari listesi yüklenirken hata oluştu.');
@@ -3921,7 +3969,16 @@ function renderExpensesRail(view) {
 
     const items = [];
 
-    if (view.net < 0) {
+    // Hiç gider kalemi yokken "gider yükü kontrollü" demek yanlış güven verir: ortada ölçülecek
+    // gider yoktur. Böyle bir dönemde ilk madde eksik veriyi söyler (2026-08-07 denetim bulgusu).
+    if (kalemSayisi === 0) {
+        items.push({
+            tone: 'neutral',
+            title: 'Bu döneme gider girilmemiş',
+            body: 'Gider kalemi olmadığı için "net kâr" burada brüt kâra eşit görünür. ' +
+                'Sabit ve değişken kalemleri girdiğinizde net sonuç ve marj gerçeği gösterir.'
+        });
+    } else if (view.net < 0) {
         items.push({
             tone: 'negative',
             title: 'Dönem net zararda',
@@ -3956,12 +4013,6 @@ function renderExpensesRail(view) {
             tone: 'warning',
             title: 'Giderler ağırlıkla sabit',
             body: `Toplamın %${sabitPayi.toFixed(0)}'ı sabit gider. Satış düştüğünde bu kalemler azalmaz; nakit planında dikkat gerektirir.`
-        });
-    } else if (kalemSayisi === 0) {
-        items.push({
-            tone: 'neutral',
-            title: 'Bu döneme gider girilmemiş',
-            body: 'Sabit ve değişken gider kalemlerini girdiğinizde net kâr ve marj hesabı gerçek sonucu gösterir.'
         });
     }
 
@@ -7920,31 +7971,45 @@ function pointText(value) {
 }
 
 // Yıl karşılaştırmasının karar paneli: veriden üretilir, dekoratif değil
-function renderCompareRail(a, b, growth) {
+// kiyas: yalnız kısmi karşılaştırmada dolu gelir (iki yılda da veri bulunan aylar).
+// Dolu geldiğinde başlık, aylık kırılım ve karar maddeleri bu ortak aylarla sınırlanır.
+function renderCompareRail(a, b, growth, kiyas) {
+    const ortakAylar = kiyas ? kiyas.sharedMonths : null;
     const meta = document.getElementById('compareHeadMeta');
-    if (meta) meta.textContent = `${a.year} → ${b.year} · ${(a.monthly || []).length} ay`;
+    if (meta) {
+        meta.textContent = kiyas
+            ? `${a.year} → ${b.year} · iki yılda da veri olan ${kiyas.sharedMonthCount} ay kıyaslandı ` +
+              `(${a.year}: ${kiyas.year1MonthCount} ay, ${b.year}: ${kiyas.year2MonthCount} ay)`
+            : `${a.year} → ${b.year} · ${(a.monthly || []).filter((m) => (m.sales || 0) !== 0 || (m.purchase || 0) !== 0).length} ay`;
+    }
 
-    const netA = a.net_profit ?? a.profit ?? 0;
-    const netB = b.net_profit ?? b.profit ?? 0;
-    const marginA = a.sales > 0 ? (netA / a.sales) * 100 : 0;
-    const marginB = b.sales > 0 ? (netB / b.sales) * 100 : 0;
+    // Kısmi kıyasta kâr = ortak ayların KDV hariç brüt kârı (gider yıllık olduğu için dağıtılamaz).
+    const netA = kiyas ? kiyas.year1.profit : (a.net_profit ?? a.profit ?? 0);
+    const netB = kiyas ? kiyas.year2.profit : (b.net_profit ?? b.profit ?? 0);
+    const cirolA = kiyas ? kiyas.year1.sales : a.sales;
+    const cirolB = kiyas ? kiyas.year2.sales : b.sales;
+    const karEtiketi = kiyas ? 'brüt kâr' : 'net kâr';
+    const marjEtiketi = kiyas ? 'brüt marj' : 'net marj';
+    const marginA = cirolA > 0 ? (netA / cirolA) * 100 : 0;
+    const marginB = cirolB > 0 ? (netB / cirolB) * 100 : 0;
     const marginDiff = marginB - marginA;
     // Yuvarlamadan sonra sıfıra düşen fark nötrdür; "0,0 puan" kırmızı görünmesin
     const marginTone = Math.abs(marginDiff) < 0.05 ? '' : (marginDiff > 0 ? 'positive' : 'negative');
 
     renderRailFacts('compareRailFacts', [
-        { label: `${a.year} net kâr`, value: formatCurrency(netA) },
-        { label: `${b.year} net kâr`, value: formatCurrency(netB), tone: netB >= netA ? 'positive' : 'negative' },
-        { label: `${a.year} net marj`, value: '%' + marginA.toFixed(1).replace('.', ',') },
-        { label: `${b.year} net marj`, value: '%' + marginB.toFixed(1).replace('.', ','), tone: marginTone },
+        { label: `${a.year} ${karEtiketi}`, value: formatCurrency(netA) },
+        { label: `${b.year} ${karEtiketi}`, value: formatCurrency(netB), tone: netB >= netA ? 'positive' : 'negative' },
+        { label: `${a.year} ${marjEtiketi}`, value: formatPercent(marginA, 1) },
+        { label: `${b.year} ${marjEtiketi}`, value: formatPercent(marginB, 1), tone: marginTone },
         { label: 'Marj değişimi', value: pointText(marginDiff), tone: marginTone }
     ]);
 
-    // Aylık en büyük artış/azalış
+    // Aylık en büyük artış/azalış. Kısmi kıyasta yalnız ortak aylar bakılır; aksi halde
+    // 2026'da hiç veri olmayan Aralık "en çok gerileyen ay" diye gösterilirdi.
     const rows = (a.monthly || []).map((m1, i) => {
         const m2 = (b.monthly || [])[i] || {};
-        return { ay: m1.monthName || '', fark: (m2.sales || 0) - (m1.sales || 0) };
-    }).filter(r => r.ay);
+        return { ay: m1.monthName || '', ayNo: i + 1, fark: (m2.sales || 0) - (m1.sales || 0) };
+    }).filter(r => r.ay && (!ortakAylar || ortakAylar.includes(r.ayNo)));
     const sorted = rows.slice().sort((x, y) => y.fark - x.fark);
     const enIyi = sorted[0];
     const enKotu = sorted[sorted.length - 1];
@@ -7981,8 +8046,10 @@ function renderCompareRail(a, b, growth) {
 
     items.push({
         tone: netB >= netA ? 'positive' : 'negative',
-        title: netB >= netA ? `${b.year} net kârla önde` : `${b.year} net kârda geride`,
-        body: `Fark ${(netB - netA >= 0 ? '+' : '') + formatCurrency(netB - netA)} (${pctText(growth.net_profit)}).`
+        title: netB >= netA ? `${b.year} ${karEtiketi}la önde` : `${b.year} ${karEtiketi}da geride`,
+        body: `Fark ${(netB - netA >= 0 ? '+' : '') + formatCurrency(netB - netA)} ` +
+            `(${pctText(kiyas ? growth.profit : growth.net_profit)})` +
+            (kiyas ? ` · yalnız ortak ${kiyas.sharedMonthCount} ay.` : '.')
     });
 
     if (enKotu && enKotu.fark < 0) {
@@ -8110,15 +8177,33 @@ window.loadCompare = async function () {
         const b = data.year2;
         const growth = data.growth || {};
 
-        updateCompareDeltaCard('compareSalesDeltaCard', 'compareSalesDeltaValue', 'compareSalesDeltaMeta', 'Satış farkı', growth.sales, b.sales - a.sales);
-        // Maliyet artışı iyi haber değildir: renk tersine çevrilir
-        updateCompareDeltaCard('compareCostDeltaCard', 'compareCostDeltaValue', 'compareCostDeltaMeta', 'Alış farkı', growth.purchase, b.purchase - a.purchase, true);
-        updateCompareDeltaCard('compareNetDeltaCard', 'compareNetDeltaValue', 'compareNetDeltaMeta', 'Net kâr farkı', growth.net_profit, (b.net_profit ?? b.profit) - (a.net_profit ?? a.profit));
+        // ORTAK AY KIYASI: yıllardan biri eksik aylıysa (12 aya karşı 6 ay) yıl toplamlarını
+        // kıyaslamak yanlış sonuç verir — eksik aylar sıfır sayılır. Böyle bir durumda kartlar
+        // yalnız İKİ YILDA DA veri bulunan aylardan hesaplanır (panelin computeYoyDelta kuralı).
+        const kiyas = data.comparable || null;
+        const kismiKiyas = !!kiyas && kiyas.sharedMonthCount > 0
+            && (kiyas.year1MonthCount !== kiyas.sharedMonthCount || kiyas.year2MonthCount !== kiyas.sharedMonthCount);
+        const kartEki = kismiKiyas ? ` (ortak ${kiyas.sharedMonthCount} ay)` : '';
+
+        if (kismiKiyas) {
+            updateCompareDeltaCard('compareSalesDeltaCard', 'compareSalesDeltaValue', 'compareSalesDeltaMeta',
+                'Satış farkı' + kartEki, kiyas.growth.sales, kiyas.year2.sales - kiyas.year1.sales);
+            updateCompareDeltaCard('compareCostDeltaCard', 'compareCostDeltaValue', 'compareCostDeltaMeta',
+                'Alış farkı' + kartEki, kiyas.growth.purchase, kiyas.year2.purchase - kiyas.year1.purchase, true);
+            // Ortak-ay kıyasında gider dağıtılamadığı için kâr BRÜT kârdır (KDV hariç, gider öncesi).
+            updateCompareDeltaCard('compareNetDeltaCard', 'compareNetDeltaValue', 'compareNetDeltaMeta',
+                'Brüt kâr farkı' + kartEki, kiyas.growth.profit, kiyas.year2.profit - kiyas.year1.profit);
+        } else {
+            updateCompareDeltaCard('compareSalesDeltaCard', 'compareSalesDeltaValue', 'compareSalesDeltaMeta', 'Satış farkı', growth.sales, b.sales - a.sales);
+            // Maliyet artışı iyi haber değildir: renk tersine çevrilir
+            updateCompareDeltaCard('compareCostDeltaCard', 'compareCostDeltaValue', 'compareCostDeltaMeta', 'Alış farkı', growth.purchase, b.purchase - a.purchase, true);
+            updateCompareDeltaCard('compareNetDeltaCard', 'compareNetDeltaValue', 'compareNetDeltaMeta', 'Net kâr farkı', growth.net_profit, (b.net_profit ?? b.profit) - (a.net_profit ?? a.profit));
+        }
 
         const chartMeta = document.getElementById('compareChartMeta');
         if (chartMeta) chartMeta.textContent = a.year + ' - ' + b.year;
         renderCompareMonthlyChart(a, b);
-        renderCompareRail(a, b, growth);
+        renderCompareRail(a, b, kismiKiyas ? kiyas.growth : growth, kismiKiyas ? kiyas : null);
 
         const monthY1 = document.getElementById('compareMonthY1Label');
         const monthY2 = document.getElementById('compareMonthY2Label');
@@ -8131,6 +8216,17 @@ window.loadCompare = async function () {
                 const m2 = b.monthly[i] || {};
                 const s1 = m1.sales || 0;
                 const s2 = m2.sales || 0;
+                // Kısmi kıyasta ortak olmayan ay için fark hesaplanmaz: bir tarafta veri yok,
+                // "−%100 düştü" demek yanlış olurdu.
+                if (kismiKiyas && !kiyas.sharedMonths.includes(i + 1)) {
+                    return `<tr class="compare-row-muted">
+                        <td>${m1.monthName || ''}</td>
+                        <td>${s1 ? formatCurrency(s1) : '–'}</td>
+                        <td>${s2 ? formatCurrency(s2) : '–'}</td>
+                        <td class="value-neutral">veri yok</td>
+                        <td class="value-neutral">–</td>
+                    </tr>`;
+                }
                 const diff = s2 - s1;
                 const growthPct = s1 ? ((s2 - s1) / s1 * 100) : null;
                 const diffClass = diff > 0 ? 'value-positive' : (diff < 0 ? 'value-negative' : 'value-neutral');
@@ -8145,15 +8241,18 @@ window.loadCompare = async function () {
                     <td class="${growthClass}">${growthText}</td>
                 </tr>`;
             });
-            const totalDiff = b.sales - a.sales;
-            const totalGrowth = a.sales ? ((b.sales - a.sales) / a.sales * 100) : null;
+            // Toplam satırı da kıyasla aynı tabanı kullanır: kısmi kıyasta yalnız ortak aylar.
+            const toplamA = kismiKiyas ? kiyas.year1.sales : a.sales;
+            const toplamB = kismiKiyas ? kiyas.year2.sales : b.sales;
+            const totalDiff = toplamB - toplamA;
+            const totalGrowth = toplamA ? ((toplamB - toplamA) / toplamA * 100) : null;
             const totalDiffClass = totalDiff > 0 ? 'value-positive' : (totalDiff < 0 ? 'value-negative' : 'value-neutral');
             const totalGrowthClass = totalGrowth != null ? (totalGrowth > 0 ? 'value-positive' : (totalGrowth < 0 ? 'value-negative' : 'value-neutral')) : '';
             const totalGrowthText = totalGrowth != null ? formatPercentSigned(totalGrowth) : '-';
             monthlyRows.push(`<tr class="compare-total-row">
-                <td>Toplam</td>
-                <td>${formatCurrency(a.sales)}</td>
-                <td>${formatCurrency(b.sales)}</td>
+                <td>${kismiKiyas ? `Toplam (ortak ${kiyas.sharedMonthCount} ay)` : 'Toplam'}</td>
+                <td>${formatCurrency(toplamA)}</td>
+                <td>${formatCurrency(toplamB)}</td>
                 <td class="${totalDiffClass}">${(totalDiff >= 0 ? '+' : '') + formatCurrency(totalDiff)}</td>
                 <td class="${totalGrowthClass}">${totalGrowthText}</td>
             </tr>`);

@@ -400,6 +400,31 @@ function neutralizeSpreadsheetCell(value) {
     return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
 }
 
+/**
+ * Yüklenen dosya adındaki Türkçe karakter bozulmasını onarır.
+ *
+ * Sorun: multipart form gövdesindeki dosya adını busboy varsayılan olarak latin1 okur.
+ * `nisan_2026_satış.xlsx` bu yüzden `nisan_2026_satÄ±s.xlsx` olarak gelir ve veritabanına
+ * da böyle yazılır (2026-08-07 tarayıcı denetiminde yakalandı).
+ *
+ * Çözüm: adı latin1 baytlarına geri çevirip UTF-8 olarak yeniden okur. Dönüşüm bozuk
+ * çıkarsa (replacement karakteri) veya adda zaten latin1 üstü karakter yoksa ad
+ * OLDUĞU GİBİ döner — yani ASCII adlar ve hâlihazırda doğru adlar etkilenmez.
+ */
+function repairUploadFilename(name) {
+    if (typeof name !== 'string' || name.length === 0) return name;
+    // Mojibake izi: latin1 okunmuş UTF-8 baytları bu aralıkta görünür (Ã, Ä, Å, Â ...).
+    if (!/[À-ÿ]/.test(name)) return name;
+    let decoded;
+    try {
+        decoded = Buffer.from(name, 'latin1').toString('utf8');
+    } catch (_) {
+        return name;
+    }
+    if (decoded.includes('�')) return name;
+    return decoded;
+}
+
 module.exports = {
     validatePassword,
     validateUsername,
@@ -415,5 +440,6 @@ module.exports = {
     validatePagination,
     validateSort,
     validateId,
-    neutralizeSpreadsheetCell
+    neutralizeSpreadsheetCell,
+    repairUploadFilename
 };

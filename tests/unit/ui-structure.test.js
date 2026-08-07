@@ -461,8 +461,8 @@ describe('UI structure rules', () => {
         assert.match(html, /id="compareHeadMeta"/);
 
         // Panel veriden üretilir, satır içi onclick yok
-        assert.match(js, /function renderCompareRail\(a, b, growth\)/);
-        assert.match(js, /renderCompareRail\(a, b, growth\);/);
+        assert.match(js, /function renderCompareRail\(a, b, growth, kiyas\)/);
+        assert.match(js, /renderCompareRail\(a, b, kismiKiyas \? kiyas\.growth : growth, kismiKiyas \? kiyas : null\);/);
         assert.doesNotMatch(js, /rail-action-title"[^\n]*onclick/);
 
         // Maliyet artışı kırmızı olmalı (ters yön bayrağı)
@@ -517,11 +517,59 @@ describe('UI structure rules', () => {
         });
 
         assert.match(js, /function renderBusinessPartyRail\(type, parties\)/);
-        assert.match(js, /renderBusinessPartyRail\(type, data\.parties \|\| \[\]\);/);
+        assert.match(js, /renderBusinessPartyRail\(type, parties\);/);
         assert.match(css, /\.party-detail-section\.cockpit-page \.party-metrics-grid\s*\{/);
 
         // Mobil kart görünümü korunmalı (isim hücresi mono dizgiye kaçmasın)
         assert.match(css, /\.customers-section\.cockpit-page \.business-party-table td\.bp-cell-name\s*\{[\s\S]*?font-family: inherit/);
+    });
+
+    // 2026-08-07 tarayıcı denetimi: Müşteriler sekmesinde fatura tablosu 30 boş manuel kartın
+    // ALTINA gömülmüştü (yaklaşık 5.300 piksel aşağıda) ve kartlar hep "Bakiye ₺0" gösteriyordu.
+    test('customers tab shows invoice volume first and never labels a card box as Bakiye', () => {
+        const html = readPublicFile('index.html');
+        const js = readPublicFile('app.js');
+
+        const cariTablo = html.indexOf('id="customerPartyTableBody"');
+        const manuelKart = html.indexOf('id="customersGrid"');
+        assert.ok(cariTablo > -1 && manuelKart > -1);
+        assert.ok(cariTablo < manuelKart, 'fatura tablosu manuel kartlardan ÖNCE gelmeli');
+        assert.match(html, /<h3>Manuel Müşteri Kayıtları<\/h3>/);
+
+        // Kartta hacim gösterilir; "Bakiye" etiketli kutu kalmaz (CLAUDE.md cari kuralı).
+        assert.match(js, /<span>Fatura Hacmi<\/span>/);
+        assert.doesNotMatch(js, /<span>Bakiye<\/span>/);
+        assert.match(js, /function normalizePartyKey/);
+        assert.match(js, /function findPartyForCustomer/);
+
+        // Eşleşen kayıtta Detay düğmesi gerçek cari detayını açar, eski manuel modalı değil.
+        assert.match(js, /openBusinessPartyDetail\('customer', '\$\{escapeAttr\(String\(party\.id\)\)\}'\)/);
+        // Manuel modal artık "işlem geçmişi yok" diye yanlış bilgi vermez.
+        assert.doesNotMatch(js, /Fatura veya tahsilat modülü eklendiğinde bu alan kullanılacak/);
+    });
+
+    // 2026-08-07: 12 aylık yıl ile 6 aylık yıl kıyaslanınca eksik aylar sıfır sayılıyor,
+    // "satış %39,6 geriledi" gibi YANLIŞ sonuç çıkıyordu.
+    test('year comparison falls back to months present in both years', () => {
+        const js = readPublicFile('app.js');
+        const server = fs.readFileSync(path.join(rootDir, 'src', 'server.js'), 'utf8');
+
+        assert.match(server, /comparable:\s*\{/);
+        assert.match(server, /sharedMonths:\s*ortakAylar/);
+        assert.match(server, /sharedMonthCount:\s*ortakAylar\.length/);
+        assert.match(js, /const kismiKiyas =/);
+        assert.match(js, /ortak \$\{kiyas\.sharedMonthCount\} ay/);
+    });
+
+    // 2026-08-07: hiç gider girilmemişken karar paneli yeşil "Gider yükü kontrollü" diyordu.
+    test('expense rail reports missing data instead of claiming costs are under control', () => {
+        const js = readPublicFile('app.js');
+        const bosDurumIndex = js.indexOf("title: 'Bu döneme gider girilmemiş'");
+        const kontrolluIndex = js.indexOf("title: 'Gider yükü kontrollü'");
+
+        assert.ok(bosDurumIndex > -1 && kontrolluIndex > -1);
+        assert.ok(bosDurumIndex < kontrolluIndex, 'boş gider dalı "kontrollü" dalından önce gelmeli');
+        assert.match(js, /if \(kalemSayisi === 0\) \{\s*items\.push\(\{/);
     });
 
     test('predictions page keeps its decision cards inside the cockpit shell', () => {

@@ -5655,6 +5655,19 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
+/* Fatura hareketi eşleşmeyen manuel kayıtta "Fatura kaydı yok" yazısı sönük kalır. */
+.customer-balance-row strong.muted {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Kart üzerindeki işlem sayısı + son işlem satırı yan yana durur. */
+.customer-invoice-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
 .customer-actions {
     display: flex;
     flex-wrap: wrap;
@@ -14773,6 +14786,11 @@ textarea.form-input { font-family: inherit; }
     border-top: 2px solid var(--border-color);
     font-weight: 800 !important;
     background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+}
+
+/* Kıyasa girmeyen ay (iki yıldan birinde veri yok) sönük gösterilir. */
+.compare-row-muted td {
+    color: var(--text-muted);
 }
 
 .prediction-table-container {

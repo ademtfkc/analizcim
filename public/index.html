@@ -1055,37 +1055,10 @@
                 <div class="cockpit-body">
                 <div class="cockpit-main">
 
-                <div class="customers-toolbar">
-                    <label class="sr-only" for="customerSearchInput">Müşteri ara</label>
-                    <input type="search" id="customerSearchInput" class="form-input customer-search-input" placeholder="İsim, e-posta, telefon veya vergi no ara">
-                    <select id="customerBalanceFilter" class="form-input">
-                        <option value="all">Tüm bakiyeler</option>
-                        <option value="positive">Alacak bakiyesi</option>
-                        <option value="negative">Borç bakiyesi</option>
-                        <option value="zero">Bakiyesi sıfır</option>
-                    </select>
-                    <select id="customerSortSelect" class="form-input">
-                        <option value="created_desc">En yeni</option>
-                        <option value="created_asc">En eski</option>
-                        <option value="name_asc">İsim A-Z</option>
-                        <option value="name_desc">İsim Z-A</option>
-                        <option value="balance_desc">Bakiye yüksek</option>
-                        <option value="balance_asc">Bakiye düşük</option>
-                    </select>
-                </div>
-
-                <div class="customers-grid" id="customersGrid"></div>
-                <div class="customers-empty" id="customersEmpty" style="display: none;">
-                    <span class="empty-icon"></span>
-                    <p>Henüz müşteri eklenmemiş</p>
-                    <span class="empty-hint">İlk müşteriyi ekleyerek cari portföyünüzü oluşturmaya başlayın.</span>
-                    <button type="button" class="dashboard-action-btn primary" onclick="openCustomerModal()">Müşteri Ekle</button>
-                </div>
-
                 <div class="business-party-panel">
                     <div class="section-subheader">
                         <div>
-                            <h3>Excel Hareketlerinden Müşteriler</h3>
+                            <h3>Fatura Hareketlerinden Müşteriler</h3>
                             <p class="section-desc">Satış faturalarından otomatik çıkarılan müşteri hacmi ve son işlem bilgisi.</p>
                         </div>
                     </div>
@@ -1119,6 +1092,41 @@
                     <div class="customers-empty" id="customerPartyEmpty" style="display: none;">
                         <span class="empty-icon"></span>
                         <p>Henüz müşteri bulunamadı. Excel dosyası yükleyerek otomatik ekleyebilirsiniz.</p>
+                    </div>
+                </div>
+
+                <div class="business-party-panel">
+                    <div class="section-subheader">
+                        <div>
+                            <h3>Manuel Müşteri Kayıtları</h3>
+                            <p class="section-desc">Elle eklenen kartlar. Fatura hareketi eşleşen kayıtlarda hacim de görünür.</p>
+                        </div>
+                    </div>
+                    <div class="customers-toolbar">
+                        <label class="sr-only" for="customerSearchInput">Müşteri ara</label>
+                        <input type="search" id="customerSearchInput" class="form-input customer-search-input" placeholder="İsim, e-posta, telefon veya vergi no ara">
+                        <select id="customerBalanceFilter" class="form-input" aria-label="Manuel bakiye durumu">
+                            <option value="all">Tüm kayıtlar</option>
+                            <option value="positive">Manuel bakiye: alacak</option>
+                            <option value="negative">Manuel bakiye: borç</option>
+                            <option value="zero">Manuel bakiye: sıfır</option>
+                        </select>
+                        <select id="customerSortSelect" class="form-input" aria-label="Sıralama">
+                            <option value="created_desc">En yeni</option>
+                            <option value="created_asc">En eski</option>
+                            <option value="name_asc">İsim A-Z</option>
+                            <option value="name_desc">İsim Z-A</option>
+                            <option value="balance_desc">Manuel bakiye yüksek</option>
+                            <option value="balance_asc">Manuel bakiye düşük</option>
+                        </select>
+                    </div>
+
+                    <div class="customers-grid" id="customersGrid"></div>
+                    <div class="customers-empty" id="customersEmpty" style="display: none;">
+                        <span class="empty-icon"></span>
+                        <p>Henüz manuel müşteri kaydı yok</p>
+                        <span class="empty-hint">Excel'den gelen müşteriler üstteki tabloda listelenir; buraya yalnız elle eklediğiniz kayıtlar düşer.</span>
+                        <button type="button" class="dashboard-action-btn primary" onclick="openCustomerModal()">Müşteri Ekle</button>
                     </div>
                 </div>
                 </div><!-- /.cockpit-main -->

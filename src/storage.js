@@ -1,5 +1,6 @@
 const db = require('./database');
 const logger = require('./logger');
+const { repairUploadFilename } = require('./validators');
 
 // Add new analysis to history
 function addToHistory(analysisResult, salesFileName, purchaseFileName, userId = 1) {
@@ -155,8 +156,8 @@ function mapRow(row) {
         userId: row.user_id,
         date: row.date,
         displayDate: row.display_date,
-        salesFileName: row.sales_filename,
-        purchaseFileName: row.purchase_filename,
+        salesFileName: repairUploadFilename(row.sales_filename),
+        purchaseFileName: repairUploadFilename(row.purchase_filename),
         sales,
         purchase,
         profitLoss: { amount: row.net_profit },
@@ -878,8 +879,8 @@ function getAnalysisHistory(userId, limit = 20) {
                 id: row.id,
                 date: row.date,
                 displayDate: row.display_date,
-                salesFileName: row.sales_filename,
-                purchaseFileName: row.purchase_filename,
+                salesFileName: repairUploadFilename(row.sales_filename),
+                purchaseFileName: repairUploadFilename(row.purchase_filename),
                 summary: row.summary,
                 summaryData: {
                     total_sales: row.sales_amount ?? 0,
@@ -1943,7 +1944,9 @@ async function getBusinessPartyDetail(userId, type, id) {
         vat: Number(row.vat || 0),
         invoiceType: row.invoice_type,
         description: row.description || '',
-        sourceFile: row.source_file || ''
+        // Eski kayıtlarda dosya adı bozuk yazılmış olabilir ("satÄ±s"); okurken onarılır.
+        // Yükleme tarafındaki kalıcı düzeltme: server.js multer fileFilter → repairUploadFilename.
+        sourceFile: repairUploadFilename(row.source_file || '')
     }));
     const totalVolume = mappedTransactions.reduce((sum, row) => sum + row.amount, 0);
     const salesVolume = mappedTransactions.filter((row) => row.invoiceType === 'sales').reduce((sum, row) => sum + row.amount, 0);
